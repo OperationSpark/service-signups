@@ -42,7 +42,8 @@ $ gcloud functions deploy session-signups \
 --runtime=go116 \
 --trigger-http \
 --allow-unauthenticated \
---entry-point HandleSignUp
+--entry-point HandleSignUp \
+--env-vars-file .env.vars-file .env.yaml
 ```
 
 ## Contributing
