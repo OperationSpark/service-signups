@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/GoogleCloudPlatform/functions-framework-go/funcframework"
-	"github.com/operationspark/slack-session-signups/signup"
+	signup "github.com/operationspark/slack-session-signups"
 )
 
 func main() {

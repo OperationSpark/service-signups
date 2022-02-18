@@ -33,7 +33,17 @@ Use the "Local Function Server" debug configuration
 
 The service is deployed as a Google Cloud Function and trigger by webhooks from operationspark.org
 
-[TODO]
+https://console.cloud.google.com/functions/details/us-central1/session-signups?env=gen1&authuser=1&project=operationspark-org
+
+[TODO: Flesh out]
+
+```shell
+$ gcloud functions deploy session-signups \
+--runtime=go116 \
+--trigger-http \
+--allow-unauthenticated \
+--entry-point HandleSignUp
+```
 
 ## Contributing
 
