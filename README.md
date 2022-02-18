@@ -5,6 +5,30 @@ this service sends a Slack message to the [#signups](https://operationspark.slac
 
 ## Development
 
+Google provides a [framework](https://cloud.google.com/functions/docs/functions-framework) to run the serverless functions locally. The framework starts an HTTP server that wraps the serverless function(s). You can start the local server with the terminal or VS Code
+
+### Shell
+
+```shell
+$ cd cmd
+$ SLACK_WEBHOOK_URL=[webhook endpoint] go run main.go
+
+Serving function:
+```
+
+Then trigger the function with an HTTP request (cURL, Postman, etc)
+
+```shell
+$ curl --header "Content-Type: application/json" \
+  --request POST \
+  --data '{"firstName":"Quinta", "lastName": "Brunson"}' \
+  http://localhost:8080/
+```
+
+### VS Code
+
+Use the "Local Function Server" debug configuration
+
 ## Deployment
 
 The service is deployed as a Google Cloud Function and trigger by webhooks from operationspark.org
