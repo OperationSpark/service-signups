@@ -6,30 +6,11 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"strings"
 
 	"github.com/operationspark/slack-session-signups/slack"
 )
 
 var SLACK_WEBHOOK_URL = os.Getenv("SLACK_WEBHOOK_URL")
-
-type Session struct {
-	Id string `json:"id"`
-}
-
-type Referral struct {
-	Value          string `json:"value"`
-	AdditionalInfo string `json:"additionalInfo"`
-}
-
-type SignUp struct {
-	Session      Session  `json:"session"`
-	Email        string   `json:"email"`
-	FirstName    string   `json:"firstName"`
-	LastName     string   `json:"lastName"`
-	Phone        string   `json:"phone"`
-	ReferencedBy Referral `json:"referencedBy"`
-}
 
 // HandleSignUp handles Info Session sign up requests from operationspark.org
 func HandleSignUp(w http.ResponseWriter, r *http.Request) {
@@ -48,12 +29,7 @@ func HandleSignUp(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	msg := strings.Join([]string{
-		fmt.Sprintf("%s %s has signed up for %s", s.FirstName, s.LastName, s.Session.Id),
-		fmt.Sprintf("Ph: %s)", s.Phone),
-		fmt.Sprintf("email: %s)", s.Email),
-	}, "\n")
-	payload := slack.Message{Text: msg}
+	payload := slack.Message{Text: s.Summary()}
 
 	err = slack.SendWebhook(SLACK_WEBHOOK_URL, payload)
 	if err != nil {
