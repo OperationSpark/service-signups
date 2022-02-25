@@ -27,7 +27,9 @@ $ curl --header "Content-Type: application/json" \
 
 ### VS Code
 
-Use the "Local Function Server" debug configuration
+Use the "Local Function Server" debug configuration:
+<img width="600" alt="image" src="https://user-images.githubusercontent.com/9354822/155805725-4de75940-d788-4265-a6cd-a42145e197bb.png">
+
 
 ## Deployment
 
