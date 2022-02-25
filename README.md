@@ -44,10 +44,15 @@ https://console.cloud.google.com/functions/details/us-central1/session-signups?e
 $ gcloud functions deploy session-signups \
 --runtime=go116 \
 --trigger-http \
---allow-unauthenticated \
 --entry-point HandleSignUp \
---env-vars-file .env.vars-file .env.yaml
+--env-vars-file .env.yaml
 ```
+
+## Connected Services
+ 
+- [OS Signups App](https://operationspark.slack.com/apps/A0338E8UFFV-os-signups?tab=settings&next_id=0)
+- Greenlight Signup API
+
 
 ## Contributing
 
