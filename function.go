@@ -47,32 +47,35 @@ func handleForm(w http.ResponseWriter, r *http.Request) (SignUp, error) {
 // HandleSignUp handles Info Session sign up requests from operationspark.org
 func HandleSignUp(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(SLACK_WEBHOOK_URL)
+	slackMsg := slack.Message{}
 
-	ct := r.Header.Get("Content-Type")
-	if ct == "application/json" {
+	switch r.Header.Get("Content-Type") {
+	case "application/json":
 		s, err := handleJson(w, r)
 		if err != nil {
 			http.Error(w, "Error reading sign up body", http.StatusInternalServerError)
 			panic(err)
 		}
+		slackMsg = slack.Message{Text: s.Summary()}
 
-		payload := slack.Message{Text: s.Summary()}
-		err = slack.SendWebhook(SLACK_WEBHOOK_URL, payload)
-		if err != nil {
-			http.Error(w, "Error sending Slack webhook", http.StatusInternalServerError)
-			panic(err)
-		}
-		return
-	}
-
-	if ct == "application/x-www-form-urlencoded" {
+	case "application/x-www-form-urlencoded":
 		s, err := handleForm(w, r)
 		if err != nil {
 			http.Error(w, "Error reading Form Body", http.StatusInternalServerError)
 			panic(err)
 		}
 		fmt.Println(s)
+		slackMsg = slack.Message{Text: s.Summary()}
+
+	default:
+		http.Error(w, "Unacceptable Content-Type", http.StatusUnsupportedMediaType)
 		return
 	}
-	http.Error(w, "Unacceptable Content-Type", http.StatusUnsupportedMediaType)
+
+	err := slack.SendWebhook(SLACK_WEBHOOK_URL, slackMsg)
+	if err != nil {
+		http.Error(w, "Error sending Slack webhook", http.StatusInternalServerError)
+		panic(err)
+	}
+
 }
