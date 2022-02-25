@@ -1,6 +1,4 @@
-// Package signup implements utilities for passing Info Session signups
-// from operationspark.org to relevant services
-package signup
+package signups
 
 import (
 	"encoding/json"
@@ -16,7 +14,7 @@ import (
 var SLACK_WEBHOOK_URL = os.Getenv("SLACK_WEBHOOK_URL")
 var decoder = schema.NewDecoder()
 
-// handleJson unmarshalls a JSON payload from a signUp request into a Signup
+// handleJson unmarshalls a JSON payload from a signUp request into a Signup.
 func handleJson(w http.ResponseWriter, r *http.Request) (Signup, error) {
 	b, err := io.ReadAll(r.Body)
 	s := Signup{}
@@ -48,8 +46,8 @@ func handleForm(w http.ResponseWriter, r *http.Request) (Signup, error) {
 	return s, nil
 }
 
-// HandleSignUp handles Info Session sign up requests from operationspark.org.
-// It sends webhooks to Greenlight, Slack, other services
+// HandleSignUp parses Info Session sign up requests from operationspark.org.
+// If successful, it sends webhooks to Greenlight, Slack, other services.
 func HandleSignUp(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(SLACK_WEBHOOK_URL)
 	slackMsg := slack.Message{}

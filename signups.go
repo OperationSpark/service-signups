@@ -1,4 +1,6 @@
-package signup
+// Package signups implements utilities for passing Info Session signups
+// from operationspark.org to relevant services.
+package signups
 
 import (
 	"fmt"
@@ -20,7 +22,7 @@ type Signup struct {
 	Token            string    `json:"token" schema:"token"`
 }
 
-// Summary creates a string, summarizing a signup event
+// Summary creates a string, summarizing a signup event.
 func (s *Signup) Summary() string {
 	msg := strings.Join([]string{
 		fmt.Sprintf("%s %s has signed up for %s", s.NameFirst, s.NameLast, s.Cohort),
