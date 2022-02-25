@@ -2,7 +2,10 @@ module github.com/operationspark/slack-session-signups
 
 go 1.17
 
-require github.com/GoogleCloudPlatform/functions-framework-go v1.5.3
+require (
+	github.com/GoogleCloudPlatform/functions-framework-go v1.5.3
+	github.com/gorilla/schema v1.2.0
+)
 
 require (
 	cloud.google.com/go/functions v1.0.0 // indirect
