@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-type SignUp struct {
+type Signup struct {
 	ProgramId        string    `json:"programId" schema:"programId"`
 	NameFirst        string    `json:"nameFirst" schema:"nameFirst"`
 	NameLast         string    `json:"nameLast" schema:"nameLast"`
@@ -20,7 +20,8 @@ type SignUp struct {
 	Token            string    `json:"token" schema:"token"`
 }
 
-func (s *SignUp) Summary() string {
+// Summary creates a string, summarizing a signup event
+func (s *Signup) Summary() string {
 	msg := strings.Join([]string{
 		fmt.Sprintf("%s %s has signed up for %s", s.NameFirst, s.NameLast, s.Cohort),
 		fmt.Sprintf("Ph: %s)", s.Cell),
