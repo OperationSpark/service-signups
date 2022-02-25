@@ -73,7 +73,7 @@ func HandleSignUp(w http.ResponseWriter, r *http.Request) {
 
 	err := s.SignUp()
 	if err != nil {
-		http.Error(w, "Error sending webhook to Greenlight", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		panic(err)
 	}
 

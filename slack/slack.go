@@ -3,8 +3,9 @@ package slack
 import (
 	"bytes"
 	"encoding/json"
-	"io"
+	"fmt"
 	"net/http"
+	"os"
 )
 
 type Message struct {
@@ -12,6 +13,9 @@ type Message struct {
 }
 
 func SendWebhook(url string, msg Message) error {
+	if os.Getenv("DISABLE_SLACK") == "true" {
+		return nil
+	}
 	body, err := json.Marshal(msg)
 	if err != nil {
 		return err
@@ -21,8 +25,9 @@ func SendWebhook(url string, msg Message) error {
 	if err != nil {
 		return err
 	}
+	if resp.StatusCode >= 300 {
+		return fmt.Errorf("error sending Slack message: %s", resp.Status)
+	}
 
-	lw := LogWriter{}
-	io.Copy(lw, resp.Body)
 	return nil
 }
