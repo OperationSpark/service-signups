@@ -1,63 +1,55 @@
 package email
 
 import (
-	"errors"
+	"context"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"net/url"
 	"os"
-	"strconv"
-	"strings"
+	"time"
+
+	"github.com/mailgun/mailgun-go/v4"
 )
 
-var BASE_URL = "https://api.mailgun.net/"
+var domain = os.Getenv("MAIL_DOMAIN")
+var privateApiKey = os.Getenv("MAIL_GUN_PRIVATE_API_KEY")
 
 type Message struct {
-	from    string
-	to      string
-	cc      string
-	bcc     string
-	subject string
-	text    string
-	html    string
+	recipient string
+	sender    string
+	subject   string
+	body      string
 }
 
-func (m *Message) form() url.Values {
-	data := url.Values{}
-	data.Set("from", "info@operationspark.org")
-	data.Set("to", m.to)
-	data.Set("subject", m.subject)
-	data.Set("text", m.text)
-	return data
-}
-
-func Send(msg Message) error {
-	DOMAIN, ok := os.LookupEnv("MAIL_DOMAIN")
-	if !ok {
-		return errors.New("'MAIL_DOMAIN' not set")
+func SendWelcome(to string) error {
+	msg := Message{
+		recipient: to,
+		sender:    "info@operationspark.org",
+		subject:   "Welcome from Operation Spark!",
+		body:      "this is a test", // TODO Welcome Email HTML here
 	}
-	url := fmt.Sprintf("https://%sv3/%s/messages", BASE_URL, DOMAIN)
-	data := msg.form()
+	resp, err := SendSimpleMessage(domain, privateApiKey, &msg)
+	fmt.Println(resp)
 
-	client := &http.Client{}
-	resp, err := http.NewRequest("POST", url, strings.NewReader(data.Encode()))
 	if err != nil {
 		return err
 	}
-	resp.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-	resp.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
-
-	res, err := client.Do(resp)
-	if err != nil {
-		return err
-	}
-	fmt.Println(res.Status)
-	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return err
-	}
-	fmt.Println(string(body))
 	return nil
+}
+
+func SendSimpleMessage(domain, apiKey string, msg *Message) (string, error) {
+	mg := mailgun.NewMailgun(domain, apiKey)
+
+	message := mg.NewMessage(msg.sender, msg.subject, msg.body, msg.recipient)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+
+	// Send the message with a 10 second timeout
+	resp, id, err := mg.Send(ctx, message)
+
+	if err != nil {
+		return "", err
+	}
+
+	fmt.Printf("ID: %s Resp: %s\n", id, resp)
+	return resp, nil
 }
