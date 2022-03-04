@@ -19,6 +19,7 @@ type Message struct {
 	body      string
 }
 
+// SendWelcome sends a "Welcome to Operation Spark" email to the specified email address.
 func SendWelcome(to string) error {
 	msg := Message{
 		recipient: to,
