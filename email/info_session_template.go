@@ -1,4 +1,14 @@
-<!DOCTYPE html>
+package email
+
+type WelcomeValues struct {
+	DisplayName string
+	SessionDate string
+	SessionTime string
+}
+
+// https://stackoverflow.com/questions/13904441/whats-the-best-way-to-bundle-static-resources-in-a-go-program
+
+const InfoSessionHtml = `<!DOCTYPE html>
 <html>
   <head>
     <!-- https://github.com/sendgrid/email-templates/blob/master/paste-templates/email-confirmation.html -->
@@ -449,3 +459,4 @@
     <!-- end body -->
   </body>
 </html>
+`

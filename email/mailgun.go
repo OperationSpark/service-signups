@@ -16,16 +16,16 @@ type Message struct {
 	recipient string
 	sender    string
 	subject   string
-	body      string
+	html      string
 }
 
 // SendWelcome sends a "Welcome to Operation Spark" email to the specified email address.
-func SendWelcome(to string) error {
+func SendWelcome(to, html string) error {
 	msg := Message{
 		recipient: to,
 		sender:    fmt.Sprintf("info@%s", domain),
 		subject:   "Welcome from Operation Spark!",
-		body:      "this is a test", // TODO Welcome Email HTML here
+		html:      html,
 	}
 	resp, err := SendSimpleMessage(domain, privateApiKey, &msg)
 	fmt.Println(resp)
@@ -39,7 +39,8 @@ func SendWelcome(to string) error {
 func SendSimpleMessage(domain, apiKey string, msg *Message) (string, error) {
 	mg := mailgun.NewMailgun(domain, apiKey)
 
-	message := mg.NewMessage(msg.sender, msg.subject, msg.body, msg.recipient)
+	message := mg.NewMessage(msg.sender, msg.subject, "", msg.recipient)
+	message.SetHtml(msg.html)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()

@@ -4,8 +4,12 @@ package signups
 
 import (
 	"fmt"
+	"io"
 	"strings"
+	"text/template"
 	"time"
+
+	"github.com/operationspark/slack-session-signups/email"
 )
 
 type Signup struct {
@@ -30,4 +34,17 @@ func (s *Signup) Summary() string {
 		fmt.Sprintf("email: %s)", s.Email),
 	}, "\n")
 	return msg
+}
+
+func (s *Signup) html(w io.Writer) error {
+	t, err := template.New("welcome").Parse(email.InfoSessionHtml)
+	if err != nil {
+		return err
+	}
+	data := email.WelcomeValues{
+		DisplayName: s.NameFirst,
+		SessionDate: s.StartDateTime.Format("Monday, Jan 02"),
+		SessionTime: s.StartDateTime.Format("3:00 PM MST"),
+	}
+	return t.Execute(w, data)
 }
