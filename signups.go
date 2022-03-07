@@ -8,8 +8,6 @@ import (
 	"strings"
 	"text/template"
 	"time"
-
-	"github.com/operationspark/slack-session-signups/email"
 )
 
 type Signup struct {
@@ -36,15 +34,20 @@ func (s *Signup) Summary() string {
 	return msg
 }
 
-func (s *Signup) html(w io.Writer) error {
-	t, err := template.New("welcome").Parse(email.InfoSessionHtml)
-	if err != nil {
-		return err
-	}
-	data := email.WelcomeValues{
+func (s *Signup) WelcomeData() WelcomeValues {
+	return WelcomeValues{
 		DisplayName: s.NameFirst,
 		SessionDate: s.StartDateTime.Format("Monday, Jan 02"),
 		SessionTime: s.StartDateTime.Format("3:00 PM MST"),
 	}
-	return t.Execute(w, data)
+}
+
+// html populates the Info Session Welcome email template with values from the Signup. It then writes the result to the io.Writer, w.
+func (s *Signup) html(w io.Writer) error {
+	t, err := template.New("welcome").Parse(InfoSessionHtml)
+	if err != nil {
+		return err
+	}
+
+	return t.Execute(w, s.WelcomeData())
 }

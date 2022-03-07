@@ -1,4 +1,4 @@
-package email
+package signups
 
 type WelcomeValues struct {
 	DisplayName string
