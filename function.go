@@ -1,6 +1,7 @@
 package signups
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -8,6 +9,7 @@ import (
 	"os"
 
 	"github.com/gorilla/schema"
+	"github.com/operationspark/slack-session-signups/email"
 	"github.com/operationspark/slack-session-signups/slack"
 )
 
@@ -71,12 +73,14 @@ func HandleSignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Post to Greenlight
 	err := s.SignUp()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		panic(err)
 	}
 
+	// #signups Slack notification
 	slackMsg := slack.Message{Text: s.Summary()}
 	err = slack.SendWebhook(SLACK_WEBHOOK_URL, slackMsg)
 	if err != nil {
@@ -84,4 +88,14 @@ func HandleSignUp(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
+	//  Send Info Session welcome email
+	buf := new(bytes.Buffer)
+	err = s.html(buf)
+	if err != nil {
+		fmt.Printf("error creating email HTML %s", err.Error())
+	}
+	err = email.SendWelcome(s.Email, buf.String())
+	if err != nil {
+		fmt.Printf("error sending welcome email %s", err.Error())
+	}
 }
