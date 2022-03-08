@@ -34,12 +34,16 @@ func (s *Signup) Summary() string {
 	return msg
 }
 
-func (s *Signup) WelcomeData() WelcomeValues {
+func (s *Signup) WelcomeData() (WelcomeValues, error) {
+	ctz, err := time.LoadLocation("America/Chicago")
+	if err != nil {
+		return WelcomeValues{}, err
+	}
 	return WelcomeValues{
 		DisplayName: s.NameFirst,
 		SessionDate: s.StartDateTime.Format("Monday, Jan 02"),
-		SessionTime: s.StartDateTime.Format("3:00 PM MST"),
-	}
+		SessionTime: s.StartDateTime.In(ctz).Format("3:00 PM MST"),
+	}, nil
 }
 
 // html populates the Info Session Welcome email template with values from the Signup. It then writes the result to the io.Writer, w.
@@ -48,6 +52,9 @@ func (s *Signup) html(w io.Writer) error {
 	if err != nil {
 		return err
 	}
-
-	return t.Execute(w, s.WelcomeData())
+	data, err := s.WelcomeData()
+	if err != nil {
+		return err
+	}
+	return t.Execute(w, data)
 }
