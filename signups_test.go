@@ -28,7 +28,25 @@ func TestWelcomeData(t *testing.T) {
 			want: WelcomeValues{
 				DisplayName: "Henri",
 				SessionDate: "Monday, Feb 28",
-				SessionTime: "5:30 PM CST",
+				SessionTime: "5:30 PM CDT",
+			},
+		},
+		{
+			name: "handle empty startDateTime",
+			signup: Signup{
+				ProgramId:     "",
+				NameFirst:     "Henri",
+				NameLast:      "Testaroni",
+				Email:         "henri@email.com",
+				Cell:          "555-123-4567",
+				Referrer:      "Word of mouth",
+				StartDateTime: time.Time{}, //  Empty value
+				Cohort:        "is-feb-28-22-12pm",
+			},
+			want: WelcomeValues{
+				DisplayName: "Henri",
+				SessionDate: "",
+				SessionTime: "",
 			},
 		},
 	}

@@ -18,7 +18,7 @@ type Signup struct {
 	Cell             string    `json:"cell" schema:"cell"`
 	Referrer         string    `json:"referrer" schema:"referrer"`
 	ReferrerResponse string    `json:"referrerResponse" schema:"referrerResponse"`
-	StartDateTime    time.Time `json:"startDateTime" schema:"startDateTime"`
+	StartDateTime    time.Time `json:"startDateTime,omitempty" schema:"startDateTime"`
 	Cohort           string    `json:"cohort" schema:"cohort"`
 	SessionId        string    `json:"sessionId" schema:"sessionId"`
 	Token            string    `json:"token" schema:"token"`
@@ -35,6 +35,11 @@ func (s *Signup) Summary() string {
 }
 
 func (s *Signup) WelcomeData() (WelcomeValues, error) {
+	if s.StartDateTime.IsZero() {
+		return WelcomeValues{
+			DisplayName: s.NameFirst,
+		}, nil
+	}
 	ctz, err := time.LoadLocation("America/Chicago")
 	if err != nil {
 		return WelcomeValues{}, err
