@@ -42,7 +42,7 @@ func (s *Signup) WelcomeData() (WelcomeValues, error) {
 	return WelcomeValues{
 		DisplayName: s.NameFirst,
 		SessionDate: s.StartDateTime.Format("Monday, Jan 02"),
-		SessionTime: s.StartDateTime.In(ctz).Format("3:00 PM MST"),
+		SessionTime: s.StartDateTime.In(ctz).Format("3:04 PM MST"),
 	}, nil
 }
 

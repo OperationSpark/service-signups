@@ -6,7 +6,7 @@ import (
 )
 
 func TestWelcomeData(t *testing.T) {
-	sessionStart, _ := time.Parse(time.RFC3339, "2022-02-28T18:00:00.000Z")
+	sessionStart, _ := time.Parse(time.RFC3339, "2022-03-21T22:30:00.000Z")
 	tests := []struct {
 		name   string
 		signup Signup
@@ -28,7 +28,7 @@ func TestWelcomeData(t *testing.T) {
 			want: WelcomeValues{
 				DisplayName: "Henri",
 				SessionDate: "Monday, Feb 28",
-				SessionTime: "12:00 PM CST",
+				SessionTime: "5:30 PM CST",
 			},
 		},
 	}
