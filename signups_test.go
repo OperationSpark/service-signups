@@ -103,3 +103,35 @@ func TestHTML(t *testing.T) {
 		}
 	}
 }
+
+func TestSummary(t *testing.T) {
+	sessionStartDate, _ := time.Parse(time.RFC822, "14 Mar 22 18:00 UTC")
+	tests := []struct {
+		s    Signup
+		want []string
+	}{
+		{
+			s: Signup{
+				NameFirst:     "Yasiin",
+				NameLast:      "Bey",
+				Cell:          "555-555-5555",
+				StartDateTime: sessionStartDate,
+				Cohort:        "is-mar-14-22-12pm",
+			},
+			want: []string{"Yasiin Bey has signed up for is-mar-14-22-12pm", "555-555-5555"},
+		},
+		{
+			s:    Signup{NameFirst: "Solána", NameLast: "Rowe", StartDateTime: time.Time{}},
+			want: []string{"Solána Rowe requested information on upcoming session times."},
+		},
+	}
+
+	for _, test := range tests {
+		got := test.s.Summary()
+		for _, want := range test.want {
+			if !strings.Contains(got, want) {
+				t.Fatalf("string missing in s.Summary()\n\ngot:\n \"%s\"\n\nwant: \"%s\"\n\nSignup:\n%+v", got, want, test.s)
+			}
+		}
+	}
+}

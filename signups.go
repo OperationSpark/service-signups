@@ -26,8 +26,12 @@ type Signup struct {
 
 // Summary creates a string, summarizing a signup event.
 func (s *Signup) Summary() string {
+	sessionNote := fmt.Sprintf("%s %s has signed up for %s.", s.NameFirst, s.NameLast, s.Cohort)
+	if s.StartDateTime.IsZero() {
+		sessionNote = fmt.Sprintf("%s %s requested information on upcoming session times.", s.NameFirst, s.NameLast)
+	}
 	msg := strings.Join([]string{
-		fmt.Sprintf("%s %s has signed up for %s", s.NameFirst, s.NameLast, s.Cohort),
+		sessionNote,
 		fmt.Sprintf("Ph: %s", s.Cell),
 		fmt.Sprintf("email: %s", s.Email),
 	}, "\n")
