@@ -17,8 +17,9 @@ var SLACK_WEBHOOK_URL = os.Getenv("SLACK_WEBHOOK_URL")
 var decoder = schema.NewDecoder()
 
 // handleJson unmarshalls a JSON payload from a signUp request into a Signup.
-func handleJson(s *Signup, r *http.Request) error {
-	b, err := io.ReadAll(r.Body)
+
+func handleJson(s *Signup, body io.Reader) error {
+	b, err := io.ReadAll(body)
 	if err != nil {
 		return err
 	}
@@ -54,7 +55,7 @@ func HandleSignUp(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Header.Get("Content-Type") {
 	case "application/json":
-		err := handleJson(&s, r)
+		err := handleJson(&s, r.Body)
 		if err != nil {
 			http.Error(w, "Error reading sign up body", http.StatusInternalServerError)
 			panic(err)

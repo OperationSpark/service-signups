@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/GoogleCloudPlatform/functions-framework-go v1.5.3
+	github.com/google/go-cmp v0.5.6
 	github.com/gorilla/schema v1.2.0
 	github.com/mailgun/mailgun-go/v4 v4.6.0
 )
