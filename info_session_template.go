@@ -259,6 +259,16 @@ const InfoSessionHtml = `<!DOCTYPE html>
                 "
               >
                 <p>Hi {{.DisplayName}}</p>
+
+                {{ if eq .SessionDate "" }}
+
+                <p>
+                  We're sorry we don't have any info session times to fit your
+                  schedule. We'll be reaching out soon to see how we can meet
+                  your needs.
+                </p>
+
+                {{ else }}
                 <p>
                   Thank you for registering for an info session with Operation
                   Spark. We're looking forward to meeting you on
@@ -272,9 +282,12 @@ const InfoSessionHtml = `<!DOCTYPE html>
                   will include information on our program and instructions for
                   joining your event.
                 </p>
+
+                {{ end }}
+
                 <p>
-                  In the meantime, if you have any questions please reach out to
-                  our Admissions coordinators at
+                  In the meantime, if you have any questions please reply to
+                  this email or reach out to our Admissions coordinators at
                   <a href="mailto: admissions@operationspark.org"
                     >admissions@operationspark.org</a
                   >

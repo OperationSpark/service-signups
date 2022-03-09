@@ -82,7 +82,7 @@ func TestHTML(t *testing.T) {
 		},
 		{
 			s:    Signup{NameFirst: "Amir", NameLast: "Thompson", StartDateTime: time.Time{}},
-			want: []string{"Amir", "we don’t have any info session times to fit your schedule"},
+			want: []string{"Amir", "we don't have any info session times to fit your"},
 		},
 	}
 
