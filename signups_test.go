@@ -1,6 +1,8 @@
 package signups
 
 import (
+	"bytes"
+	"strings"
 	"testing"
 	"time"
 )
@@ -61,5 +63,43 @@ func TestWelcomeData(t *testing.T) {
 				t.Errorf("s.WelcomeData():\ns.StartDateTime:%v\nwant:%s\ngot:%s", test.signup.StartDateTime, test.want.SessionTime, got.SessionTime)
 			}
 		})
+	}
+}
+
+func TestHTML(t *testing.T) {
+	sessionStartDate, _ := time.Parse(time.RFC822, "02 Feb 22 15:00 UTC")
+	tests := []struct {
+		s    Signup
+		want []string
+	}{
+		{
+			s: Signup{
+				NameFirst:     "Tariq",
+				NameLast:      "Trotter",
+				StartDateTime: sessionStartDate,
+			},
+			want: []string{"Tariq", "Wednesday, Feb 02 at 9:00 AM CST"},
+		},
+		{
+			s:    Signup{NameFirst: "Amir", NameLast: "Thompson", StartDateTime: time.Time{}},
+			want: []string{"Amir", "we don’t have any info session times to fit your schedule"},
+		},
+	}
+
+	for _, test := range tests {
+		var b bytes.Buffer
+		err := test.s.html(&b)
+		if err != nil {
+			t.Errorf("unexpected error: %s", err)
+		}
+
+		hiIndex := strings.Index(b.String(), "Hi ")
+		got := b.Bytes()[hiIndex : hiIndex+250]
+		for _, expected := range test.want {
+			if !strings.Contains(b.String(), expected) {
+				t.Fatalf("string missing from rendered HTML\nwant: \"...%s...\"\ngot:\n %s\nSignup:%+v\n", expected, got, test.s)
+			}
+
+		}
 	}
 }
