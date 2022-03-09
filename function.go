@@ -3,10 +3,12 @@ package signups
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gorilla/schema"
 	"github.com/operationspark/slack-session-signups/email"
@@ -17,14 +19,18 @@ var SLACK_WEBHOOK_URL = os.Getenv("SLACK_WEBHOOK_URL")
 var decoder = schema.NewDecoder()
 
 // handleJson unmarshalls a JSON payload from a signUp request into a Signup.
-
 func handleJson(s *Signup, body io.Reader) error {
+	var timeParseError *time.ParseError
+
 	b, err := io.ReadAll(body)
 	if err != nil {
 		return err
 	}
 
 	err = json.Unmarshal(b, s)
+	if errors.As(err, &timeParseError) {
+		return &InvalidFieldError{Field: "startDateTime"}
+	}
 	if err != nil {
 		return err
 	}
@@ -57,14 +63,14 @@ func HandleSignUp(w http.ResponseWriter, r *http.Request) {
 	case "application/json":
 		err := handleJson(&s, r.Body)
 		if err != nil {
-			http.Error(w, "Error reading sign up body", http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			panic(err)
 		}
 
 	case "application/x-www-form-urlencoded":
 		err := handleForm(&s, r)
 		if err != nil {
-			http.Error(w, "Error reading Form Body", http.StatusInternalServerError)
+			http.Error(w, "Error reading Form Body", http.StatusBadRequest)
 			panic(err)
 		}
 		fmt.Println(s)
@@ -99,4 +105,12 @@ func HandleSignUp(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Printf("error sending welcome email %s", err.Error())
 	}
+}
+
+type InvalidFieldError struct {
+	Field string
+}
+
+func (e *InvalidFieldError) Error() string {
+	return fmt.Sprintf("invalid value for field: '%s'", e.Field)
 }

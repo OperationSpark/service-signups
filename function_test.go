@@ -11,8 +11,14 @@ func TestHandleJson(t *testing.T) {
 	tests := []struct {
 		json []byte
 		want Signup
+		err  error
 	}{
-		{[]byte(`{"startDateTime": null}`), Signup{}},
+		{[]byte(`{"startDateTime": null}`), Signup{}, nil},
+		{
+			[]byte(`{"startDateTime": ""}`),
+			Signup{},
+			&InvalidFieldError{Field: "startDateTime"},
+		},
 		{
 			[]byte(`{
 			"nameFirst": "Henri",
@@ -30,14 +36,15 @@ func TestHandleJson(t *testing.T) {
 				Cell:             "555-123-4567",
 				Referrer:         "instagram",
 				ReferrerResponse: "",
-			}},
+			},
+			nil},
 	}
 
 	for _, test := range tests {
 		got := Signup{}
 		err := handleJson(&got, bytes.NewReader(test.json))
-		if err != nil {
-			t.Errorf("Error unmarshalling JSON: %s\n%v", string(test.json), err)
+		if err != nil && test.err == nil {
+			t.Errorf("Unexpected error for \n%s\nerror: %s", string(test.json), err)
 		}
 		if diff := cmp.Diff(test.want, got); diff != "" {
 			t.Errorf("handleJSON() mismatch (-want +got):\n%s", diff)
