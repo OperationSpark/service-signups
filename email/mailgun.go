@@ -23,7 +23,7 @@ type Message struct {
 func SendWelcome(to, html string) error {
 	msg := Message{
 		recipient: to,
-		sender:    fmt.Sprintf("info@%s", domain),
+		sender:    fmt.Sprintf("Operation Spark <admissions@%s>", domain),
 		subject:   "Welcome from Operation Spark!",
 		html:      html,
 	}
