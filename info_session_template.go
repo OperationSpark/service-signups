@@ -380,7 +380,7 @@ const InfoSessionHtml = `<!DOCTYPE html>
               >
                 <p style="margin: 0">
                   Cheers,<br />
-                  Operation Spark
+                  Admissions Team
                 </p>
               </td>
             </tr>
