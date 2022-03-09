@@ -28,8 +28,8 @@ type Signup struct {
 func (s *Signup) Summary() string {
 	msg := strings.Join([]string{
 		fmt.Sprintf("%s %s has signed up for %s", s.NameFirst, s.NameLast, s.Cohort),
-		fmt.Sprintf("Ph: %s)", s.Cell),
-		fmt.Sprintf("email: %s)", s.Email),
+		fmt.Sprintf("Ph: %s", s.Cell),
+		fmt.Sprintf("email: %s", s.Email),
 	}, "\n")
 	return msg
 }

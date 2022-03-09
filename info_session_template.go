@@ -258,7 +258,7 @@ const InfoSessionHtml = `<!DOCTYPE html>
                   line-height: 24px;
                 "
               >
-                <p>Hi {{.DisplayName}}</p>
+                <p>Hi {{.DisplayName}},</p>
 
                 {{ if eq .SessionDate "" }}
 
