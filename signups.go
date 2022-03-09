@@ -34,6 +34,7 @@ func (s *Signup) Summary() string {
 	return msg
 }
 
+// WelcomeData takes a Signup and prepares data for use in the Welcome email template
 func (s *Signup) WelcomeData() (WelcomeValues, error) {
 	if s.StartDateTime.IsZero() {
 		return WelcomeValues{
