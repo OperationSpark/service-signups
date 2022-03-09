@@ -1,2 +1,3 @@
 .env
-.env.yaml
+.env*
+cmd/__debug_bin
