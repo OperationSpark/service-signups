@@ -12,6 +12,9 @@ import (
 // SignUp (verb) sends a webhook to Greenlight (POST /signup).
 // The webhook creates a Info Session Signup record in the Greenlight database.
 func (s *Signup) SignUp() error {
+	if os.Getenv("DISABLE_GREENLIGHT") == "true" {
+		return nil
+	}
 	url, ok := os.LookupEnv("GREENLIGHT_WEBHOOK_URL")
 	if !ok {
 		return errors.New("'GREENLIGHT_WEBHOOK_URL' env var not set")
