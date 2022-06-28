@@ -1,0 +1,118 @@
+<mjml>
+  <mj-head>
+    <mj-title>Information Session Confirmation - Operation Sperk</mj-title>
+    <mj-preview>Information Session Confirmation - Operation Sperk</mj-preview>
+    <mj-attributes>
+      <mj-all font-family="Tahoma, 'Helvetica Neue', Helvetica, Arial, sans-serif"></mj-all>
+      <mj-text font-weight="400" font-size="16px" color="#000000" line-height="24px" font-family="Tahoma, 'Helvetica Neue', Helvetica, Arial, sans-serif"></mj-text>
+    </mj-attributes>
+    <mj-style inline="inline">
+      .body-section {
+        -webkit-box-shadow: 2px 4px 12px 0px rgba(0, 0, 0, 1);
+        -moz-box-shadow: 2px 4px 12px 0px rgba(0, 0, 0, 1);
+        box-shadow: 2px 4px 12px 0px rgba(0, 0, 0, 1);
+      }
+    </mj-style>
+    <mj-style inline="inline">
+      .text-link {
+        color: #f0c414;
+      }
+    </mj-style>
+
+    <mj-style inline="inline">
+      .footer-link {
+        color: #BBBBBB;
+      }
+    </mj-style>
+  </mj-head>
+  <mj-body width="700px" background-color="#202020">
+    <mj-section full-width="full-width" background-color="#920cf8" padding-bottom="0px" border-radius="0 0 4px 4px">
+      <mj-column width="100%">
+        <mj-image src="https://raw.githubusercontent.com/OperationSpark/images/master/logos/operationspark-banner-3d_300x132.png" alt="" align="center" width="250px"></mj-image>
+        <mj-text color="#f0c414" align="center" font-size="32px" font-weight="bold" line-height="40px">Welcome to Operation Spark!
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+
+
+    <mj-section full-width="full-width" padding-bottom="0px" padding-top="10px">
+      <mj-column width="100%">
+        <mj-divider border-width="1px" border-color="#f0c414"></mj-divider>
+      </mj-column>
+    </mj-section>
+
+    <mj-wrapper padding="10px">
+      <mj-section background-color="#202020" padding-left="2px" padding-right="2px" css-class="body-section" border-radius="8px">
+        <mj-column width="100%">
+
+          <mj-text font-size="16px" padding-left="12px" padding-right="12px" padding-top="0px" color="#f9f9f9">Hi {{.DisplayName}},</mj-text>
+
+          {{if eq .SessionDate ""}}
+          <mj-text color="#f9f9f9" font-size="16px" padding="12px">
+            We're sorry we don't have any info session times to fit your schedule. We'll be reaching out soon to see how we can meet your needs.
+          </mj-text>
+          {{else}}
+            <mj-text color="#f9f9f9" font-size="16px" padding="12px">
+              Thank you for registering for an info session with Operation Spark. We're looking forward to meeting you on:
+            </mj-text>
+            <mj-text font-size="16px" align="center" font-weight="bold" color="#f0c414" padding-bottom="0px">
+              {{ .SessionDate}}
+            </mj-text>
+            <mj-text font-size="16px" align="center" font-weight="bold" color="#f0c414" padding-top="0px">
+              {{ .SessionTime }}
+            </mj-text>
+            <mj-text color="#f9f9f9" font-size="16px" padding="12px">
+              At this time, all of our info sessions are being held online via Zoom. You will receive a detailed email from our admissions team prior to the date of your Info Session. It will include information on our program and instructions for joining your event.
+            </mj-text>
+            {{end}}
+
+            <mj-text color="#f9f9f9" font-size="16px" padding="12px">
+              In the meantime, if you have any questions please reply to this email or reach out to our Admissions coordinators at
+              <a class="text-link" href="mailto:admissions@operationspark.org">admissions@operationspark.org</a>
+            </mj-text>
+
+            <mj-text color="#f9f9f9" font-size="16px" padding="12px">Thank you for your interest and we look forward to meeting soon. </mj-text>
+
+            <mj-text color="#f9f9f9" font-size="16px" padding-bottom="0px" padding-top="32px" padding="12px">Cheers,</mj-text>
+            <mj-text color="#f9f9f9" font-size="16px" padding-bottom="0px" padding-left="12px" padding-right="12px">Admissions Team</mj-text>
+
+
+        </mj-column>
+      </mj-section>
+    </mj-wrapper>
+
+
+
+
+    <mj-wrapper full-width="full-width">
+      <mj-section>
+        <mj-column width="100%" padding="0px">
+          <mj-social font-size="15px" icon-size="30px" mode="horizontal" padding="0px" align="center">
+            <mj-social-element name="facebook" href="https://www.facebook.com/opspark"></mj-social-element>
+            <mj-social-element name="twitter" href="https://twitter.com/OperationSpark"></mj-social-element>
+            <mj-social-element name="instagram" href="https://www.instagram.com/operationspark"></mj-social-element>
+            <mj-social-element name="linkedin" href="https://www.linkedin.com/school/operation-spark"></mj-social-element>
+            <mj-social-element name="github" href="https://github.com/OperationSpark"></mj-social-element>
+
+
+          </mj-social>
+          <mj-text color="#555555" font-size="12px" align="center" line-height="16px">You received this email because we received a request to join an info session. If you didn't request to join an info session you can safely delete this email.
+          </mj-text>
+          <mj-text color="#AAAAAA" font-size="12px" align="center" line-height="16px">514 Franklin Ave, New Orleans, LA 70117 </mj-text>
+          <mj-text color="#AAAAAA" font-size="12px" align="center" line-height="16px">&copy;
+            <a href="https://operationspark.org" style="color:#AAAAAA;text-decoration:none;">Operation Spark</a>
+          </mj-text>
+
+        </mj-column>
+      </mj-section>
+      <mj-section padding-top="0">
+        <mj-group>
+          <mj-column width="100%" padding-right="0px">
+            <mj-text color="#888888" font-size="12px" align="center" line-height="16px" font-weight="bold"><a class="footer-link" href="https://operationspark.org/privacyPolicy">Privacy</a></mj-text>
+          </mj-column>
+        </mj-group>
+      </mj-section>
+    </mj-wrapper>
+  </mj-body>
+</mjml>
