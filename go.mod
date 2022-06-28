@@ -1,4 +1,4 @@
-module github.com/OperationSpark/service-slack-signup/tree/refactor-email-template
+module github.com/operationspark/service-slack-signup/tree/refactor-email-template
 
 go 1.17
 
