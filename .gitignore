@@ -1,3 +1,4 @@
 .env
 .env*
 cmd/__debug_bin
+*.ignore.html
