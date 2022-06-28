@@ -1,21 +1,21 @@
-package signups
+package generate
 
 import (
 	"context"
 	"errors"
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 
 	"github.com/Boostport/mjml-go"
 )
 
 // Used to create template -- runs only when tested
-func generateHtml() (string, error) {
-	cwd, err := os.Getwd()
-	check(err)
+func GenerateHtml() (string, error) {
 
-	input, err := os.ReadFile(path.Join(cwd, "email", "generate-template", "index.mjml"))
+	templatePath, err := filepath.Abs("index.mjml")
+	fmt.Println("Template Path: ", templatePath)
+	input, err := os.ReadFile(templatePath)
 
 	output, err := mjml.ToHTML(context.Background(), string(input), mjml.WithMinify(true))
 
@@ -24,10 +24,15 @@ func generateHtml() (string, error) {
 	if errors.As(err, &mjmlError) {
 		fmt.Println(mjmlError.Message)
 		fmt.Println(mjmlError.Details)
+		return "", err
 	}
 
-	f, err := os.Create(path.Join(cwd, "email", "templates", "signup_template.html"))
-	check(err)
+	outputPath, err := filepath.Abs(filepath.Join("..", "templates", "signup_template.html"))
+	fmt.Println("Output Path: ", outputPath)
+	f, err := os.Create(outputPath)
+	if err != nil {
+		return "", err
+	}
 
 	bytes, err := f.WriteString(output)
 
