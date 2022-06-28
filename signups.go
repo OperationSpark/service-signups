@@ -61,16 +61,24 @@ func (s *Signup) WelcomeData() (WelcomeValues, error) {
 // html populates the Info Session Welcome email template with values from the Signup. It then writes the result to the io.Writer, w.
 func (s *Signup) html(w io.Writer) error {
 	cwd, err := os.Getwd()
-	check(err)
+	if err != nil {
+		return err
+	}
 
 	signupTemplate, err := os.ReadFile(path.Join(cwd, "email", "templates", "signup_template.html"))
-	check(err)
+	if err != nil {
+		return err
+	}
 
 	t, err := template.New("welcome").Parse(string(signupTemplate))
-	check(err)
+	if err != nil {
+		return err
+	}
 
 	data, err := s.WelcomeData()
-	check(err)
+	if err != nil {
+		return err
+	}
 
 	err = t.Execute(w, data)
 

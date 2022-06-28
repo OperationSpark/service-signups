@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/gorilla/schema"
-	"github.com/operationspark/slack-session-signups/email"
-	"github.com/operationspark/slack-session-signups/slack"
+	"github.com/operationspark/service-slack-signup/email"
+	"github.com/operationspark/service-slack-signup/slack"
 )
 
 var SLACK_WEBHOOK_URL = os.Getenv("SLACK_WEBHOOK_URL")

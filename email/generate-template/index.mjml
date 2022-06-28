@@ -109,7 +109,7 @@
       <mj-section padding-top="0">
         <mj-group>
           <mj-column width="100%" padding-right="0px">
-            <mj-text color="#888888" font-size="12px" align="center" line-height="16px" font-weight="bold"><a class="footer-link" href="https://operationspark.org/privacyPolicy">Privacy</a></mj-text>
+            <mj-text color="#888888" font-size="12px" align="center" line-height="16px" font-weight="bold"><a class="footer-link" href="https://operationspark.org/privacyPolicy">Privacy Policy</a></mj-text>
           </mj-column>
         </mj-group>
       </mj-section>
