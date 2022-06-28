@@ -78,7 +78,7 @@ func TestHTML(t *testing.T) {
 				NameLast:      "Trotter",
 				StartDateTime: sessionStartDate,
 			},
-			want: []string{"Tariq", "Wednesday, Feb 02 at 9:00 AM CST"},
+			want: []string{"Tariq", "Wednesday, Feb 02", "9:00 AM CST"},
 		},
 		{
 			s:    Signup{NameFirst: "Amir", NameLast: "Thompson", StartDateTime: time.Time{}},
@@ -94,7 +94,7 @@ func TestHTML(t *testing.T) {
 		}
 
 		hiIndex := strings.Index(b.String(), "Hi ")
-		got := b.Bytes()[hiIndex : hiIndex+250]
+		got := b.Bytes()[hiIndex : hiIndex+500]
 		for _, expected := range test.want {
 			if !strings.Contains(b.String(), expected) {
 				t.Fatalf("string missing from rendered HTML\nwant: \"...%s...\"\ngot:\n %s\nSignup:%+v\n", expected, got, test.s)
