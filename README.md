@@ -48,11 +48,26 @@ $ gcloud functions deploy session-signups \
 --env-vars-file .env.yaml
 ```
 
+#### Windows Powershell
+```pwsh
+gcloud functions deploy session-signups --runtime=go116 --trigger-http --entry-point HandleSignUp --env-vars-file .env.yaml
+```
 ## Connected Services
- 
 - [OS Signups App](https://operationspark.slack.com/apps/A0338E8UFFV-os-signups?tab=settings&next_id=0)
 - Greenlight Signup API
 
+## Email Templates
+
+- Template generated with [MJML Email Template](https://mjml.io/)
+- If edits are made to [index.mjml](email/generate-template/index.mjml) template, generate a new [signup_template.html](email/templates/signup_template.html) with:
+  ```sh
+  go run ./email/generate-template/generate.go
+  ```
+  OR the test will also rerender
+
+  ```sh
+  go test
+  ```
 
 ## Contributing
 
