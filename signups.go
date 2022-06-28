@@ -5,6 +5,8 @@ package signups
 import (
 	"fmt"
 	"io"
+	"os"
+	"path"
 	"strings"
 	"text/template"
 	"time"
@@ -58,13 +60,25 @@ func (s *Signup) WelcomeData() (WelcomeValues, error) {
 
 // html populates the Info Session Welcome email template with values from the Signup. It then writes the result to the io.Writer, w.
 func (s *Signup) html(w io.Writer) error {
-	t, err := template.New("welcome").Parse(InfoSessionHtml)
-	if err != nil {
-		return err
-	}
+	cwd, err := os.Getwd()
+	check(err)
+
+	signupTemplate, err := os.ReadFile(path.Join(cwd, "email", "templates", "signup_template.html"))
+	check(err)
+
+	t, err := template.New("welcome").Parse(string(signupTemplate))
+	check(err)
+
 	data, err := s.WelcomeData()
-	if err != nil {
-		return err
+	check(err)
+
+	err = t.Execute(w, data)
+
+	return err
+}
+
+func check(e error) {
+	if e != nil {
+		panic(e)
 	}
-	return t.Execute(w, data)
 }
