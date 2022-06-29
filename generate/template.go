@@ -13,6 +13,18 @@ import (
 
 // Used to create template -- runs only when tested
 func main() {
+
+	var defaultGoTemplate = `package signups
+type WelcomeValues struct {
+	DisplayName string
+	SessionDate string
+	SessionTime string
+}
+
+// https://stackoverflow.com/questions/13904441/whats-the-best-way-to-bundle-static-resources-in-a-go-program
+
+`
+
 	templatePath, err := filepath.Abs(path.Join("generate", "template.mjml"))
 	check(err, "Error finding template path")
 
@@ -26,6 +38,18 @@ func main() {
 		fmt.Println(mjmlError.Details)
 		check(err, "MJML transpiling error")
 	}
+	var goTemplateHtml = fmt.Sprintf("const InfoSessionHtml = `%s\n`", output)
+	var goTemplate = fmt.Sprintf("%s\n%s", defaultGoTemplate, goTemplateHtml)
+
+	goTemplateOutPath, err := filepath.Abs("info_session_template.go")
+	check(err, "Error creating 'goTemplateOutPath'")
+	goTemplateFile, err := os.Create(goTemplateOutPath)
+	check(err, "Error creating 'goTemplateFile'")
+
+	goBytes, err := goTemplateFile.WriteString(goTemplate)
+
+	fmt.Printf("\n%sSuccessfully created info_session_template.go (%dkb):%s\n", "\u001b[32m", goBytes/1000, "\u001b[0m")
+	fmt.Printf("%sFile Located => %s%s\n\n", "\u001b[32m", goTemplateOutPath, "\u001b[0m")
 
 	outputPath, err := filepath.Abs(filepath.Join("email", "templates", "signup_template.html"))
 	check(err, "Error creating output path")
