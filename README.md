@@ -25,6 +25,8 @@ $ curl --header "Content-Type: application/json" \
   http://localhost:8080/
 ```
 
+
+
 ### VS Code
 
 Use the "Local Function Server" debug configuration:
@@ -48,8 +50,14 @@ $ gcloud functions deploy session-signups \
 --env-vars-file .env.yaml
 ```
 
+#### session-signups-dev
+```
+gcloud functions deploy session-signups-dev --runtime=go116 --trigger-http --entry-point HandleSignUp --env-vars-file .env.yaml
+```
+
+
 ## Connected Services
- 
+
 - [OS Signups App](https://operationspark.slack.com/apps/A0338E8UFFV-os-signups?tab=settings&next_id=0)
 - Greenlight Signup API
 
