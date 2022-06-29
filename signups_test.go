@@ -2,6 +2,9 @@ package signups
 
 import (
 	"bytes"
+	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -88,7 +91,8 @@ func TestHTML(t *testing.T) {
 
 	for _, test := range tests {
 		var b bytes.Buffer
-		err := test.s.html(&b)
+		err := test.s.Html(&b)
+
 		if err != nil {
 			t.Errorf("unexpected error: %s", err)
 		}
@@ -134,4 +138,39 @@ func TestSummary(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestRenderedHtml(t *testing.T) {
+	sessionStart, _ := time.Parse(time.RFC3339, "2022-03-21T22:30:00.000Z")
+	test := Signup{
+		ProgramId:        "",
+		NameFirst:        "Peter",
+		NameLast:         "Barnum",
+		Email:            "the-tester@email.com",
+		Cell:             "555-123-4567",
+		Referrer:         "Word of mouth",
+		ReferrerResponse: "JaneDoe Smith",
+		StartDateTime:    sessionStart,
+		Cohort:           "is-feb-28-22-12pm",
+	}
+
+	var b bytes.Buffer
+	err := test.Html(&b)
+
+	if err != nil {
+		fmt.Println("Bytes", b)
+	}
+
+	renderedPath, err := filepath.Abs(filepath.Join(".", "signup_template.ignore.html"))
+
+	f, err := os.Create(renderedPath)
+	if err != nil {
+		t.Fatalf("Should create file 'signup_template.ignore.html'\n  > %v", renderedPath)
+	}
+
+	n, err := f.WriteString(b.String())
+	if err != nil || n == 0 {
+		t.Fatal("Should write to file 'signup_template.ignore.html'")
+	}
+
 }

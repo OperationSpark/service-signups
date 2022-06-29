@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/gorilla/schema"
-	"github.com/operationspark/service-slack-signup/tree/refactor-email-template/email"
-	"github.com/operationspark/service-slack-signup/tree/refactor-email-template/slack"
+	"github.com/operationspark/slack-session-signups/email"
+	"github.com/operationspark/slack-session-signups/slack"
 )
 
 var SLACK_WEBHOOK_URL = os.Getenv("SLACK_WEBHOOK_URL")
@@ -97,7 +97,7 @@ func HandleSignUp(w http.ResponseWriter, r *http.Request) {
 
 	//  Send Info Session welcome email
 	buf := new(bytes.Buffer)
-	err = s.html(buf)
+	err = s.Html(buf)
 	if err != nil {
 		fmt.Printf("error creating email HTML %s", err.Error())
 	}

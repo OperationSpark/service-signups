@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/GoogleCloudPlatform/functions-framework-go/funcframework"
-	signups "github.com/operationspark/service-slack-signup/tree/refactor-email-template"
+	signups "github.com/operationspark/slack-session-signups"
 )
 
 func main() {

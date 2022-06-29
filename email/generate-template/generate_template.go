@@ -1,4 +1,4 @@
-package generate
+package main
 
 import (
 	"context"
@@ -38,4 +38,8 @@ func GenerateHtml() (string, error) {
 
 	fmt.Printf("wrote %d bytes\n", bytes)
 	return output, err
+}
+
+func main() {
+	GenerateHtml()
 }

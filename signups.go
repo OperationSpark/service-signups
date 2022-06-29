@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 	"text/template"
 	"time"
@@ -59,13 +59,14 @@ func (s *Signup) WelcomeData() (WelcomeValues, error) {
 }
 
 // html populates the Info Session Welcome email template with values from the Signup. It then writes the result to the io.Writer, w.
-func (s *Signup) html(w io.Writer) error {
-	cwd, err := os.Getwd()
+func (s *Signup) Html(w io.Writer) error {
+
+	templatePath, err := filepath.Abs(filepath.Join(".", "email", "templates", "signup_template.html"))
 	if err != nil {
+		fmt.Println("Error: 'templatePath\nPath: ", templatePath, err)
 		return err
 	}
-
-	signupTemplate, err := os.ReadFile(path.Join(cwd, "email", "templates", "signup_template.html"))
+	signupTemplate, err := os.ReadFile(templatePath)
 	if err != nil {
 		return err
 	}
@@ -82,11 +83,8 @@ func (s *Signup) html(w io.Writer) error {
 
 	err = t.Execute(w, data)
 
-	return err
-}
-
-func check(e error) {
-	if e != nil {
-		panic(e)
+	if err != nil {
+		return err
 	}
+	return nil
 }
