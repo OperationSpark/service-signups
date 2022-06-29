@@ -78,7 +78,7 @@ func TestHTML(t *testing.T) {
 				NameLast:      "Trotter",
 				StartDateTime: sessionStartDate,
 			},
-			want: []string{"Tariq", "Wednesday, Feb 02 at 9:00 AM CST"},
+			want: []string{"Tariq", "Wednesday, Feb 02", "9:00 AM CST"},
 		},
 		{
 			s:    Signup{NameFirst: "Amir", NameLast: "Thompson", StartDateTime: time.Time{}},
