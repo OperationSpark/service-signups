@@ -1,7 +1,6 @@
 <mjml>
   <mj-head>
-    <mj-title>Information Session Confirmation - Operation Sperk</mj-title>
-    <mj-preview>Information Session Confirmation - Operation Sperk</mj-preview>
+    <mj-title>Information Session Confirmation • {{ .SessionDate}}, {{ .SessionTime }} • </mj-title>
     <mj-attributes>
       <mj-all font-family="Tahoma, 'Helvetica Neue', Helvetica, Arial, sans-serif"></mj-all>
       <mj-text font-weight="400" font-size="16px" color="#000000" line-height="24px" font-family="Tahoma, 'Helvetica Neue', Helvetica, Arial, sans-serif"></mj-text>
@@ -46,14 +45,14 @@
       <mj-section background-color="#202020" padding-left="2px" padding-right="2px" css-class="body-section" border-radius="8px">
         <mj-column width="100%">
 
-          <mj-text font-size="16px" padding-left="12px" padding-right="12px" padding-top="0px" color="#f9f9f9">Hi {{.DisplayName}},</mj-text>
+          <mj-text font-size="16px" padding-left="16px" padding-right="16px" padding-bottom="8px" padding-top="0px" color="#f9f9f9">Hi {{.DisplayName}},</mj-text>
 
           {{if eq .SessionDate ""}}
-          <mj-text color="#f9f9f9" font-size="16px" padding="12px">
+          <mj-text color="#f9f9f9" font-size="16px" padding="8px 16px">
             We're sorry we don't have any info session times to fit your schedule. We'll be reaching out soon to see how we can meet your needs.
           </mj-text>
           {{else}}
-            <mj-text color="#f9f9f9" font-size="16px" padding="12px">
+            <mj-text color="#f9f9f9" font-size="16px" padding="8px 16px">
               Thank you for registering for an info session with Operation Spark. We're looking forward to meeting you on:
             </mj-text>
             <mj-text font-size="16px" align="center" font-weight="bold" color="#f0c414" padding-bottom="0px">
@@ -62,20 +61,20 @@
             <mj-text font-size="16px" align="center" font-weight="bold" color="#f0c414" padding-top="0px">
               {{ .SessionTime }}
             </mj-text>
-            <mj-text color="#f9f9f9" font-size="16px" padding="12px">
+            <mj-text color="#f9f9f9" font-size="16px" padding="8px 16px">
               At this time, all of our info sessions are being held online via Zoom. You will receive a detailed email from our admissions team prior to the date of your Info Session. It will include information on our program and instructions for joining your event.
             </mj-text>
             {{end}}
 
-            <mj-text color="#f9f9f9" font-size="16px" padding="12px">
+            <mj-text color="#f9f9f9" font-size="16px" padding="8px 16px">
               In the meantime, if you have any questions please reply to this email or reach out to our Admissions coordinators at
               <a class="text-link" href="mailto:admissions@operationspark.org">admissions@operationspark.org</a>
             </mj-text>
 
-            <mj-text color="#f9f9f9" font-size="16px" padding="12px">Thank you for your interest and we look forward to meeting soon. </mj-text>
+            <mj-text color="#f9f9f9" font-size="16px" padding="8px 16px">Thank you for your interest and we look forward to meeting soon. </mj-text>
 
-            <mj-text color="#f9f9f9" font-size="16px" padding-bottom="0px" padding-top="32px" padding="12px">Cheers,</mj-text>
-            <mj-text color="#f9f9f9" font-size="16px" padding-bottom="0px" padding-left="12px" padding-right="12px">Admissions Team</mj-text>
+            <mj-text color="#f9f9f9" font-size="16px" padding-bottom="0px" padding-top="32px" padding-left="16px" padding-right="12px">Cheers,</mj-text>
+            <mj-text color="#f9f9f9" font-size="16px" padding-bottom="0px" padding-left="16px" padding-right="16px">Admissions Team</mj-text>
 
 
         </mj-column>
