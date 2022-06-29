@@ -70,7 +70,7 @@
             At this time, all of our info sessions are being held online via Zoom. You will receive a detailed email from our admissions team prior to the date of your Info Session. It will include information on our program and instructions for joining your event.
           </mj-text>
 
-          <mj-raw> {{ "end" }} </mj-raw>
+          <mj-raw> {{ end }} </mj-raw>
 
           <mj-text color="#f9f9f9" font-size="16px" padding="8px 16px">
             In the meantime, if you have any questions please reply to this email or reach out to our Admissions coordinators at
