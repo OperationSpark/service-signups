@@ -25,7 +25,7 @@ type WelcomeValues struct {
 
 `
 
-	templatePath, err := filepath.Abs(path.Join("generate", "template.mjml"))
+	templatePath, err := filepath.Abs(path.Join("template.mjml"))
 	check(err, "Error finding template path")
 
 	input, err := os.ReadFile(templatePath)
@@ -41,27 +41,17 @@ type WelcomeValues struct {
 	var goTemplateHtml = fmt.Sprintf("const InfoSessionHtml = `%s\n`", output)
 	var goTemplate = fmt.Sprintf("%s\n%s", defaultGoTemplate, goTemplateHtml)
 
-	goTemplateOutPath, err := filepath.Abs("info_session_template.go")
+	goTemplateOutPath, err := filepath.Abs(path.Join("..", "..", "info_session_template.go"))
 	check(err, "Error creating 'goTemplateOutPath'")
 	goTemplateFile, err := os.Create(goTemplateOutPath)
 	check(err, "Error creating 'goTemplateFile'")
 
 	goBytes, err := goTemplateFile.WriteString(goTemplate)
+	check(err, "Error: 'goTemplateFile'")
 
 	fmt.Printf("\n%sSuccessfully created info_session_template.go (%dkb):%s\n", "\u001b[32m", goBytes/1000, "\u001b[0m")
 	fmt.Printf("%sFile Located => %s%s\n\n", "\u001b[32m", goTemplateOutPath, "\u001b[0m")
 
-	outputPath, err := filepath.Abs(filepath.Join("email", "templates", "signup_template.html"))
-	check(err, "Error creating output path")
-
-	f, err := os.Create(outputPath)
-	check(err, "Error creating output file")
-
-	bytes, err := f.WriteString(output)
-	check(err, "Error writing file")
-
-	fmt.Printf("\n%sSuccessfully created template (%dkb):%s\n", "\u001b[32m", bytes/1000, "\u001b[0m")
-	fmt.Printf("%sFile Located => %s%s\n\n", "\u001b[32m", outputPath, "\u001b[0m")
 }
 
 func check(err error, msg string) {

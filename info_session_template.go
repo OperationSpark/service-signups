@@ -1,5 +1,4 @@
 package signups
-
 type WelcomeValues struct {
 	DisplayName string
 	SessionDate string
@@ -7,6 +6,7 @@ type WelcomeValues struct {
 }
 
 // https://stackoverflow.com/questions/13904441/whats-the-best-way-to-bundle-static-resources-in-a-go-program
+
 
 const InfoSessionHtml = `<!doctype html><html xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office"><head><title>Information Session Confirmation • {{ .SessionDate }}, {{ .SessionTime }} •</title><!--[if !mso]><!--><meta http-equiv="X-UA-Compatible" content="IE=edge"><!--<![endif]--><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style type="text/css">#outlook a { padding:0; }
       body { margin:0;padding:0;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%; }
