@@ -1,4 +1,4 @@
-# Slack Session Sign Up Service
+# Session Sign Up Service
 
 When someone signs up for an Info Session on [operationspark.org](https://operationspark.org),
 this service sends a webhook to Greenlight and a Slack message to the [#signups](https://operationspark.slack.com/archives/G3F2KFGJH) channel.
