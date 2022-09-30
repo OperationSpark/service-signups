@@ -1,8 +1,8 @@
-name: GCP Cloud Functions Deploy
+name: GCP Cloud Functions Deploy (Staging)
 on:
   push:
     branches:
-      - "main"
+      - "staging"
 jobs:
   build-deploy-cloud-function:
     permissions:
@@ -21,7 +21,7 @@ jobs:
       - id: "deploy"
         uses: "google-github-actions/deploy-cloud-functions@v0"
         with:
-          name: "session-signups-dev"
+          name: "session-signups-staging"
           entry_point: "HandleSignUp"
           https_trigger_security_level: "secure-always"
           project_id: "operationspark-org"

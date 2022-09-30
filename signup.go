@@ -61,10 +61,6 @@ func (s *Signup) Summary() string {
 	return msg
 }
 
-type mailer interface {
-	SendWelcome(signup Signup) error
-}
-
 type task interface {
 	// Run takes a signup form struct and executes some action.
 	// Ex.: Send an email, post a Slack message.

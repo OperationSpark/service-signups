@@ -61,8 +61,7 @@ func TestSendWelcome(t *testing.T) {
 		}))
 		defer mockMailgunAPI.Close()
 
-		mgSvc := NewMailgunService(domain, apiKey, mockMailgunAPI.URL+
-			"/v4")
+		mgSvc := NewMailgunService(domain, apiKey, mockMailgunAPI.URL+"/v4")
 
 		err := mgSvc.sendWelcome(form)
 
