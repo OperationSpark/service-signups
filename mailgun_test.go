@@ -70,9 +70,3 @@ func TestSendWelcome(t *testing.T) {
 		}
 	})
 }
-
-func assertEqual(t *testing.T, got, want string) {
-	if got != want {
-		t.Fatalf("Want: %q, but got: %q", want, got)
-	}
-}
