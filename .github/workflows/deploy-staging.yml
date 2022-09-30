@@ -28,10 +28,9 @@ jobs:
           region: "us-central1"
           runtime: "go116"
           env_vars: >-
-            SLACK_WEBHOOK_URL=${{secrets.SLACK_WEBHOOK_URL}},
-            MAIL_DOMAIN=${{secrets.MAIL_DOMAIN}},
-            MAIL_GUN_PUBLIC_API_KEY=${{secrets.MAIL_GUN_PUBLIC_API_KEY}},
-            MAIL_GUN_PRIVATE_API_KEY=${{secrets.MAIL_GUN_PRIVATE_API_KEY}},
-            GREENLIGHT_WEBHOOK_URL=${{secrets.GREENLIGHT_WEBHOOK_URL}}
+            SLACK_WEBHOOK_URL=${{secrets.STAGING_SLACK_WEBHOOK_URL}},
+            MAIL_DOMAIN=${{secrets.STAGING_MAIL_DOMAIN}},
+            MAIL_GUN_PRIVATE_API_KEY=${{secrets.STAGING_MAIL_GUN_PRIVATE_API_KEY}},
+            GREENLIGHT_WEBHOOK_URL=${{secrets.STAGING_GREENLIGHT_WEBHOOK_URL}}
       - id: "trigger-url"
         run: 'echo "${{ steps.deploy.outputs.url }}"'
