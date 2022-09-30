@@ -9,6 +9,7 @@ jobs:
       contents: "read"
       id-token: "write"
 
+    environment: staging
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -21,16 +22,16 @@ jobs:
       - id: "deploy"
         uses: "google-github-actions/deploy-cloud-functions@v0"
         with:
-          name: "session-signups-staging"
+          name: "session-signups-dev"
           entry_point: "HandleSignUp"
           https_trigger_security_level: "secure-always"
           project_id: "operationspark-org"
           region: "us-central1"
           runtime: "go116"
           env_vars: >-
-            SLACK_WEBHOOK_URL=${{secrets.STAGING_SLACK_WEBHOOK_URL}},
-            MAIL_DOMAIN=${{secrets.STAGING_MAIL_DOMAIN}},
-            MAIL_GUN_PRIVATE_API_KEY=${{secrets.STAGING_MAIL_GUN_PRIVATE_API_KEY}},
-            GREENLIGHT_WEBHOOK_URL=${{secrets.STAGING_GREENLIGHT_WEBHOOK_URL}}
+            SLACK_WEBHOOK_URL=${{secrets.SLACK_WEBHOOK_URL}},
+            MAIL_DOMAIN=${{secrets.MAIL_DOMAIN}},
+            MAILGUN_API_KEY=${{secrets.MAILGUN_API_KEY}},
+            GREENLIGHT_WEBHOOK_URL=${{secrets.GREENLIGHT_WEBHOOK_URL}}
       - id: "trigger-url"
         run: 'echo "${{ steps.deploy.outputs.url }}"'

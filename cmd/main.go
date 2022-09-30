@@ -11,7 +11,7 @@ import (
 
 func main() {
 	mgDomain := os.Getenv("MAIL_DOMAIN")
-	mgAPIKey := os.Getenv("MAIL_GUN_PRIVATE_API_KEY")
+	mgAPIKey := os.Getenv("MAILGUN_API_KEY")
 	glWebhookURL := os.Getenv("GREENLIGHT_WEBHOOK_URL")
 	glAPIkey := os.Getenv("GREENLIGHT_API_KEY")
 	slackWebhookURL := os.Getenv("SLACK_WEBHOOK_URL")
