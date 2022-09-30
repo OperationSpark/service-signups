@@ -1,24 +1,36 @@
-package slack
+package signup
 
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 )
 
-type Message struct {
+type slackService struct {
+	url string // Slack Webhook URL.
+}
+
+func (sl slackService) run(su Signup) error {
+	return sendWebhook(sl.url, message{Text: su.Summary()})
+}
+
+func (sl slackService) name() string {
+	return "slack service"
+}
+
+func NewSlackService(url string) *slackService {
+	return &slackService{url}
+}
+
+type message struct {
 	Text string `json:"text"`
 }
 
 // SendWebhook POSTs a message to the OS Signups Slack App webhook.
 // This incoming webhook posts a message to the #signups channel.
 // https://api.slack.com/apps/A0338E8UFFV/incoming-webhooks
-func SendWebhook(url string, msg Message) error {
-	if os.Getenv("DISABLE_SLACK") == "true" {
-		return nil
-	}
+func sendWebhook(url string, msg message) error {
 	body, err := json.Marshal(msg)
 	if err != nil {
 		return err
