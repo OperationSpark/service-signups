@@ -13,11 +13,12 @@ func main() {
 	mgDomain := os.Getenv("MAIL_DOMAIN")
 	mgAPIKey := os.Getenv("MAIL_GUN_PRIVATE_API_KEY")
 	glWebhookURL := os.Getenv("GREENLIGHT_WEBHOOK_URL")
+	glAPIkey := os.Getenv("GREENLIGHT_API_KEY")
 	slackWebhookURL := os.Getenv("SLACK_WEBHOOK_URL")
 
 	// Set up services/tasks to run when someone signs up for an Info Session.
 	mgSvc := signup.NewMailgunService(mgDomain, mgAPIKey, "")
-	glSvc := signup.NewGreenlightService(glWebhookURL)
+	glSvc := signup.NewGreenlightService(glWebhookURL, glAPIkey)
 	slackSvc := signup.NewSlackService(slackWebhookURL)
 
 	// These registration tasks include:
