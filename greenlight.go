@@ -1,37 +1,45 @@
-package signups
+package signup
 
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
-	"os"
 )
 
-// SignUp (verb) sends a webhook to Greenlight (POST /signup).
+type greenlightService struct {
+	url string // URL to POST webhooks.
+}
+
+func NewGreenlightService(url string) *greenlightService {
+	return &greenlightService{
+		url: url,
+	}
+}
+
+func (g greenlightService) run(su Signup) error {
+	return g.postWebhook(su)
+}
+
+func (g greenlightService) name() string {
+	return "greenlight service"
+}
+
+// PostWebhook sends a webhook to Greenlight (POST /signup).
 // The webhook creates a Info Session Signup record in the Greenlight database.
-func (s *Signup) SignUp() error {
-	if os.Getenv("DISABLE_GREENLIGHT") == "true" {
-		return nil
-	}
-	url, ok := os.LookupEnv("GREENLIGHT_WEBHOOK_URL")
-	if !ok {
-		return errors.New("'GREENLIGHT_WEBHOOK_URL' env var not set")
+func (g greenlightService) postWebhook(su Signup) error {
+	body, err := json.Marshal(su)
+	if err != nil {
+		return fmt.Errorf("greenlight postWebhook JSON marshall: %v", err)
 	}
 
-	body, err := json.Marshal(s)
+	resp, err := http.Post(g.url, "application/json", bytes.NewBuffer(body))
 	if err != nil {
-		return err
-	}
-
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
-	if err != nil {
-		return err
+		return fmt.Errorf("greenlight postWebhook POST: %v", err)
 	}
 
 	if resp.StatusCode >= 300 {
-		return fmt.Errorf("could not post to Greenlight\n%s", resp.Status)
+		return fmt.Errorf("greenlight postWebhook HTTP: %v", resp.Status)
 	}
 	return nil
 }
