@@ -9,8 +9,8 @@ import (
 )
 
 func TestSendWelcome(t *testing.T) {
-	t.Run("sends a 'Welcome Email'", func(t *testing.T) {
-		sessionStartDate, _ := time.Parse(time.RFC822, "02 Feb 22 18:00 UTC")
+	t.Run("sends a 'Welcome Email' with the correct template variables", func(t *testing.T) {
+		sessionStartDate, _ := time.Parse(time.RFC822, "14 Mar 22 17:00 UTC")
 		form := Signup{
 			NameFirst:        "Henri",
 			NameLast:         "Testaroni",
@@ -19,6 +19,7 @@ func TestSendWelcome(t *testing.T) {
 			Referrer:         "instagram",
 			ReferrerResponse: "",
 			StartDateTime:    sessionStartDate,
+			Cohort:           "is-mar-14-22-12pm",
 		}
 
 		domain := "test.notarealdomain.org"
@@ -51,8 +52,8 @@ func TestSendWelcome(t *testing.T) {
 
 			assertEqual(t, gotVars.FirstName, form.NameFirst)
 			assertEqual(t, gotVars.LastName, form.NameLast)
-			assertEqual(t, gotVars.SessionDate, "Wednesday, Feb 02")
-			assertEqual(t, gotVars.SessionTime, "12:00 PM CST")
+			assertEqual(t, gotVars.SessionDate, "Monday, Mar 14")
+			assertEqual(t, gotVars.SessionTime, "12:00 PM CDT")
 			// TODO: ZoomURL
 			// assertEqual(t, gotVars.ZoomURL, "TODO")
 
