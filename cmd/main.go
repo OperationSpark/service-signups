@@ -15,10 +15,23 @@ func main() {
 	glWebhookURL := os.Getenv("GREENLIGHT_WEBHOOK_URL")
 	slackWebhookURL := os.Getenv("SLACK_WEBHOOK_URL")
 
+	// Set up services/tasks to run when someone signs up for an Info Session.
 	mgSvc := signup.NewMailgunService(mgDomain, mgAPIKey, "")
 	glSvc := signup.NewGreenlightService(glWebhookURL)
 	slackSvc := signup.NewSlackService(slackWebhookURL)
-	registrationService := signup.NewSignupService(mgSvc, glSvc, slackSvc)
+
+	// These registration tasks include:
+	registrationService := signup.NewSignupService(
+		// posting a WebHook to Greenlight,
+		glSvc,
+		// sending a "Welcome Email",
+		mgSvc,
+		// sending a Slack message to #signups channel,
+		slackSvc,
+		// TODO:
+		// registering the user for the Zoom meeting,
+		// sending an SMS confirmation message to the user.
+	)
 
 	server := signup.NewSignupServer(registrationService)
 

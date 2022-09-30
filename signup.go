@@ -65,13 +65,12 @@ type mailer interface {
 	SendWelcome(signup Signup) error
 }
 
-type namer interface {
-	name() string
-}
-
 type task interface {
+	// Run takes a signup form struct and executes some action.
+	// Ex.: Send an email, post a Slack message.
 	run(signup Signup) error
-	namer
+	// Name Returns the name of the task.
+	name() string
 }
 type SignupService struct {
 	tasks []task
@@ -83,12 +82,7 @@ func NewSignupService(tasks ...task) *SignupService {
 	}
 }
 
-// Registers someone for an Info Session. This includes
-// posting a WebHook to Greenlight,
-// sending a Slack message to #signups channel,
-// sending a "Welcome Email",
-// registering the user for the Zoom meeting,
-// sending an SMS confirmation message to the user.
+// Register executes a series of tasks in order. If one fails, the remaining tasks are cancelled.
 func (sc *SignupService) Register(su Signup) error {
 	// TODO: Create specific errors for each handler
 	// TODO: Use context.Context to cancel subsequent requests on any failures
