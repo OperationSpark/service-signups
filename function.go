@@ -1,7 +1,6 @@
 package signup
 
 import (
-	"net/http"
 	"os"
 
 	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
@@ -9,10 +8,10 @@ import (
 
 func init() {
 	// Register an HTTP function with the Functions Framework
-	functions.HTTP("HandleSignup", makeEntryPoint())
+	functions.HTTP("HandleSignUp", NewServer().HandleSignUp)
 }
 
-func makeEntryPoint() http.HandlerFunc {
+func NewServer() *SignupServer {
 	mgDomain := os.Getenv("MAIL_DOMAIN")
 	mgAPIKey := os.Getenv("MAILGUN_API_KEY")
 	glWebhookURL := os.Getenv("GREENLIGHT_WEBHOOK_URL")
@@ -38,6 +37,5 @@ func makeEntryPoint() http.HandlerFunc {
 	)
 
 	server := NewSignupServer(registrationService)
-
-	return server.HandleSignUp
+	return server
 }
