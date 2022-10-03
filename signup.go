@@ -72,14 +72,14 @@ type SignupService struct {
 	tasks []task
 }
 
-func NewSignupService(tasks ...task) *SignupService {
+func newSignupService(tasks ...task) *SignupService {
 	return &SignupService{
 		tasks: tasks,
 	}
 }
 
 // Register executes a series of tasks in order. If one fails, the remaining tasks are cancelled.
-func (sc *SignupService) Register(su Signup) error {
+func (sc *SignupService) register(su Signup) error {
 	// TODO: Create specific errors for each handler
 	// TODO: Use context.Context to cancel subsequent requests on any failures
 	for _, task := range sc.tasks {

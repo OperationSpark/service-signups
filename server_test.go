@@ -13,7 +13,7 @@ type MockSignupService struct {
 	RegisterFunc func(signup Signup) error
 }
 
-func (m *MockSignupService) Register(signup Signup) error {
+func (m *MockSignupService) register(signup Signup) error {
 	return m.RegisterFunc(signup)
 }
 
@@ -34,7 +34,7 @@ func TestHandleSignup(t *testing.T) {
 			},
 		}
 
-		server := NewSignupServer(service)
+		server := newSignupServer(service)
 
 		req := httptest.NewRequest(http.MethodPost, "/", signupToJson(t, signup))
 		req.Header.Set("Content-Type", "application/json")

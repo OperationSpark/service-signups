@@ -50,15 +50,15 @@ type task interface {
 When someone signs up for an Info Session, the form is parsed, then passed to a series of tasks for processing.
 
 ```go
+// function.go
+
 // Set up services/tasks to run when someone signs up for an Info Session.
-// ( these different services are currently in the same package "signup" for simplicity.
-// They could go into their own packages. )
-mgSvc := signup.NewMailgunService(mgDomain, mgAPIKey, "")
-glSvc := signup.NewGreenlightService(glWebhookURL)
-slackSvc := signup.NewSlackService(slackWebhookURL)
+mgSvc := NewMailgunService(mgDomain, mgAPIKey, "")
+glSvc := NewGreenlightService(glWebhookURL)
+slackSvc := NewSlackService(slackWebhookURL)
 
 // These registration tasks include:
-registrationService := signup.NewSignupService(
+registrationService := newSignupService(
 	// posting a WebHook to Greenlight,
 	glSvc,
 	// sending a "Welcome Email",
@@ -70,12 +70,12 @@ registrationService := signup.NewSignupService(
 	// sending an SMS confirmation message to the user.
 )
 
-server := signup.NewSignupServer(registrationService)
+server := newSignupServer(registrationService)
 ```
 
 ```go
 // Register executes a series of tasks in order. If one fails, the remaining tasks are cancelled.
-func (sc *SignupService) Register(su Signup) error {
+func (sc *SignupService) register(su Signup) error {
 	// TODO: Create specific errors for each handler
 	// TODO: Use context.Context to cancel subsequent requests on any failures
 	for _, task := range sc.tasks {
@@ -117,17 +117,19 @@ func (d skywriteService) skyWrite(name string) error {
 }
 ```
 
-Then pass the service to the registration service in `main.go`.
+Then pass the service to the registration service in `function.go`.
 
 ```go
-func main() {
+func NewServer() {
 	// ...
-  registrationService := signup.NewSignupService(
+  registrationService := newSignupService(
     // ... other tasks,
     // (Order matters!)
     NewSkyWriteService()
 	)
   // ...
+	server := newSignupServer(registrationService)
+	return server
 }
 ```
 

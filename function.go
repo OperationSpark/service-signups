@@ -8,10 +8,12 @@ import (
 
 func init() {
 	// Register an HTTP function with the Functions Framework
+	// This handler name maps to the entry point name in the Google Cloud Function platform.
+	// https://cloud.google.com/functions/docs/writing/write-http-functions
 	functions.HTTP("HandleSignUp", NewServer().HandleSignUp)
 }
 
-func NewServer() *SignupServer {
+func NewServer() *signupServer {
 	mgDomain := os.Getenv("MAIL_DOMAIN")
 	mgAPIKey := os.Getenv("MAILGUN_API_KEY")
 	glWebhookURL := os.Getenv("GREENLIGHT_WEBHOOK_URL")
@@ -24,7 +26,7 @@ func NewServer() *SignupServer {
 	slackSvc := NewSlackService(slackWebhookURL)
 
 	// These registration tasks include:
-	registrationService := NewSignupService(
+	registrationService := newSignupService(
 		// posting a WebHook to Greenlight,
 		glSvc,
 		// sending a "Welcome Email",
@@ -36,6 +38,6 @@ func NewServer() *SignupServer {
 		// sending an SMS confirmation message to the user.
 	)
 
-	server := NewSignupServer(registrationService)
+	server := newSignupServer(registrationService)
 	return server
 }

@@ -11,19 +11,19 @@ import (
 	"github.com/gorilla/schema"
 )
 
-type Registerer interface {
-	Register(signup Signup) error
+type registerer interface {
+	register(signup Signup) error
 }
 
-type SignupServer struct {
-	service Registerer
+type signupServer struct {
+	service registerer
 }
 
-func NewSignupServer(service Registerer) *SignupServer {
-	return &SignupServer{service: service}
+func newSignupServer(service registerer) *signupServer {
+	return &signupServer{service: service}
 }
 
-func (ss *SignupServer) HandleSignUp(w http.ResponseWriter, r *http.Request) {
+func (ss *signupServer) HandleSignUp(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	var su Signup
@@ -43,14 +43,13 @@ func (ss *SignupServer) HandleSignUp(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Error reading Form Body", http.StatusBadRequest)
 			panic(err)
 		}
-		fmt.Println(su)
 
 	default:
 		http.Error(w, "Unacceptable Content-Type", http.StatusUnsupportedMediaType)
 		return
 	}
 
-	err := ss.service.Register(su)
+	err := ss.service.register(su)
 	// depending on what we get back, respond accordingly
 	if err != nil {
 		// TODO: handle different kinds of errors differently

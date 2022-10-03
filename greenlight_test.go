@@ -2,7 +2,6 @@ package signup
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -34,7 +33,6 @@ func TestPostWebhook(t *testing.T) {
 			var resp Signup
 			d := json.NewDecoder(r.Body)
 			d.Decode(&resp)
-			fmt.Println(resp)
 
 			assertDeepEqual(t, resp, su)
 		}))

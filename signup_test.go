@@ -40,9 +40,9 @@ func TestRegisterUser(t *testing.T) {
 			},
 		}
 
-		signupService := NewSignupService(mailService)
+		signupService := newSignupService(mailService)
 
-		err := signupService.Register(signup)
+		err := signupService.register(signup)
 		if err != nil {
 			t.Fatalf("register: %v", err)
 		}
