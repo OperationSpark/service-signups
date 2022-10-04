@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestRegisterForMeeting(t *testing.T) {
@@ -76,5 +77,31 @@ func TestAuthenticate(t *testing.T) {
 		}
 
 		assertEqual(t, zsvc.accessToken, fakeAccessToken)
+	})
+}
+
+func TestGetMeetingID(t *testing.T) {
+	t.Run("resolves the Zoom meeting ID from the session start time", func(t *testing.T) {
+
+		meetings := map[int]string{
+			17: "530pm-meeting-ID",
+			12: "noon-meeting-ID",
+		}
+
+		sessionStartDate, _ := time.Parse(time.RFC822, "14 Mar 22 17:00 UTC")
+		su := Signup{
+			StartDateTime: sessionStartDate,
+		}
+
+		zsvc := NewZoomService(ZoomOptions{
+			meetings: meetings,
+		})
+
+		gotMeetingID, err := zsvc.getMeetingID(su)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assertEqual(t, gotMeetingID, meetings[12])
 	})
 }

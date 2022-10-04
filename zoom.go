@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 )
 
 type zoomService struct {
@@ -16,6 +17,8 @@ type zoomService struct {
 	accountID    string
 	clientID     string
 	clientSecret string
+	//
+	meetings map[int]string
 }
 
 type tokenResponse struct {
@@ -31,6 +34,7 @@ type ZoomOptions struct {
 	clientID          string
 	clientSecret      string
 	accountID         string
+	meetings          map[int]string
 }
 
 func NewZoomService(o ZoomOptions) *zoomService {
@@ -52,6 +56,7 @@ func NewZoomService(o ZoomOptions) *zoomService {
 		clientID:     o.clientID,
 		clientSecret: o.clientSecret,
 		accountID:    o.accountID,
+		meetings:     o.meetings,
 	}
 }
 
@@ -68,6 +73,20 @@ func (z *zoomService) registerUser() error {
 	// Get Meeting ID based on Info Session time
 	// Send Zoom API req to register user to meeting
 	return nil
+}
+
+func (z *zoomService) getMeetingID(su Signup) (string, error) {
+	loc, err := time.LoadLocation("America/Chicago")
+	if err != nil {
+		return "", fmt.Errorf("%s: getMeetingID: loadLocation: %v", z.name(), err)
+	}
+	sessionStart := su.StartDateTime
+	centralStart := sessionStart.In(loc)
+
+	if _, ok := z.meetings[centralStart.Hour()]; !ok {
+		return "", fmt.Errorf("%s: getMeetingID: no zoom meeting found with start hour: %d", z.name(), centralStart.Hour())
+	}
+	return z.meetings[centralStart.Hour()], nil
 }
 
 func (z *zoomService) authenticate() error {
