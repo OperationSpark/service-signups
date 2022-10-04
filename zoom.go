@@ -9,8 +9,8 @@ import (
 )
 
 type zoomService struct {
-	baseURL      string // Base API Endpoint. Ex: "https://api.zoom.us/v2"
-	meetings     map[string]string
+	baseURL      string // Base API endpoint. Default: "https://api.zoom.us/v2"
+	oauthURL     string // Base OAuth endpoint. Default: "https://zoom.us/oauth"
 	client       http.Client
 	accessToken  string
 	accountID    string
@@ -20,20 +20,38 @@ type zoomService struct {
 
 type tokenResponse struct {
 	AccessToken string `json:"access_token"`
-	ExpiresIn   string `json:"expires_in"`
+	ExpiresIn   int    `json:"expires_in"`
+	Scope       string `json:"scope"`
+	TokenType   string `json:"token_type"`
 }
 
-func NewZoomService(baseURL, clientID, clientSecret string) *zoomService {
+type ZoomOptions struct {
+	baseAPIOverride   string //
+	baseOAuthOverride string
+	clientID          string
+	clientSecret      string
+	accountID         string
+}
+
+func NewZoomService(o ZoomOptions) *zoomService {
 	apiURL := "https://api.zoom.us/v2"
-	if len(baseURL) > 0 {
-		apiURL = baseURL
+
+	if len(o.baseAPIOverride) > 0 {
+		apiURL = o.baseAPIOverride
+	}
+
+	oauthURL := "https://zoom.us/oauth"
+	if len(o.baseOAuthOverride) > 0 {
+		oauthURL = o.baseOAuthOverride
 	}
 
 	return &zoomService{
 		baseURL:      apiURL,
+		oauthURL:     oauthURL,
 		client:       *http.DefaultClient,
-		clientID:     clientID,
-		clientSecret: clientSecret,
+		clientID:     o.clientID,
+		clientSecret: o.clientSecret,
+		accountID:    o.accountID,
 	}
 }
 
@@ -53,12 +71,12 @@ func (z *zoomService) registerUser() error {
 }
 
 func (z *zoomService) authenticate() error {
-
+	url := fmt.Sprintf("%s/token?grant_type=account_credentials&account_id=%s", z.oauthURL, z.accountID)
 	// Make a HTTP req to authenticate the client
 	req, err := http.NewRequestWithContext(
 		context.TODO(),
 		http.MethodPost,
-		fmt.Sprintf("https://zoom.us/oauth/token?grant_type=account_credentials&account_id=%s", z.accountID),
+		url,
 		nil,
 	)
 	if err != nil {
@@ -80,7 +98,6 @@ func (z *zoomService) authenticate() error {
 	d.Decode(&body)
 
 	z.accessToken = body.AccessToken
-	fmt.Println(body)
 	return nil
 }
 
