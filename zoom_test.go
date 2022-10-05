@@ -149,6 +149,10 @@ func TestRegisterForMeeting(t *testing.T) {
 	mockZoomServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		assertEqual(t, r.Method, http.MethodPost)
+		// Check auth token
+		authHeader := r.Header.Get("Authorization")
+		assertEqual(t, authHeader, "Bearer fake_access_token")
+
 		assertEqual(t, r.URL.Path, "/meetings/"+mockMeetingID+"/registrants")
 		// Meeting Occurrence ID. Provide this field to view meeting details of a particular occurrence of the recurring meeting.
 		assertEqual(t, r.URL.Query().Get("occurrence_id"), "1666045800000")
