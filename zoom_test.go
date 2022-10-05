@@ -150,6 +150,8 @@ func TestRegisterForMeeting(t *testing.T) {
 
 		assertEqual(t, r.Method, http.MethodPost)
 		assertEqual(t, r.URL.Path, "/meetings/"+mockMeetingID+"/registrants")
+		// Meeting Occurrence ID. Provide this field to view meeting details of a particular occurrence of the recurring meeting.
+		assertEqual(t, r.URL.Query().Get("occurrence_id"), "1666045800000")
 
 		var reqBody meeting.RegistrantRequest
 

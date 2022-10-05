@@ -15,15 +15,20 @@ import (
 
 type (
 	zoomService struct {
-		baseURL        string // Base API endpoint. Default: "https://api.zoom.us/v2"
-		oauthURL       string // Base OAuth endpoint. Default: "https://zoom.us/oauth"
+		// Base API endpoint. Default: "https://api.zoom.us/v2"
+		baseURL string
+		// Base OAuth endpoint. Default: "https://zoom.us/oauth"
+		oauthURL string
+		// HTTP client for making Zoom API requests.
+		// https://marketplace.zoom.us/docs/api-reference/zoom-api/methods/#overview
 		client         http.Client
 		accessToken    string
 		tokenExpiresAt time.Time
 		accountID      string
 		clientID       string
 		clientSecret   string
-		//
+		// Key-value map with the Central Time meeting start hour (int) as the keys, and Zoom Meeting ID as the values.
+		// Ex: {17: "86935241734"} denotes meeting with ID, "86935241734", starts at 5pm central.
 		meetings map[int]string
 	}
 
@@ -35,12 +40,16 @@ type (
 	}
 
 	ZoomOptions struct {
-		baseAPIOverride   string //
+		// Overrides Zoom API base URL for testing. Default: "https://api.zoom.us/v2"
+		baseAPIOverride string
+		// Overrides Zoom OAuth base URL for testing. Default: "https://zoom.us/oauth"
 		baseOAuthOverride string
 		clientID          string
 		clientSecret      string
 		accountID         string
-		meetings          map[int]string
+		// Key-value map with the Central Time meeting start hour (int) as the keys, and Zoom Meeting ID as the values.
+		// Ex: {17: "86935241734"} denotes meeting with ID, "86935241734", starts at 5pm central.
+		meetings map[int]string
 	}
 )
 
@@ -75,6 +84,7 @@ func (z *zoomService) name() string {
 	return "zoom service"
 }
 
+// RegisterUser creates and submits a user's registration to a meeting. The specific meeting is decided from the Signup's startDateTime.
 func (z *zoomService) registerUser(su Signup) error {
 	// Get Meeting ID based on Info Session time
 	meetingID, err := z.getMeetingID(su)
@@ -100,7 +110,8 @@ func (z *zoomService) registerUser(su Signup) error {
 		return fmt.Errorf("marshall: %v", err)
 	}
 
-	url := fmt.Sprintf("%s/meetings/%d/registrants", z.baseURL, meetingID)
+	// Register for a specific occurrence for the recurring meeting
+	url := fmt.Sprintf("%s/meetings/%d/registrants?occurrence_id=%d", z.baseURL, meetingID, su.StartDateTime.UnixMilli())
 
 	req, err := http.NewRequestWithContext(
 		context.TODO(),
@@ -131,6 +142,7 @@ func (z *zoomService) registerUser(su Signup) error {
 	return nil
 }
 
+// GetMeetingID looks up the Zoom meeting ID by the signup startDateTime (in Central Time).
 func (z *zoomService) getMeetingID(su Signup) (int64, error) {
 	loc, err := time.LoadLocation("America/Chicago")
 	if err != nil {
@@ -149,6 +161,7 @@ func (z *zoomService) getMeetingID(su Signup) (int64, error) {
 	return int64(id), nil
 }
 
+// Authenticate requests an access token and sets it along with the expiration date on the service.
 func (z *zoomService) authenticate() error {
 	url := fmt.Sprintf("%s/token?grant_type=account_credentials&account_id=%s", z.oauthURL, z.accountID)
 	// Make a HTTP req to authenticate the client
@@ -187,6 +200,8 @@ func (z *zoomService) isAuthenticated() bool {
 		time.Now().Before(z.tokenExpiresAt.Truncate(time.Minute))
 }
 
+// EncodeCredentials base64 encodes the client ID and secret, separated by a colon.
+// ie: Base64Encode([clientID]:[clientSecret])
 func (z *zoomService) encodeCredentials() string {
 	creds := fmt.Sprintf("%s:%s", z.clientID, z.clientSecret)
 	return base64.StdEncoding.EncodeToString([]byte(creds))
