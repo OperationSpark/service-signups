@@ -1,41 +1,48 @@
 package signup
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
+
+	"github.com/operationspark/service-signup/zoom/meeting"
 )
 
-type zoomService struct {
-	baseURL      string // Base API endpoint. Default: "https://api.zoom.us/v2"
-	oauthURL     string // Base OAuth endpoint. Default: "https://zoom.us/oauth"
-	client       http.Client
-	accessToken  string
-	accountID    string
-	clientID     string
-	clientSecret string
-	//
-	meetings map[int]string
-}
+type (
+	zoomService struct {
+		baseURL        string // Base API endpoint. Default: "https://api.zoom.us/v2"
+		oauthURL       string // Base OAuth endpoint. Default: "https://zoom.us/oauth"
+		client         http.Client
+		accessToken    string
+		tokenExpiresAt time.Time
+		accountID      string
+		clientID       string
+		clientSecret   string
+		//
+		meetings map[int]string
+	}
 
-type tokenResponse struct {
-	AccessToken string `json:"access_token"`
-	ExpiresIn   int    `json:"expires_in"`
-	Scope       string `json:"scope"`
-	TokenType   string `json:"token_type"`
-}
+	tokenResponse struct {
+		AccessToken string `json:"access_token"`
+		ExpiresIn   int    `json:"expires_in"`
+		Scope       string `json:"scope"`
+		TokenType   string `json:"token_type"`
+	}
 
-type ZoomOptions struct {
-	baseAPIOverride   string //
-	baseOAuthOverride string
-	clientID          string
-	clientSecret      string
-	accountID         string
-	meetings          map[int]string
-}
+	ZoomOptions struct {
+		baseAPIOverride   string //
+		baseOAuthOverride string
+		clientID          string
+		clientSecret      string
+		accountID         string
+		meetings          map[int]string
+	}
+)
 
 func NewZoomService(o ZoomOptions) *zoomService {
 	apiURL := "https://api.zoom.us/v2"
@@ -61,32 +68,83 @@ func NewZoomService(o ZoomOptions) *zoomService {
 }
 
 func (z *zoomService) run(su Signup) error {
-	return z.registerUser()
+	return z.registerUser(su)
 }
 
 func (z *zoomService) name() string {
 	return "zoom service"
 }
 
-func (z *zoomService) registerUser() error {
-	// Authenticate client
+func (z *zoomService) registerUser(su Signup) error {
 	// Get Meeting ID based on Info Session time
+	meetingID, err := z.getMeetingID(su)
+	if err != nil {
+		return fmt.Errorf("getMeetingID: %v", err)
+	}
+
+	// Authenticate client
+	if !z.isAuthenticated() {
+		if err = z.authenticate(); err != nil {
+			return fmt.Errorf("authenticate: %v", err)
+		}
+	}
+
 	// Send Zoom API req to register user to meeting
+	reqBody := meeting.RegistrantRequest{
+		FirstName: su.NameFirst,
+		LastName:  su.NameLast,
+		Email:     su.Email,
+	}
+	jsonBody, err := json.Marshal(reqBody)
+	if err != nil {
+		return fmt.Errorf("marshall: %v", err)
+	}
+
+	url := fmt.Sprintf("%s/meetings/%d/registrants", z.baseURL, meetingID)
+
+	req, err := http.NewRequestWithContext(
+		context.TODO(),
+		http.MethodPost,
+		url,
+		bytes.NewBuffer(jsonBody),
+	)
+	if err != nil {
+		return fmt.Errorf("newRequestWithContext: %v", err)
+	}
+
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer: %s", z.accessToken))
+	resp, err := z.client.Do(req)
+	if err != nil {
+		return fmt.Errorf("client.Do: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode > 300 {
+		return fmt.Errorf("HTTP: %s", resp.Status)
+	}
+	var respBody meeting.RegistrationResponse
+	d := json.NewDecoder(resp.Body)
+	d.Decode(&respBody)
+
 	return nil
 }
 
-func (z *zoomService) getMeetingID(su Signup) (string, error) {
+func (z *zoomService) getMeetingID(su Signup) (int64, error) {
 	loc, err := time.LoadLocation("America/Chicago")
 	if err != nil {
-		return "", fmt.Errorf("%s: getMeetingID: loadLocation: %v", z.name(), err)
+		return 0, fmt.Errorf("loadLocation: %v", err)
 	}
 	sessionStart := su.StartDateTime
 	centralStart := sessionStart.In(loc)
 
 	if _, ok := z.meetings[centralStart.Hour()]; !ok {
-		return "", fmt.Errorf("%s: getMeetingID: no zoom meeting found with start hour: %d", z.name(), centralStart.Hour())
+		return 0, fmt.Errorf("no zoom meeting found with start hour: %d", centralStart.Hour())
 	}
-	return z.meetings[centralStart.Hour()], nil
+	id, err := strconv.Atoi(z.meetings[centralStart.Hour()])
+	if err != nil {
+		return 0, fmt.Errorf("convert string to intL %v", err)
+	}
+	return int64(id), nil
 }
 
 func (z *zoomService) authenticate() error {
@@ -99,17 +157,18 @@ func (z *zoomService) authenticate() error {
 		nil,
 	)
 	if err != nil {
-		return fmt.Errorf("%s: authenticate: %v", z.name(), err)
+		return fmt.Errorf("NewRequestWithContext: %v", err)
 	}
 
 	req.Header.Add("Authorization", "Basic "+z.encodeCredentials())
 
 	resp, err := z.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("%s: Do: %v", z.name(), err)
+		return fmt.Errorf("client.do: %v", err)
 	}
+	defer resp.Body.Close()
 	if resp.StatusCode >= 300 {
-		return fmt.Errorf("%s: authenticate: HTTP: %v", z.name(), resp.Status)
+		return fmt.Errorf("HTTP: %v", resp.Status)
 	}
 
 	var body tokenResponse
@@ -117,7 +176,13 @@ func (z *zoomService) authenticate() error {
 	d.Decode(&body)
 
 	z.accessToken = body.AccessToken
+	z.tokenExpiresAt = time.Now().Add(time.Second * time.Duration(body.ExpiresIn))
 	return nil
+}
+
+func (z *zoomService) isAuthenticated() bool {
+	return len(z.accessToken) > 0 &&
+		time.Now().Before(z.tokenExpiresAt.Truncate(time.Minute))
 }
 
 func (z *zoomService) encodeCredentials() string {

@@ -14,16 +14,33 @@ func init() {
 }
 
 func NewServer() *signupServer {
+	// Set up services/tasks to run when someone signs up for an Info Session.
 	mgDomain := os.Getenv("MAIL_DOMAIN")
 	mgAPIKey := os.Getenv("MAILGUN_API_KEY")
+	mgSvc := NewMailgunService(mgDomain, mgAPIKey, "")
+
 	glWebhookURL := os.Getenv("GREENLIGHT_WEBHOOK_URL")
 	glAPIkey := os.Getenv("GREENLIGHT_API_KEY")
-	slackWebhookURL := os.Getenv("SLACK_WEBHOOK_URL")
-
-	// Set up services/tasks to run when someone signs up for an Info Session.
-	mgSvc := NewMailgunService(mgDomain, mgAPIKey, "")
 	glSvc := NewGreenlightService(glWebhookURL, glAPIkey)
+
+	slackWebhookURL := os.Getenv("SLACK_WEBHOOK_URL")
 	slackSvc := NewSlackService(slackWebhookURL)
+
+	zoomAccountID := os.Getenv("ZOOM_ACCOUNT_ID")
+	zoomClientID := os.Getenv("ZOOM_CLIENT_ID")
+	zoomClientSecret := os.Getenv("ZOOM_CLIENT_SECRET")
+	zoomMeeting12 := os.Getenv("ZOOM_MEETING_12")
+	zoomMeeting17 := os.Getenv("ZOOM_MEETING_17")
+
+	zoomSvc := NewZoomService(ZoomOptions{
+		clientID:     zoomClientID,
+		clientSecret: zoomClientSecret,
+		accountID:    zoomAccountID,
+		meetings: map[int]string{
+			12: zoomMeeting12,
+			17: zoomMeeting17,
+		},
+	})
 
 	// These registration tasks include:
 	registrationService := newSignupService(
@@ -33,8 +50,9 @@ func NewServer() *signupServer {
 		mgSvc,
 		// sending a Slack message to #signups channel,
 		slackSvc,
-		// TODO:
 		// registering the user for the Zoom meeting,
+		zoomSvc,
+		// TODO:
 		// sending an SMS confirmation message to the user.
 	)
 

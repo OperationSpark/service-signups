@@ -6,11 +6,9 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/operationspark/service-signup/zoom/meeting"
 )
-
-func TestRegisterForMeeting(t *testing.T) {
-
-}
 
 func TestAuthHeader(t *testing.T) {
 	t.Run("base64 encodes the client ID and secret", func(t *testing.T) {
@@ -43,7 +41,9 @@ func TestAuthenticate(t *testing.T) {
 	// base64Encode(fakeClientID + ":" + fakeClientSecret)
 	encodedCreds := "amhhc2RibmNhNzg0M1NIbmRkOTMyNDpqZGFzODcyMzhoVlNWREQ5YjJmZTluZjJyMm44SEpIVg=="
 
-	t.Run("authorizes the client", func(t *testing.T) {
+	expiresIn := 3599
+
+	t.Run("authenticates the client", func(t *testing.T) {
 		authServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			assertEqual(t, r.URL.Path, "/oauth/token")
 			// Check the account ID is in the URL params
@@ -57,12 +57,11 @@ func TestAuthenticate(t *testing.T) {
 			e := json.NewEncoder(w)
 			body := tokenResponse{
 				AccessToken: fakeAccessToken,
-				ExpiresIn:   3599,
+				ExpiresIn:   expiresIn,
 				TokenType:   "bearer",
 				Scope:       "meeting:master meeting:read:admin meeting:write:admin",
 			}
 			e.Encode(&body)
-
 		}))
 
 		zsvc := NewZoomService(ZoomOptions{
@@ -77,6 +76,36 @@ func TestAuthenticate(t *testing.T) {
 		}
 
 		assertEqual(t, zsvc.accessToken, fakeAccessToken)
+		// token expiration date should be now() + expiresIn
+		wantExpiry := time.Now().
+			Add(time.Second * time.Duration(expiresIn)).
+			// Round down to the nearest minute
+			Truncate(time.Minute)
+
+		gotExpiry := zsvc.tokenExpiresAt.Truncate(time.Minute)
+		assertEqual(t, gotExpiry, wantExpiry)
+	})
+}
+
+func TestIsAuthenticated(t *testing.T) {
+	t.Run("returns false if the client has no token", func(t *testing.T) {
+		zsvc := NewZoomService(ZoomOptions{})
+		assertEqual(t, zsvc.isAuthenticated(), false)
+	})
+
+	t.Run("returns false if the client's token is expired", func(t *testing.T) {
+		zsvc := NewZoomService(ZoomOptions{})
+		zsvc.tokenExpiresAt = time.Now().Add(-time.Minute)
+
+		assertEqual(t, zsvc.isAuthenticated(), false)
+	})
+
+	t.Run("returns true if the client has an unexpired token", func(t *testing.T) {
+		zsvc := NewZoomService(ZoomOptions{})
+		zsvc.accessToken = "an-access-token"
+		zsvc.tokenExpiresAt = time.Now().Add(time.Minute * 1)
+
+		assertEqual(t, zsvc.isAuthenticated(), true)
 	})
 }
 
@@ -84,8 +113,8 @@ func TestGetMeetingID(t *testing.T) {
 	t.Run("resolves the Zoom meeting ID from the session start time", func(t *testing.T) {
 
 		meetings := map[int]string{
-			17: "530pm-meeting-ID",
-			12: "noon-meeting-ID",
+			17: "1730123456789",
+			12: "1200123456789",
 		}
 
 		sessionStartDate, _ := time.Parse(time.RFC822, "14 Mar 22 17:00 UTC")
@@ -102,6 +131,53 @@ func TestGetMeetingID(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		assertEqual(t, gotMeetingID, meetings[12])
+		assertEqual(t, gotMeetingID, int64(1200123456789))
 	})
+}
+
+func TestRegisterForMeeting(t *testing.T) {
+	sessionStartDate, _ := time.Parse(time.RFC822, "17 Oct 22 22:30 UTC")
+	su := Signup{
+		NameFirst:     "Tamari",
+		NameLast:      "Quanka",
+		Email:         "t.quan@aol.com",
+		StartDateTime: sessionStartDate,
+	}
+
+	mockMeetingID := "87582741258"
+
+	mockZoomServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		assertEqual(t, r.Method, http.MethodPost)
+		assertEqual(t, r.URL.Path, "/meetings/"+mockMeetingID+"/registrants")
+
+		var reqBody meeting.RegistrantRequest
+
+		d := json.NewDecoder(r.Body)
+		d.Decode(&reqBody)
+
+		assertEqual(t, reqBody.Email, su.Email)
+		assertEqual(t, reqBody.FirstName, su.NameFirst)
+		assertEqual(t, reqBody.LastName, su.NameLast)
+
+		w.WriteHeader(http.StatusOK)
+		e := json.NewEncoder(w)
+		e.Encode(meeting.RegistrationResponse{
+			JoinURL: "https://us06web.zoom.us/j/" + mockMeetingID,
+		})
+	}))
+
+	zsvc := NewZoomService(ZoomOptions{
+		baseAPIOverride: mockZoomServer.URL,
+		meetings:        map[int]string{17: mockMeetingID},
+	})
+
+	// Fake authentication
+	zsvc.accessToken = "fake_access_token"
+	zsvc.tokenExpiresAt = time.Now().Add(time.Minute * 10)
+
+	err := zsvc.registerUser(su)
+	if err != nil {
+		t.Fatalf("register for meeting: %v", err)
+	}
 }
