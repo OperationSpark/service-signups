@@ -1,6 +1,7 @@
 package meeting
 
 type (
+	// https://marketplace.zoom.us/docs/api-reference/zoom-api/methods/#operation/meetingRegistrantCreate
 	RegistrantRequest struct {
 		FirstName   string `json:"first_name"`
 		LastName    string `json:"last_name"`
@@ -22,9 +23,9 @@ type (
 	}
 
 	RegistrationResponse struct {
-		Id           string       `json:"id"`
+		Id           int          `json:"id"`
 		JoinURL      string       `json:"join_url"`
-		RegistrantID string       `json:"registrant_id"`
+		RegistrantID int          `json:"registrant_id"`
 		StartTime    string       `json:"start_time"`
 		Topic        string       `json:"topic"`
 		Occurrences  []Occurrence `json:"occurrences"`
