@@ -112,20 +112,22 @@ func (z *zoomService) registerUser(su Signup) error {
 		return fmt.Errorf("newRequestWithContext: %v", err)
 	}
 
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer: %s", z.accessToken))
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", z.accessToken))
+	req.Header.Add("Content-Type", "application/json")
+
 	resp, err := z.client.Do(req)
 	if err != nil {
 		return fmt.Errorf("client.Do: %v", err)
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode > 300 {
-		return fmt.Errorf("HTTP: %s", resp.Status)
+	if resp.StatusCode >= 300 {
+		return handleHTTPError(resp)
 	}
+
 	var respBody meeting.RegistrationResponse
 	d := json.NewDecoder(resp.Body)
 	d.Decode(&respBody)
-
 	return nil
 }
 
@@ -168,7 +170,7 @@ func (z *zoomService) authenticate() error {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 300 {
-		return fmt.Errorf("HTTP: %v", resp.Status)
+		return handleHTTPError(resp)
 	}
 
 	var body tokenResponse
