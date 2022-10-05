@@ -26,7 +26,6 @@ func TestPostWebhook(t *testing.T) {
 			SessionId:        "X5TsABhN94yesyMEi",
 		}
 		mockGreenlightSvr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			defer r.Body.Close()
 			// Sends API Key header
 			assertEqual(t, r.Header.Get("X-Greenlight-Signup-Api-Key"), apiKey)
 
