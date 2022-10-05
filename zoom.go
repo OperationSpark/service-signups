@@ -111,7 +111,7 @@ func (z *zoomService) registerUser(su Signup) error {
 	}
 
 	// Register for a specific occurrence for the recurring meeting
-	url := fmt.Sprintf("%s/meetings/%d/registrants?occurrence_id=%d", z.baseURL, meetingID, su.StartDateTime.UnixMilli())
+	url := fmt.Sprintf("%s/meetings/%d/registrants?occurrence_id=%d", z.baseURL, meetingID, su.StartDateTime.Unix()*int64(time.Microsecond))
 
 	req, err := http.NewRequestWithContext(
 		context.TODO(),
