@@ -158,7 +158,7 @@ func TestWelcomeData(t *testing.T) {
 }
 
 func TestSummary(t *testing.T) {
-	sessionStartDate, _ := time.Parse(time.RFC822, "14 Mar 22 18:00 UTC")
+	sessionStartDate, _ := time.Parse(time.RFC822, "14 Mar 22 17:00 UTC")
 	tests := []struct {
 		s    Signup
 		want []string

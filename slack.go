@@ -3,7 +3,6 @@ package signup
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
 )
 
@@ -44,8 +43,10 @@ func sendWebhook(url string, msg message) error {
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
+
 	if resp.StatusCode >= 300 {
-		return fmt.Errorf("error sending Slack message: %s", resp.Status)
+		return handleHTTPError(resp)
 	}
 
 	return nil
