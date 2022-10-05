@@ -31,7 +31,7 @@ func (g greenlightService) name() string {
 // PostWebhook sends a webhook to Greenlight (POST /signup).
 // The webhook creates a Info Session Signup record in the Greenlight database.
 func (g greenlightService) postWebhook(su Signup) error {
-	body, err := json.Marshal(su)
+	reqBody, err := json.Marshal(su)
 	if err != nil {
 		return fmt.Errorf("greenlight postWebhook JSON marshall: %v", err)
 	}
@@ -40,7 +40,7 @@ func (g greenlightService) postWebhook(su Signup) error {
 		context.TODO(),
 		http.MethodPost,
 		g.url,
-		bytes.NewBuffer(body),
+		bytes.NewBuffer(reqBody),
 	)
 	if err != nil {
 		return fmt.Errorf("greenlight newRequest: %v", err)
@@ -52,6 +52,7 @@ func (g greenlightService) postWebhook(su Signup) error {
 	if err != nil {
 		return fmt.Errorf("greenlight postWebhook POST: %v", err)
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode >= 300 {
 		return fmt.Errorf("greenlight postWebhook HTTP: %v", resp.Status)
