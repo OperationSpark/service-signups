@@ -10,6 +10,23 @@ import (
 	"github.com/operationspark/service-signup/zoom/meeting"
 )
 
+func TestRun(t *testing.T) {
+	t.Run("does nothing if there is no session start time", func(t *testing.T) {
+		mockAPIServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			t.Fatal("the Zoom API should not be called.")
+		}))
+		su := Signup{}
+		zsvc := NewZoomService(ZoomOptions{
+			baseAPIOverride: mockAPIServer.URL,
+		})
+
+		err := zsvc.run(su)
+		if err != nil {
+			t.Fatalf("run: %v", err)
+		}
+	})
+}
+
 func TestAuthHeader(t *testing.T) {
 	t.Run("base64 encodes the client ID and secret", func(t *testing.T) {
 		// These are NOT real credentials

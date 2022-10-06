@@ -77,6 +77,10 @@ func NewZoomService(o ZoomOptions) *zoomService {
 }
 
 func (z *zoomService) run(su Signup) error {
+	// Do nothing if the user has not signed up for a specific session
+	if su.StartDateTime.IsZero() {
+		return nil
+	}
 	return z.registerUser(su)
 }
 
