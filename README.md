@@ -2,7 +2,11 @@
 ![Coverage](https://img.shields.io/badge/Coverage-72.3%25-brightgreen)
 
 When someone signs up for an Info Session on [operationspark.org](https://operationspark.org),
-this service sends a webhook to Greenlight and a Slack message to the [#signups](https://operationspark.slack.com/archives/G3F2KFGJH) channel.
+this service runs a series of tasks:
+- Sends a webhook to Greenlight 
+- Sends a Slack message to the [#signups](https://operationspark.slack.com/archives/G3F2KFGJH) channel.
+- Sends the user a confirmation email
+- Registers the user for the Info Session's Zoom meeting
 
 ## Development
 
