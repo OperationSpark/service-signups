@@ -113,6 +113,7 @@ func newSignupService(o signupServiceOptions) *SignupService {
 func (sc *SignupService) register(su Signup) error {
 	// TODO: Create specific errors for each handler
 	// TODO: Use context.Context to cancel subsequent requests on any failures
+	sc.attachZoomMeetingID(&su)
 	for _, task := range sc.tasks {
 		err := task.run(su)
 		if err != nil {
