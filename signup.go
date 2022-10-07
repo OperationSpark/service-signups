@@ -1,6 +1,7 @@
 package signup
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -41,7 +42,7 @@ type (
 	task interface {
 		// Run takes a signup form struct and executes some action.
 		// Ex.: Send an email, post a Slack message.
-		run(signup Signup) error
+		run(ctx context.Context, signup Signup) error
 		// Name Returns the name of the task.
 		name() string
 	}
@@ -110,12 +111,11 @@ func newSignupService(o signupServiceOptions) *SignupService {
 }
 
 // Register executes a series of tasks in order. If one fails, the remaining tasks are cancelled.
-func (sc *SignupService) register(su Signup) error {
+func (sc *SignupService) register(ctx context.Context, su Signup) error {
 	// TODO: Create specific errors for each handler
-	// TODO: Use context.Context to cancel subsequent requests on any failures
 	sc.attachZoomMeetingID(&su)
 	for _, task := range sc.tasks {
-		err := task.run(su)
+		err := task.run(ctx, su)
 		if err != nil {
 			return fmt.Errorf("task failed: %q: %v", task.name(), err)
 		}

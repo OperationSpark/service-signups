@@ -1,6 +1,7 @@
 package signup
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -21,7 +22,7 @@ func TestRun(t *testing.T) {
 			baseAPIOverride: mockAPIServer.URL,
 		})
 
-		err := zsvc.run(su)
+		err := zsvc.run(context.Background(), su)
 		if err != nil {
 			t.Fatalf("run: %v", err)
 		}
@@ -88,7 +89,7 @@ func TestAuthenticate(t *testing.T) {
 			clientSecret:      fakeClientSecret,
 			accountID:         fakeAccountID,
 		})
-		err := zsvc.authenticate()
+		err := zsvc.authenticate(context.Background())
 		if err != nil {
 			t.Fatalf("authenticate: %v", err)
 		}
@@ -174,7 +175,7 @@ func TestRegisterForMeeting(t *testing.T) {
 	zsvc.tokenExpiresAt = time.Now().Add(time.Minute * 10)
 
 	// Method under test
-	err := zsvc.registerUser(su)
+	err := zsvc.registerUser(context.Background(), su)
 	if err != nil {
 		t.Fatalf("register for meeting: %v", err)
 	}

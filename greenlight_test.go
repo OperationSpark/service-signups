@@ -1,6 +1,7 @@
 package signup
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -39,6 +40,6 @@ func TestPostWebhook(t *testing.T) {
 
 		glSvc := NewGreenlightService(mockGreenlightSvr.URL, apiKey)
 
-		glSvc.postWebhook(su)
+		glSvc.postWebhook(context.Background(), su)
 	})
 }

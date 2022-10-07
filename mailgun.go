@@ -29,15 +29,15 @@ func NewMailgunService(domain, apiKey, baseAPIurlOverride string) *MailgunServic
 	}
 }
 
-func (m MailgunService) run(su Signup) error {
-	return m.sendWelcome(su)
+func (m MailgunService) run(ctx context.Context, su Signup) error {
+	return m.sendWelcome(ctx, su)
 }
 
 func (m MailgunService) name() string {
 	return "mailgun service"
 }
 
-func (m MailgunService) sendWelcome(su Signup) error {
+func (m MailgunService) sendWelcome(ctx context.Context, su Signup) error {
 	isStagingEnv := os.Getenv("APP_ENV") == "staging"
 
 	vars, err := su.welcomeData()
@@ -60,7 +60,7 @@ func (m MailgunService) sendWelcome(su Signup) error {
 		t.version = "dev"
 	}
 
-	return m.sendWithTemplate(t, su.Email)
+	return m.sendWithTemplate(ctx, t, su.Email)
 }
 
 type mgTemplate struct {
@@ -69,7 +69,7 @@ type mgTemplate struct {
 	version   string            // Mailgun template version. If not set, the active version is used.
 }
 
-func (m MailgunService) sendWithTemplate(t mgTemplate, recipient string) error {
+func (m MailgunService) sendWithTemplate(ctx context.Context, t mgTemplate, recipient string) error {
 	sender := m.defaultSender
 	subject := "Welcome from Operation Spark!"
 	// Empty body because we're using a template
@@ -87,11 +87,11 @@ func (m MailgunService) sendWithTemplate(t mgTemplate, recipient string) error {
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Second*10)
 	defer cancel()
 
 	// Send the message with a 10 second timeout
-	respMsg, id, err := m.mgClient.Send(ctx, message)
+	respMsg, id, err := m.mgClient.Send(ctxWithTimeout, message)
 	if err != nil {
 		return fmt.Errorf("send: %v", err)
 	}

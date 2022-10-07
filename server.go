@@ -1,6 +1,7 @@
 package signup
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,7 +13,7 @@ import (
 )
 
 type registerer interface {
-	register(signup Signup) error
+	register(ctx context.Context, signup Signup) error
 }
 
 type signupServer struct {
@@ -49,7 +50,7 @@ func (ss *signupServer) HandleSignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := ss.service.register(su)
+	err := ss.service.register(r.Context(), su)
 	// depending on what we get back, respond accordingly
 	if err != nil {
 		// TODO: handle different kinds of errors differently

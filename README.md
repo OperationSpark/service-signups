@@ -46,7 +46,7 @@ A `task` is an [interface](https://go.dev/tour/methods/9) with `run` and `name` 
 type task interface {
 	// Run takes a signup form struct and executes some action.
 	// Ex.: Send an email, post a Slack message.
-	run(signup Signup) error
+	run(context.Context, Signup) error
 	// Name Returns the name of the task.
 	name() string
 }
@@ -86,8 +86,6 @@ server := newSignupServer(registrationService)
 ```go
 // Register executes a series of tasks in order. If one fails, the remaining tasks are cancelled.
 func (sc *SignupService) register(su Signup) error {
-	// TODO: Create specific errors for each handler
-	// TODO: Use context.Context to cancel subsequent requests on any failures
 	for _, task := range sc.tasks {
 		err := task.run(su)
 		if err != nil {
