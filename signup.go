@@ -2,31 +2,57 @@ package signup
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 )
 
-type Signup struct {
-	ProgramId        string    `json:"programId" schema:"programId"`
-	NameFirst        string    `json:"nameFirst" schema:"nameFirst"`
-	NameLast         string    `json:"nameLast" schema:"nameLast"`
-	Email            string    `json:"email" schema:"email"`
-	Cell             string    `json:"cell" schema:"cell"`
-	Referrer         string    `json:"referrer" schema:"referrer"`
-	ReferrerResponse string    `json:"referrerResponse" schema:"referrerResponse"`
-	StartDateTime    time.Time `json:"startDateTime,omitempty" schema:"startDateTime"`
-	Cohort           string    `json:"cohort" schema:"cohort"`
-	SessionId        string    `json:"sessionId" schema:"sessionId"`
-	Token            string    `json:"token" schema:"token"`
-}
+type (
+	Signup struct {
+		ProgramId        string    `json:"programId" schema:"programId"`
+		NameFirst        string    `json:"nameFirst" schema:"nameFirst"`
+		NameLast         string    `json:"nameLast" schema:"nameLast"`
+		Email            string    `json:"email" schema:"email"`
+		Cell             string    `json:"cell" schema:"cell"`
+		Referrer         string    `json:"referrer" schema:"referrer"`
+		ReferrerResponse string    `json:"referrerResponse" schema:"referrerResponse"`
+		StartDateTime    time.Time `json:"startDateTime,omitempty" schema:"startDateTime"`
+		Cohort           string    `json:"cohort" schema:"cohort"`
+		SessionId        string    `json:"sessionId" schema:"sessionId"`
+		Token            string    `json:"token" schema:"token"`
+		zoomMeetingID    int64
+	}
 
-type welcomeVariables struct {
-	FirstName   string `json:"firstName"`
-	LastName    string `json:"lastName"`
-	SessionTime string `json:"sessionTime"`
-	SessionDate string `json:"sessionDate"`
-	ZoomURL     string `json:"zoomURL"`
-}
+	welcomeVariables struct {
+		FirstName   string `json:"firstName"`
+		LastName    string `json:"lastName"`
+		SessionTime string `json:"sessionTime"`
+		SessionDate string `json:"sessionDate"`
+		ZoomURL     string `json:"zoomURL"`
+	}
+
+	SignupService struct {
+		// Key-value map with the Central Time meeting start hour (int) as the keys, and Zoom Meeting ID as the values.
+		// Ex: {17: "86935241734"} denotes meeting with ID, "86935241734", starts at 5pm central.
+		meetings map[int]string
+		tasks    []task
+	}
+
+	task interface {
+		// Run takes a signup form struct and executes some action.
+		// Ex.: Send an email, post a Slack message.
+		run(signup Signup) error
+		// Name Returns the name of the task.
+		name() string
+	}
+
+	signupServiceOptions struct {
+		// Key-value map with the Central Time meeting start hour (int) as the keys, and Zoom Meeting ID as the values.
+		// Ex: {17: "86935241734"} denotes meeting with ID, "86935241734", starts at 5pm central.
+		meetings map[int]string
+		tasks    []task
+	}
+)
 
 // welcomeData takes a Signup and prepares data for use in the Welcome email template
 func (s *Signup) welcomeData() (welcomeVariables, error) {
@@ -61,20 +87,23 @@ func (s *Signup) Summary() string {
 	return msg
 }
 
-type task interface {
-	// Run takes a signup form struct and executes some action.
-	// Ex.: Send an email, post a Slack message.
-	run(signup Signup) error
-	// Name Returns the name of the task.
-	name() string
-}
-type SignupService struct {
-	tasks []task
+func (su *Signup) SetZoomMeetingID(id int64) {
+	su.zoomMeetingID = id
 }
 
-func newSignupService(tasks ...task) *SignupService {
+func (su Signup) ZoomMeetingID() int64 {
+	// Set in SignupService.attachZoomMeetingID()
+	return su.zoomMeetingID
+}
+
+func (su Signup) ZoomMeetingURL() string {
+	return fmt.Sprintf("https://us06web.zoom.us/s/%d", su.zoomMeetingID)
+}
+
+func newSignupService(o signupServiceOptions) *SignupService {
 	return &SignupService{
-		tasks: tasks,
+		meetings: o.meetings,
+		tasks:    o.tasks,
 	}
 }
 
@@ -88,5 +117,25 @@ func (sc *SignupService) register(su Signup) error {
 			return fmt.Errorf("task failed: %q: %v", task.name(), err)
 		}
 	}
+	return nil
+}
+
+// AttachZoomMeetingID sets the Zoom meeting ID on the Signup based on the Signup's StartDateTime and the SignService's Zoom sessions.
+func (sc *SignupService) attachZoomMeetingID(su *Signup) error {
+	loc, err := time.LoadLocation("America/Chicago")
+	if err != nil {
+		return fmt.Errorf("loadLocation: %v", err)
+	}
+	sessionStart := su.StartDateTime
+	centralStart := sessionStart.In(loc)
+
+	if _, ok := sc.meetings[centralStart.Hour()]; !ok {
+		return fmt.Errorf("no zoom meeting found with start hour: %d", centralStart.Hour())
+	}
+	id, err := strconv.Atoi(sc.meetings[centralStart.Hour()])
+	if err != nil {
+		return fmt.Errorf("convert string to intL %v", err)
+	}
+	su.SetZoomMeetingID(int64(id))
 	return nil
 }

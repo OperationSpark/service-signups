@@ -36,24 +36,28 @@ func NewServer() *signupServer {
 		clientID:     zoomClientID,
 		clientSecret: zoomClientSecret,
 		accountID:    zoomAccountID,
-		meetings: map[int]string{
-			12: zoomMeeting12,
-			17: zoomMeeting17,
-		},
 	})
 
 	// These registration tasks include:
 	registrationService := newSignupService(
-		// posting a WebHook to Greenlight,
-		glSvc,
-		// sending a "Welcome Email",
-		mgSvc,
-		// sending a Slack message to #signups channel,
-		slackSvc,
-		// registering the user for the Zoom meeting,
-		zoomSvc,
-		// TODO:
-		// sending an SMS confirmation message to the user.
+		signupServiceOptions{
+			meetings: map[int]string{
+				12: zoomMeeting12,
+				17: zoomMeeting17,
+			},
+			tasks: []task{
+				// posting a WebHook to Greenlight,
+				glSvc,
+				// sending a "Welcome Email",
+				mgSvc,
+				// sending a Slack message to #signups channel,
+				slackSvc,
+				// registering the user for the Zoom meeting,
+				zoomSvc,
+				// TODO:
+				// sending an SMS confirmation message to the user.
+			},
+		},
 	)
 
 	server := newSignupServer(registrationService)

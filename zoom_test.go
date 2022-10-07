@@ -2,6 +2,7 @@ package signup
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -126,32 +127,6 @@ func TestIsAuthenticated(t *testing.T) {
 	})
 }
 
-func TestGetMeetingID(t *testing.T) {
-	t.Run("resolves the Zoom meeting ID from the session start time", func(t *testing.T) {
-
-		meetings := map[int]string{
-			17: "1730123456789",
-			12: "1200123456789",
-		}
-
-		sessionStartDate, _ := time.Parse(time.RFC822, "14 Mar 22 17:00 UTC")
-		su := Signup{
-			StartDateTime: sessionStartDate,
-		}
-
-		zsvc := NewZoomService(ZoomOptions{
-			meetings: meetings,
-		})
-
-		gotMeetingID, err := zsvc.getMeetingID(su)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		assertEqual(t, gotMeetingID, int64(1200123456789))
-	})
-}
-
 func TestRegisterForMeeting(t *testing.T) {
 	sessionStartDate, _ := time.Parse(time.RFC822, "17 Oct 22 22:30 UTC")
 	su := Signup{
@@ -161,8 +136,8 @@ func TestRegisterForMeeting(t *testing.T) {
 		StartDateTime: sessionStartDate,
 	}
 
-	mockMeetingID := "87582741258"
-
+	mockMeetingID := int64(87582741258)
+	su.SetZoomMeetingID(mockMeetingID)
 	mockZoomServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		assertEqual(t, r.Method, http.MethodPost)
@@ -170,7 +145,7 @@ func TestRegisterForMeeting(t *testing.T) {
 		authHeader := r.Header.Get("Authorization")
 		assertEqual(t, authHeader, "Bearer fake_access_token")
 
-		assertEqual(t, r.URL.Path, "/meetings/"+mockMeetingID+"/registrants")
+		assertEqual(t, r.URL.Path, fmt.Sprintf("/meetings/%d/registrants", mockMeetingID))
 		// Meeting Occurrence ID. Provide this field to view meeting details of a particular occurrence of the recurring meeting.
 		assertEqual(t, r.URL.Query().Get("occurrence_id"), "1666045800000")
 
@@ -186,19 +161,19 @@ func TestRegisterForMeeting(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		e := json.NewEncoder(w)
 		e.Encode(meeting.RegistrationResponse{
-			JoinURL: "https://us06web.zoom.us/j/" + mockMeetingID,
+			JoinURL: fmt.Sprintf("https://us06web.zoom.us/j/%d", mockMeetingID),
 		})
 	}))
 
 	zsvc := NewZoomService(ZoomOptions{
 		baseAPIOverride: mockZoomServer.URL,
-		meetings:        map[int]string{17: mockMeetingID},
 	})
 
 	// Fake authentication
 	zsvc.accessToken = "fake_access_token"
 	zsvc.tokenExpiresAt = time.Now().Add(time.Minute * 10)
 
+	// Method under test
 	err := zsvc.registerUser(su)
 	if err != nil {
 		t.Fatalf("register for meeting: %v", err)

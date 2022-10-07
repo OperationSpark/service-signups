@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 type MockMailgunService struct {
@@ -40,7 +41,9 @@ func TestRegisterUser(t *testing.T) {
 			},
 		}
 
-		signupService := newSignupService(mailService)
+		signupService := newSignupService(signupServiceOptions{
+			tasks: []task{mailService},
+		})
 
 		err := signupService.register(signup)
 		if err != nil {
@@ -92,7 +95,7 @@ func TestHandleJson(t *testing.T) {
 		if err != nil && test.err == nil {
 			t.Errorf("Unexpected error for \n%s\nerror: %s", string(test.json), err)
 		}
-		if diff := cmp.Diff(test.want, got); diff != "" {
+		if diff := cmp.Diff(test.want, got, cmpopts.IgnoreUnexported(test.want, got)); diff != "" {
 			t.Errorf("handleJSON() mismatch (-want +got):\n%s", diff)
 		}
 	}
@@ -155,6 +158,34 @@ func TestWelcomeData(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAttachZoomMeetingID(t *testing.T) {
+	t.Run("generates the correct Zoom URL for a given session start time", func(t *testing.T) {
+		suSvc := newSignupService(signupServiceOptions{
+			meetings: map[int]string{
+				// Noon Central
+				12: "12123456789",
+				// 5p Central
+				17: "17123456789",
+			},
+		})
+		sessionStartDate, _ := time.Parse(time.RFC822, "14 Mar 22 17:00 UTC")
+		su := Signup{
+			StartDateTime: sessionStartDate,
+		}
+
+		suSvc.attachZoomMeetingID(&su)
+
+		gotID := su.ZoomMeetingID()
+		wantID := int64(12123456789) // Meeting for 12p Central
+
+		assertEqual(t, gotID, wantID)
+
+		gotURL := su.ZoomMeetingURL()
+		wantURL := "https://us06web.zoom.us/s/12123456789" // Meeting for 12p Central
+		assertEqual(t, gotURL, wantURL)
+	})
 }
 
 func TestSummary(t *testing.T) {
