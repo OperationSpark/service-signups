@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 )
@@ -37,6 +38,9 @@ func TestSendWelcome(t *testing.T) {
 		mockMailgunAPI := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			r.ParseMultipartForm(128)
 
+			// Check template version is not set
+			assertEqual(t, r.FormValue("t:version"), "")
+
 			// Check request has the correct fields
 			for key, want := range expectedFormFields {
 				got := r.FormValue(key)
@@ -45,6 +49,7 @@ func TestSendWelcome(t *testing.T) {
 					t.Fatalf("expected Mailgun POST /messages form field %q:%q\nGot value: %q\n", key, want, got)
 				}
 			}
+
 			// Check the template variables are correct
 			jsonVars := r.Form.Get("h:X-Mailgun-Variables")
 			var gotVars welcomeVariables
@@ -68,5 +73,29 @@ func TestSendWelcome(t *testing.T) {
 		if err != nil {
 			t.Fatalf("send welcome: %v", err)
 		}
+	})
+
+	t.Run("uses 'dev' info-session-signup template 'APP_ENV' == 'staging' ", func(t *testing.T) {
+		os.Setenv("APP_ENV", "staging")
+
+		mockMailgunAPI := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			r.ParseMultipartForm(128)
+
+			assertEqual(t, r.FormValue("t:version"), "dev")
+
+			w.Write([]byte("{}"))
+		}))
+
+		mgSvc := NewMailgunService(
+			"mail.example.com",
+			"api-key",
+			mockMailgunAPI.URL+"/v4",
+		)
+
+		err := mgSvc.sendWelcome(Signup{})
+		if err != nil {
+			t.Fatal(err)
+		}
+
 	})
 }

@@ -59,15 +59,20 @@ slackSvc := NewSlackService(slackWebhookURL)
 
 // These registration tasks include:
 registrationService := newSignupService(
-	// posting a WebHook to Greenlight,
-	glSvc,
-	// sending a "Welcome Email",
-	mgSvc,
-	// sending a Slack message to #signups channel,
-	slackSvc,
-	// TODO:
-	// registering the user for the Zoom meeting,
-	// sending an SMS confirmation message to the user.
+		signupServiceOptions{
+			// Registration tasks:
+			// (executed serially)
+			tasks: []task{
+				// posting a WebHook to Greenlight,
+				glSvc,
+				// sending a "Welcome Email",
+				mgSvc,
+				// sending a Slack message to #signups channel,
+				slackSvc,
+				// registering the user for the Zoom meeting,
+				zoomSvc,
+			},
+		},
 )
 
 server := newSignupServer(registrationService)
