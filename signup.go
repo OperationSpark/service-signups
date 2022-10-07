@@ -113,7 +113,6 @@ func newSignupService(o signupServiceOptions) *SignupService {
 // Register executes a series of tasks in order. If one fails, the remaining tasks are cancelled.
 func (sc *SignupService) register(ctx context.Context, su Signup) error {
 	// TODO: Create specific errors for each handler
-	// TODO: Use context.Context to cancel subsequent requests on any failures
 	sc.attachZoomMeetingID(&su)
 	for _, task := range sc.tasks {
 		err := task.run(ctx, su)
