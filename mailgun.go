@@ -3,6 +3,7 @@ package signup
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/mailgun/mailgun-go/v4"
@@ -37,6 +38,8 @@ func (m MailgunService) name() string {
 }
 
 func (m MailgunService) sendWelcome(su Signup) error {
+	isStagingEnv := os.Getenv("APP_ENV") == "staging"
+
 	vars, err := su.welcomeData()
 	if err != nil {
 		return fmt.Errorf("sendWelcome: welcomeData: %v", err)
@@ -52,12 +55,18 @@ func (m MailgunService) sendWelcome(su Signup) error {
 			"zoomURL":     vars.ZoomURL,
 		},
 	}
+
+	if isStagingEnv {
+		t.version = "dev"
+	}
+
 	return m.sendWithTemplate(t, su.Email)
 }
 
 type mgTemplate struct {
 	name      string            // Name of mailgun template.
 	variables map[string]string // KV pairs of variables used in the email template.
+	version   string            // Mailgun template version. If not set, the active version is used.
 }
 
 func (m MailgunService) sendWithTemplate(t mgTemplate, recipient string) error {
@@ -68,6 +77,9 @@ func (m MailgunService) sendWithTemplate(t mgTemplate, recipient string) error {
 
 	message := m.mgClient.NewMessage(sender, subject, body, recipient)
 	message.SetTemplate(t.name)
+	if len(t.version) > 0 {
+		message.SetTemplateVersion(t.version)
+	}
 	for k, v := range t.variables {
 		err := message.AddTemplateVariable(k, v)
 		if err != nil {

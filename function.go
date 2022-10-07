@@ -38,13 +38,14 @@ func NewServer() *signupServer {
 		accountID:    zoomAccountID,
 	})
 
-	// These registration tasks include:
 	registrationService := newSignupService(
 		signupServiceOptions{
 			meetings: map[int]string{
 				12: zoomMeeting12,
 				17: zoomMeeting17,
 			},
+			// Registration tasks:
+			// (executed serially)
 			tasks: []task{
 				// posting a WebHook to Greenlight,
 				glSvc,

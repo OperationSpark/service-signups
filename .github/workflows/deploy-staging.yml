@@ -37,6 +37,7 @@ jobs:
             ZOOM_CLIENT_ID=${{secrets.ZOOM_CLIENT_ID}},
             ZOOM_CLIENT_SECRET=${{secrets.ZOOM_CLIENT_SECRET}},
             ZOOM_MEETING_12=${{secrets.ZOOM_MEETING_12}},
-            ZOOM_MEETING_17=${{secrets.ZOOM_MEETING_17}}
+            ZOOM_MEETING_17=${{secrets.ZOOM_MEETING_17}},
+            APP_ENV=staging
       - id: "trigger-url"
         run: 'echo "${{ steps.deploy.outputs.url }}"'
