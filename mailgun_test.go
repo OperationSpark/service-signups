@@ -1,6 +1,7 @@
 package signup
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -68,7 +69,7 @@ func TestSendWelcome(t *testing.T) {
 
 		mgSvc := NewMailgunService(domain, apiKey, mockMailgunAPI.URL+"/v4")
 
-		err := mgSvc.sendWelcome(form)
+		err := mgSvc.sendWelcome(context.Background(), form)
 
 		if err != nil {
 			t.Fatalf("send welcome: %v", err)
@@ -92,7 +93,7 @@ func TestSendWelcome(t *testing.T) {
 			mockMailgunAPI.URL+"/v4",
 		)
 
-		err := mgSvc.sendWelcome(Signup{})
+		err := mgSvc.sendWelcome(context.Background(), Signup{})
 		if err != nil {
 			t.Fatal(err)
 		}

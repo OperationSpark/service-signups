@@ -20,8 +20,8 @@ func NewGreenlightService(url, apiKey string) *greenlightService {
 	}
 }
 
-func (g greenlightService) run(su Signup) error {
-	return g.postWebhook(su)
+func (g greenlightService) run(ctx context.Context, su Signup) error {
+	return g.postWebhook(ctx, su)
 }
 
 func (g greenlightService) name() string {
@@ -30,14 +30,14 @@ func (g greenlightService) name() string {
 
 // PostWebhook sends a webhook to Greenlight (POST /signup).
 // The webhook creates a Info Session Signup record in the Greenlight database.
-func (g greenlightService) postWebhook(su Signup) error {
+func (g greenlightService) postWebhook(ctx context.Context, su Signup) error {
 	reqBody, err := json.Marshal(su)
 	if err != nil {
 		return fmt.Errorf("marshal: %v", err)
 	}
 
 	req, err := http.NewRequestWithContext(
-		context.TODO(),
+		ctx,
 		http.MethodPost,
 		g.url,
 		bytes.NewBuffer(reqBody),

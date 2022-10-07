@@ -1,6 +1,7 @@
 package signup
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -21,7 +22,7 @@ func TestSendWebhook(t *testing.T) {
 			assertEqual(t, payload["text"], msg.Text)
 		}))
 
-		err := sendWebhook(slackAPI.URL, msg)
+		err := sendWebhook(context.Background(), slackAPI.URL, msg)
 		if err != nil {
 			t.Fatalf("sendWebhook: %v", err)
 		}

@@ -2,6 +2,7 @@ package signup
 
 import (
 	"bytes"
+	"context"
 	"strings"
 	"testing"
 	"time"
@@ -11,13 +12,13 @@ import (
 )
 
 type MockMailgunService struct {
-	WelcomeFunc func(Signup) error
+	WelcomeFunc func(context.Context, Signup) error
 	called      bool
 }
 
-func (ms *MockMailgunService) run(su Signup) error {
+func (ms *MockMailgunService) run(ctx context.Context, su Signup) error {
 	ms.called = true
-	return ms.WelcomeFunc(su)
+	return ms.WelcomeFunc(ctx, su)
 }
 
 func (ms *MockMailgunService) name() string {
@@ -36,7 +37,7 @@ func TestRegisterUser(t *testing.T) {
 		}
 
 		mailService := &MockMailgunService{
-			WelcomeFunc: func(s Signup) error {
+			WelcomeFunc: func(ctx context.Context, s Signup) error {
 				return nil
 			},
 		}
@@ -45,7 +46,7 @@ func TestRegisterUser(t *testing.T) {
 			tasks: []task{mailService},
 		})
 
-		err := signupService.register(signup)
+		err := signupService.register(context.Background(), signup)
 		if err != nil {
 			t.Fatalf("register: %v", err)
 		}

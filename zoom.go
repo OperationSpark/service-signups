@@ -68,12 +68,12 @@ func NewZoomService(o ZoomOptions) *zoomService {
 	}
 }
 
-func (z *zoomService) run(su Signup) error {
+func (z *zoomService) run(ctx context.Context, su Signup) error {
 	// Do nothing if the user has not signed up for a specific session
 	if su.StartDateTime.IsZero() {
 		return nil
 	}
-	return z.registerUser(su)
+	return z.registerUser(ctx, su)
 }
 
 func (z *zoomService) name() string {
@@ -81,10 +81,10 @@ func (z *zoomService) name() string {
 }
 
 // RegisterUser creates and submits a user's registration to a meeting. The specific meeting is decided from the Signup's startDateTime.
-func (z *zoomService) registerUser(su Signup) error {
+func (z *zoomService) registerUser(ctx context.Context, su Signup) error {
 	// Authenticate client
 	if !z.isAuthenticated() {
-		if err := z.authenticate(); err != nil {
+		if err := z.authenticate(ctx); err != nil {
 			return fmt.Errorf("authenticate: %v", err)
 		}
 	}
@@ -109,7 +109,7 @@ func (z *zoomService) registerUser(su Signup) error {
 	)
 
 	req, err := http.NewRequestWithContext(
-		context.TODO(),
+		ctx,
 		http.MethodPost,
 		url,
 		bytes.NewBuffer(jsonBody),
@@ -138,11 +138,11 @@ func (z *zoomService) registerUser(su Signup) error {
 }
 
 // Authenticate requests an access token and sets it along with the expiration date on the service.
-func (z *zoomService) authenticate() error {
+func (z *zoomService) authenticate(ctx context.Context) error {
 	url := fmt.Sprintf("%s/token?grant_type=account_credentials&account_id=%s", z.oauthURL, z.accountID)
 	// Make a HTTP req to authenticate the client
 	req, err := http.NewRequestWithContext(
-		context.TODO(),
+		ctx,
 		http.MethodPost,
 		url,
 		nil,

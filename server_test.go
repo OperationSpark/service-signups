@@ -2,6 +2,7 @@ package signup
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -10,11 +11,11 @@ import (
 )
 
 type MockSignupService struct {
-	RegisterFunc func(signup Signup) error
+	RegisterFunc func(context.Context, Signup) error
 }
 
-func (m *MockSignupService) register(signup Signup) error {
-	return m.RegisterFunc(signup)
+func (m *MockSignupService) register(ctx context.Context, signup Signup) error {
+	return m.RegisterFunc(ctx, signup)
 }
 
 func TestHandleSignup(t *testing.T) {
@@ -29,7 +30,7 @@ func TestHandleSignup(t *testing.T) {
 		}
 
 		service := &MockSignupService{
-			RegisterFunc: func(signup Signup) error {
+			RegisterFunc: func(context.Context, Signup) error {
 				return nil
 			},
 		}
