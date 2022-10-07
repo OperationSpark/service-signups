@@ -41,7 +41,7 @@ A `task` is an [interface](https://go.dev/tour/methods/9) with `run` and `name` 
 type task interface {
 	// Run takes a signup form struct and executes some action.
 	// Ex.: Send an email, post a Slack message.
-	run(signup Signup) error
+	run(context.Context, Signup) error
 	// Name Returns the name of the task.
 	name() string
 }
