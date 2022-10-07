@@ -59,6 +59,7 @@ func (s *Signup) welcomeData() (welcomeVariables, error) {
 	if s.StartDateTime.IsZero() {
 		return welcomeVariables{
 			FirstName: s.NameFirst,
+			LastName:  s.NameLast,
 		}, nil
 	}
 	ctz, err := time.LoadLocation("America/Chicago")
@@ -70,6 +71,7 @@ func (s *Signup) welcomeData() (welcomeVariables, error) {
 		LastName:    s.NameLast,
 		SessionDate: s.StartDateTime.Format("Monday, Jan 02"),
 		SessionTime: s.StartDateTime.In(ctz).Format("3:04 PM MST"),
+		ZoomURL:     s.ZoomMeetingURL(),
 	}, nil
 }
 

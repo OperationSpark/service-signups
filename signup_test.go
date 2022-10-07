@@ -102,7 +102,7 @@ func TestHandleJson(t *testing.T) {
 }
 
 func TestWelcomeData(t *testing.T) {
-	sessionStart, _ := time.Parse(time.RFC3339, "2022-03-21T22:30:00.000Z")
+	sessionStart, _ := time.Parse(time.RFC3339, "2022-02-28T23:30:00.000Z")
 	tests := []struct {
 		name   string
 		signup Signup
@@ -123,39 +123,89 @@ func TestWelcomeData(t *testing.T) {
 			},
 			want: welcomeVariables{
 				FirstName:   "Henri",
+				LastName:    "Testaroni",
 				SessionDate: "Monday, Feb 28",
-				SessionTime: "5:30 PM CDT",
+				SessionTime: "5:30 PM CST",
+				ZoomURL:     "https://us06web.zoom.us/s/17171717171",
 			},
 		},
 		{
 			name: "handle empty startDateTime",
 			signup: Signup{
 				ProgramId:     "",
-				NameFirst:     "Henri",
-				NameLast:      "Testaroni",
+				NameFirst:     "Cordell",
+				NameLast:      "Kinavan",
 				Email:         "henri@email.com",
 				Cell:          "555-123-4567",
 				Referrer:      "Word of mouth",
 				StartDateTime: time.Time{}, //  Empty value
-				Cohort:        "is-feb-28-22-12pm",
 			},
 			want: welcomeVariables{
-				FirstName:   "Henri",
+				FirstName:   "Cordell",
+				LastName:    "Kinavan",
 				SessionDate: "",
 				SessionTime: "",
 			},
 		},
+		{
+			name: "contains the correct Zoom URL",
+			signup: Signup{
+				ProgramId:        "",
+				NameFirst:        "Delcina",
+				NameLast:         "Hallward",
+				Email:            "henri@email.com",
+				Cell:             "555-123-4567",
+				Referrer:         "Word of mouth",
+				ReferrerResponse: "Jane Smith",
+				StartDateTime:    sessionStart,
+				Cohort:           "is-feb-28-22-12pm",
+			},
+			want: welcomeVariables{
+				FirstName:   "Delcina",
+				LastName:    "Hallward",
+				SessionDate: "Monday, Feb 28",
+				SessionTime: "5:30 PM CST",
+				ZoomURL:     "https://us06web.zoom.us/s/17171717171",
+			},
+		},
+		{
+			name: "contains the correct Zoom URL",
+			signup: Signup{
+				ProgramId:        "",
+				NameFirst:        "Miquela",
+				NameLast:         "Carmo",
+				Email:            "mcarmo2@opensource.org",
+				Cell:             "832-546-7105",
+				Referrer:         "Word of mouth",
+				ReferrerResponse: "Jane Smith",
+				StartDateTime:    time.Date(2022, time.Month(10), 10, 17, 0, 0, 0, time.UTC),
+				Cohort:           "is-oct-10-22-12pm",
+			},
+			want: welcomeVariables{
+				FirstName:   "Miquela",
+				LastName:    "Carmo",
+				SessionDate: "Monday, Oct 10",
+				SessionTime: "12:00 PM CDT",
+				ZoomURL:     "https://us06web.zoom.us/s/12121212121",
+			},
+		},
 	}
 
+	suSvc := newSignupService(signupServiceOptions{
+		meetings: map[int]string{
+			12: "12121212121",
+			17: "17171717171",
+		},
+	})
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			suSvc.attachZoomMeetingID(&test.signup)
 			got, err := test.signup.welcomeData()
 			if err != nil {
 				t.Errorf("Unexpected error for input date %v.\n%v", test.signup.StartDateTime, err)
 			}
-			if got.SessionTime != test.want.SessionTime {
-				t.Errorf("s.WelcomeData():\ns.StartDateTime:%v\nwant:%s\ngot:%s", test.signup.StartDateTime, test.want.SessionTime, got.SessionTime)
-			}
+
+			assertDeepEqual(t, got, test.want)
 		})
 	}
 }
