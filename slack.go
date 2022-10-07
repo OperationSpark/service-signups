@@ -3,6 +3,7 @@ package signup
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 )
 
@@ -36,12 +37,12 @@ type message struct {
 func sendWebhook(url string, msg message) error {
 	body, err := json.Marshal(msg)
 	if err != nil {
-		return err
+		return fmt.Errorf("marshall: %v", err)
 	}
 
 	resp, err := http.Post(url, "application/json", bytes.NewBuffer(body))
 	if err != nil {
-		return err
+		return fmt.Errorf("post request: %v", err)
 	}
 	defer resp.Body.Close()
 

@@ -42,7 +42,7 @@ func (m MailgunService) sendWelcome(su Signup) error {
 
 	vars, err := su.welcomeData()
 	if err != nil {
-		return fmt.Errorf("sendWelcome: welcomeData: %v", err)
+		return fmt.Errorf("welcomeData: %v", err)
 	}
 
 	t := mgTemplate{
@@ -93,7 +93,7 @@ func (m MailgunService) sendWithTemplate(t mgTemplate, recipient string) error {
 	// Send the message with a 10 second timeout
 	respMsg, id, err := m.mgClient.Send(ctx, message)
 	if err != nil {
-		return fmt.Errorf("sendWithTemplate: send: %v", err)
+		return fmt.Errorf("send: %v", err)
 	}
 
 	fmt.Printf("mailgun message queued.\nID: %s Resp: %s\n\n", id, respMsg)

@@ -33,7 +33,7 @@ func (g greenlightService) name() string {
 func (g greenlightService) postWebhook(su Signup) error {
 	reqBody, err := json.Marshal(su)
 	if err != nil {
-		return fmt.Errorf("greenlight postWebhook JSON marshall: %v", err)
+		return fmt.Errorf("marshal: %v", err)
 	}
 
 	req, err := http.NewRequestWithContext(
@@ -43,14 +43,14 @@ func (g greenlightService) postWebhook(su Signup) error {
 		bytes.NewBuffer(reqBody),
 	)
 	if err != nil {
-		return fmt.Errorf("greenlight newRequest: %v", err)
+		return fmt.Errorf("newRequest: %v", err)
 	}
 
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("X-Greenlight-Signup-Api-Key", g.apiKey)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("greenlight postWebhook POST: %v", err)
+		return fmt.Errorf("POST request: %v", err)
 	}
 	defer resp.Body.Close()
 

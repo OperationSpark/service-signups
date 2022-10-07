@@ -137,7 +137,7 @@ func (sc *SignupService) attachZoomMeetingID(su *Signup) error {
 	}
 	id, err := strconv.Atoi(sc.meetings[centralStart.Hour()])
 	if err != nil {
-		return fmt.Errorf("convert string to intL %v", err)
+		return fmt.Errorf("convert string to int: %v", err)
 	}
 	su.SetZoomMeetingID(int64(id))
 	return nil
