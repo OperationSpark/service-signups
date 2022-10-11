@@ -3,6 +3,7 @@ package signup
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"strings"
 	"testing"
 	"time"
@@ -282,4 +283,21 @@ func TestSummary(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestMarshalJSON(t *testing.T) {
+	t.Run("should contain the 'zoomJoinUrl' field", func(t *testing.T) {
+		su := Signup{
+			zoomMeetingURL: "http://jointhiszoom.com",
+		}
+
+		j, err := json.Marshal(su)
+		if err != nil {
+			t.Fatalf("marshall: %v", err)
+		}
+
+		hasJoinField := bytes.Contains(j, []byte(`"zoomJoinUrl":"http://jointhiszoom.com"`))
+
+		assertEqual(t, hasJoinField, true)
+	})
 }

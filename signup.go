@@ -2,6 +2,7 @@ package signup
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -23,6 +24,13 @@ type (
 		Token            string    `json:"token" schema:"token"`
 		zoomMeetingID    int64
 		zoomMeetingURL   string
+	}
+
+	SignupAlias Signup
+
+	SignupJSON struct {
+		SignupAlias
+		ZoomJoinURL string `json:"zoomJoinUrl"`
 	}
 
 	welcomeVariables struct {
@@ -63,6 +71,13 @@ type (
 		zoomService mutationTask
 	}
 )
+
+func (s Signup) MarshalJSON() ([]byte, error) {
+	return json.Marshal(SignupJSON{
+		SignupAlias(s),
+		s.ZoomMeetingURL(),
+	})
+}
 
 // welcomeData takes a Signup and prepares data for use in the Welcome email template
 func (s *Signup) welcomeData() (welcomeVariables, error) {
