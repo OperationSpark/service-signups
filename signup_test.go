@@ -25,6 +25,18 @@ func (ms *MockMailgunService) name() string {
 	return "mock mailgun service"
 }
 
+type MockZoomService struct{}
+
+func (*MockZoomService) run(ctx context.Context, su *Signup) error {
+	mockZoomJoinURL := "https://us06web.zoom.us/w/fakemeetingid?tk=faketoken"
+	su.SetZoomJoinURL(mockZoomJoinURL)
+	return nil
+}
+
+func (*MockZoomService) name() string {
+	return "mock zoom service"
+}
+
 func TestRegisterUser(t *testing.T) {
 	t.Run("triggers an 'Welcome Email'", func(t *testing.T) {
 		signup := Signup{
@@ -42,8 +54,11 @@ func TestRegisterUser(t *testing.T) {
 			},
 		}
 
+		zoomService := &MockZoomService{}
+
 		signupService := newSignupService(signupServiceOptions{
-			tasks: []task{mailService},
+			tasks:       []task{mailService},
+			zoomService: zoomService,
 		})
 
 		err := signupService.register(context.Background(), signup)

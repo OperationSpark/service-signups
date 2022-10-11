@@ -44,6 +44,8 @@ func NewServer() *signupServer {
 				12: zoomMeeting12,
 				17: zoomMeeting17,
 			},
+			// registering the user for the Zoom meeting,
+			zoomService: zoomSvc,
 			// Registration tasks:
 			// (executed serially)
 			tasks: []task{
@@ -53,8 +55,7 @@ func NewServer() *signupServer {
 				mgSvc,
 				// sending a Slack message to #signups channel,
 				slackSvc,
-				// registering the user for the Zoom meeting,
-				zoomSvc,
+
 				// TODO:
 				// sending an SMS confirmation message to the user.
 			},

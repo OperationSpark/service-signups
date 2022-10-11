@@ -22,7 +22,7 @@ func TestRun(t *testing.T) {
 			baseAPIOverride: mockAPIServer.URL,
 		})
 
-		err := zsvc.run(context.Background(), su)
+		err := zsvc.run(context.Background(), &su)
 		if err != nil {
 			t.Fatalf("run: %v", err)
 		}
