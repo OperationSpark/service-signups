@@ -127,7 +127,7 @@ func TestWelcomeData(t *testing.T) {
 				LastName:    "Testaroni",
 				SessionDate: "Monday, Feb 28",
 				SessionTime: "5:30 PM CST",
-				ZoomURL:     "https://us06web.zoom.us/s/17171717171",
+				ZoomURL:     "https://us06web.zoom.us/w/fakemeetingid?tk=faketoken",
 			},
 		},
 		{
@@ -166,7 +166,7 @@ func TestWelcomeData(t *testing.T) {
 				LastName:    "Hallward",
 				SessionDate: "Monday, Feb 28",
 				SessionTime: "5:30 PM CST",
-				ZoomURL:     "https://us06web.zoom.us/s/17171717171",
+				ZoomURL:     "https://us06web.zoom.us/w/fakemeetingid?tk=faketoken",
 			},
 		},
 		{
@@ -187,7 +187,7 @@ func TestWelcomeData(t *testing.T) {
 				LastName:    "Carmo",
 				SessionDate: "Monday, Oct 10",
 				SessionTime: "12:00 PM CDT",
-				ZoomURL:     "https://us06web.zoom.us/s/12121212121",
+				ZoomURL:     "https://us06web.zoom.us/w/fakemeetingid?tk=faketoken",
 			},
 		},
 	}
@@ -201,6 +201,7 @@ func TestWelcomeData(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			suSvc.attachZoomMeetingID(&test.signup)
+			test.signup.SetZoomJoinURL("https://us06web.zoom.us/w/fakemeetingid?tk=faketoken")
 			got, err := test.signup.welcomeData()
 			if err != nil {
 				t.Errorf("Unexpected error for input date %v.\n%v", test.signup.StartDateTime, err)
@@ -233,9 +234,6 @@ func TestAttachZoomMeetingID(t *testing.T) {
 
 		assertEqual(t, gotID, wantID)
 
-		gotURL := su.ZoomMeetingURL()
-		wantURL := "https://us06web.zoom.us/s/12123456789" // Meeting for 12p Central
-		assertEqual(t, gotURL, wantURL)
 	})
 }
 
