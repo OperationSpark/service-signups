@@ -1,116 +1,67 @@
-package signups
+package signup
 
 import (
-	"bytes"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"io"
-	"net/http"
 	"os"
-	"time"
 
-	"github.com/gorilla/schema"
-	"github.com/operationspark/slack-session-signups/email"
-	"github.com/operationspark/slack-session-signups/slack"
+	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
 )
 
-var SLACK_WEBHOOK_URL = os.Getenv("SLACK_WEBHOOK_URL")
-var decoder = schema.NewDecoder()
-
-// handleJson unmarshalls a JSON payload from a signUp request into a Signup.
-func handleJson(s *Signup, body io.Reader) error {
-	var timeParseError *time.ParseError
-
-	b, err := io.ReadAll(body)
-	if err != nil {
-		return err
-	}
-
-	err = json.Unmarshal(b, s)
-	if errors.As(err, &timeParseError) {
-		return &InvalidFieldError{Field: "startDateTime"}
-	}
-	if err != nil {
-		return err
-	}
-
-	return nil
+func init() {
+	// Register an HTTP function with the Functions Framework
+	// This handler name maps to the entry point name in the Google Cloud Function platform.
+	// https://cloud.google.com/functions/docs/writing/write-http-functions
+	functions.HTTP("HandleSignUp", NewServer().HandleSignUp)
 }
 
-// handleForm unmarshalls a FormData payload from a signUp request into a Signup
-func handleForm(s *Signup, r *http.Request) error {
-	err := r.ParseForm()
-	if err != nil {
-		return err
-	}
+func NewServer() *signupServer {
+	// Set up services/tasks to run when someone signs up for an Info Session.
+	mgDomain := os.Getenv("MAIL_DOMAIN")
+	mgAPIKey := os.Getenv("MAILGUN_API_KEY")
+	mgSvc := NewMailgunService(mgDomain, mgAPIKey, "")
 
-	err = decoder.Decode(s, r.PostForm)
-	if err != nil {
-		return err
-	}
+	glWebhookURL := os.Getenv("GREENLIGHT_WEBHOOK_URL")
+	glAPIkey := os.Getenv("GREENLIGHT_API_KEY")
+	glSvc := NewGreenlightService(glWebhookURL, glAPIkey)
 
-	return nil
-}
+	slackWebhookURL := os.Getenv("SLACK_WEBHOOK_URL")
+	slackSvc := NewSlackService(slackWebhookURL)
 
-// HandleSignUp parses Info Session sign up requests from operationspark.org.
-// If successful, it sends webhooks to Greenlight, Slack, other services.
-func HandleSignUp(w http.ResponseWriter, r *http.Request) {
-	fmt.Println(SLACK_WEBHOOK_URL)
-	s := Signup{}
+	zoomAccountID := os.Getenv("ZOOM_ACCOUNT_ID")
+	zoomClientID := os.Getenv("ZOOM_CLIENT_ID")
+	zoomClientSecret := os.Getenv("ZOOM_CLIENT_SECRET")
+	zoomMeeting12 := os.Getenv("ZOOM_MEETING_12")
+	zoomMeeting17 := os.Getenv("ZOOM_MEETING_17")
 
-	switch r.Header.Get("Content-Type") {
-	case "application/json":
-		err := handleJson(&s, r.Body)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			panic(err)
-		}
+	zoomSvc := NewZoomService(ZoomOptions{
+		clientID:     zoomClientID,
+		clientSecret: zoomClientSecret,
+		accountID:    zoomAccountID,
+	})
 
-	case "application/x-www-form-urlencoded":
-		err := handleForm(&s, r)
-		if err != nil {
-			http.Error(w, "Error reading Form Body", http.StatusBadRequest)
-			panic(err)
-		}
-		fmt.Println(s)
+	registrationService := newSignupService(
+		signupServiceOptions{
+			meetings: map[int]string{
+				12: zoomMeeting12,
+				17: zoomMeeting17,
+			},
+			// registering the user for the Zoom meeting,
+			zoomService: zoomSvc,
+			// Registration tasks:
+			// (executed serially)
+			tasks: []task{
+				// posting a WebHook to Greenlight,
+				glSvc,
+				// sending a "Welcome Email",
+				mgSvc,
+				// sending a Slack message to #signups channel,
+				slackSvc,
 
-	default:
-		http.Error(w, "Unacceptable Content-Type", http.StatusUnsupportedMediaType)
-		return
-	}
+				// TODO:
+				// sending an SMS confirmation message to the user.
+			},
+		},
+	)
 
-	// Post to Greenlight
-	err := s.SignUp()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		panic(err)
-	}
-
-	// #signups Slack notification
-	slackMsg := slack.Message{Text: s.Summary()}
-	err = slack.SendWebhook(SLACK_WEBHOOK_URL, slackMsg)
-	if err != nil {
-		http.Error(w, "Error sending Slack webhook", http.StatusInternalServerError)
-		panic(err)
-	}
-
-	//  Send Info Session welcome email
-	buf := new(bytes.Buffer)
-	err = s.html(buf)
-	if err != nil {
-		fmt.Printf("error creating email HTML %s", err.Error())
-	}
-	err = email.SendWelcome(s.Email, buf.String())
-	if err != nil {
-		fmt.Printf("error sending welcome email %s", err.Error())
-	}
-}
-
-type InvalidFieldError struct {
-	Field string
-}
-
-func (e *InvalidFieldError) Error() string {
-	return fmt.Sprintf("invalid value for field: '%s'", e.Field)
+	server := newSignupServer(registrationService)
+	return server
 }

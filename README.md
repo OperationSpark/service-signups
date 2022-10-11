@@ -1,7 +1,12 @@
 # Session Sign Up Service
+![Coverage](https://img.shields.io/badge/Coverage-72.3%25-brightgreen)
 
 When someone signs up for an Info Session on [operationspark.org](https://operationspark.org),
-this service sends a webhook to Greenlight and a Slack message to the [#signups](https://operationspark.slack.com/archives/G3F2KFGJH) channel.
+this service runs a series of tasks:
+- Sends a webhook to Greenlight 
+- Sends a Slack message to the [#signups](https://operationspark.slack.com/archives/G3F2KFGJH) channel.
+- Sends the user a confirmation email
+- Registers the user for the Info Session's Zoom meeting
 
 ## Development
 
@@ -31,28 +36,116 @@ Use the "Local Function Server" debug configuration:
 
 <img width="600" alt="image" src="https://user-images.githubusercontent.com/9354822/155805725-4de75940-d788-4265-a6cd-a42145e197bb.png">
 
+### Project Structure
 
-## Deployment
+There is a `signupService` struct that has a list of `tasks` to run on a [signup form](https://operationspark.org/programs/workforce/infoSession) event from the operationspark.org website.
 
-The service is deployed as a Google Cloud Function and trigger by webhooks from operationspark.org
+A `task` is an [interface](https://go.dev/tour/methods/9) with `run` and `name` methods.
 
-https://console.cloud.google.com/functions/details/us-central1/session-signups?env=gen1&authuser=1&project=operationspark-org
+```go
+type task interface {
+	// Run takes a signup form struct and executes some action.
+	// Ex.: Send an email, post a Slack message.
+	run(context.Context, Signup) error
+	// Name Returns the name of the task.
+	name() string
+}
+```
 
-[TODO: Flesh out]
+When someone signs up for an Info Session, the form is parsed, then passed to a series of tasks for processing.
 
-```shell
-$ gcloud functions deploy session-signups \
---runtime=go116 \
---trigger-http \
---entry-point HandleSignUp \
---env-vars-file .env.yaml
+```go
+// function.go
+
+// Set up services/tasks to run when someone signs up for an Info Session.
+mgSvc := NewMailgunService(mgDomain, mgAPIKey, "")
+glSvc := NewGreenlightService(glWebhookURL)
+slackSvc := NewSlackService(slackWebhookURL)
+
+// These registration tasks include:
+registrationService := newSignupService(
+		signupServiceOptions{
+			// Registration tasks:
+			// (executed serially)
+			tasks: []task{
+				// posting a WebHook to Greenlight,
+				glSvc,
+				// sending a "Welcome Email",
+				mgSvc,
+				// sending a Slack message to #signups channel,
+				slackSvc,
+				// registering the user for the Zoom meeting,
+				zoomSvc,
+			},
+		},
+)
+
+server := newSignupServer(registrationService)
+```
+
+```go
+// Register executes a series of tasks in order. If one fails, the remaining tasks are cancelled.
+func (sc *SignupService) register(su Signup) error {
+	for _, task := range sc.tasks {
+		err := task.run(su)
+		if err != nil {
+			return fmt.Errorf("task failed: %q: %v", task.name(), err)
+		}
+	}
+	return nil
+}
+```
+
+To register a new `task`, create a service struct and implement the `task` interface:
+
+#### Example
+
+```go
+package signup
+
+type skywriteService struct {
+}
+
+func NewSkyWriteService() *skywriteService {
+  return &skywriteService{}
+}
+
+func (d skywriteService) run(su Signup) error {
+	return d.skyWrite(su.NameFirst)
+}
+
+func (d skywriteService) name() string {
+	return "dominos service"
+}
+
+// SkyWrite sends a drone out to draw someones name in chemtrails.
+func (d skywriteService) skyWrite(name string) error {
+	// Do the thing
+	return nil
+}
+```
+
+Then pass the service to the registration service in `function.go`.
+
+```go
+func NewServer() {
+	// ...
+  registrationService := newSignupService(
+    // ... other tasks,
+    // (Order matters!)
+    NewSkyWriteService()
+	)
+  // ...
+	server := newSignupServer(registrationService)
+	return server
+}
 ```
 
 ## Connected Services
- 
+
 - [OS Signups App](https://operationspark.slack.com/apps/A0338E8UFFV-os-signups?tab=settings&next_id=0)
 - Greenlight Signup API
-
+- Mailgun API
 
 ## Contributing
 

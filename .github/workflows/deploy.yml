@@ -1,0 +1,42 @@
+name: GCP Cloud Functions Deploy
+on:
+  push:
+    branches:
+      - "main"
+jobs:
+  build-deploy-cloud-function:
+    permissions:
+      contents: "read"
+      id-token: "write"
+
+    environment: production
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - id: "auth"
+        uses: "google-github-actions/auth@v0"
+        with:
+          credentials_json: "${{ secrets.GCP_SA_CREDS_JSON }}"
+
+      - id: "deploy"
+        uses: "google-github-actions/deploy-cloud-functions@v0"
+        with:
+          name: "session-signups-dev"
+          entry_point: "HandleSignUp"
+          https_trigger_security_level: "secure-always"
+          project_id: "operationspark-org"
+          region: "us-central1"
+          runtime: "go116"
+          env_vars: >-
+            SLACK_WEBHOOK_URL=${{secrets.SLACK_WEBHOOK_URL}},
+            MAIL_DOMAIN=${{secrets.MAIL_DOMAIN}},
+            MAILGUN_API_KEY=${{secrets.MAILGUN_API_KEY}},
+            GREENLIGHT_WEBHOOK_URL=${{secrets.GREENLIGHT_WEBHOOK_URL}},
+            ZOOM_ACCOUNT_ID=${{secrets.ZOOM_ACCOUNT_ID}},
+            ZOOM_CLIENT_ID=${{secrets.ZOOM_CLIENT_ID}},
+            ZOOM_CLIENT_SECRET=${{secrets.ZOOM_CLIENT_SECRET}},
+            ZOOM_MEETING_12=${{secrets.ZOOM_MEETING_12}},
+            ZOOM_MEETING_17=${{secrets.ZOOM_MEETING_17}}
+      - id: "trigger-url"
+        run: 'echo "${{ steps.deploy.outputs.url }}"'
