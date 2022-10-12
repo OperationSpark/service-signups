@@ -22,7 +22,7 @@ func TestRun(t *testing.T) {
 			baseAPIOverride: mockAPIServer.URL,
 		})
 
-		err := zsvc.run(context.Background(), su)
+		err := zsvc.run(context.Background(), &su)
 		if err != nil {
 			t.Fatalf("run: %v", err)
 		}
@@ -139,6 +139,10 @@ func TestRegisterForMeeting(t *testing.T) {
 
 	mockMeetingID := int64(87582741258)
 	su.SetZoomMeetingID(mockMeetingID)
+	// Simulate the registrant-specific Join URL
+	// Regular Zoom links, (Ex: https://us06web.zoom.us/j/87582741258), will redirect an unauthorized user to the registration page, defeating the purpose of auto-registration.
+	mockJoinURL := fmt.Sprintf("https://us06web.zoom.us/w/%d?tk=6ySWiEckpHMI15UYaou_2dkNdDxTHbx7LM8l73iT7rM.DQMAAAAUeoDxnxZ5HSAGdi4newfHJJB#NBDETFhraE1BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", mockMeetingID)
+
 	mockZoomServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		assertEqual(t, r.Method, http.MethodPost)
@@ -161,8 +165,9 @@ func TestRegisterForMeeting(t *testing.T) {
 
 		w.WriteHeader(http.StatusOK)
 		e := json.NewEncoder(w)
+		// Respond with the Join URL
 		e.Encode(meeting.RegistrationResponse{
-			JoinURL: fmt.Sprintf("https://us06web.zoom.us/j/%d", mockMeetingID),
+			JoinURL: mockJoinURL,
 		})
 	}))
 
@@ -175,8 +180,11 @@ func TestRegisterForMeeting(t *testing.T) {
 	zsvc.tokenExpiresAt = time.Now().Add(time.Minute * 10)
 
 	// Method under test
-	err := zsvc.registerUser(context.Background(), su)
+	err := zsvc.registerUser(context.Background(), &su)
 	if err != nil {
 		t.Fatalf("register for meeting: %v", err)
 	}
+
+	// Check for custom Join URL from Zoom
+	assertEqual(t, su.ZoomMeetingURL(), mockJoinURL)
 }

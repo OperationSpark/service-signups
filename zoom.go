@@ -68,7 +68,7 @@ func NewZoomService(o ZoomOptions) *zoomService {
 	}
 }
 
-func (z *zoomService) run(ctx context.Context, su Signup) error {
+func (z *zoomService) run(ctx context.Context, su *Signup) error {
 	// Do nothing if the user has not signed up for a specific session
 	if su.StartDateTime.IsZero() {
 		return nil
@@ -81,7 +81,7 @@ func (z *zoomService) name() string {
 }
 
 // RegisterUser creates and submits a user's registration to a meeting. The specific meeting is decided from the Signup's startDateTime.
-func (z *zoomService) registerUser(ctx context.Context, su Signup) error {
+func (z *zoomService) registerUser(ctx context.Context, su *Signup) error {
 	// Authenticate client
 	if !z.isAuthenticated() {
 		if err := z.authenticate(ctx); err != nil {
@@ -134,6 +134,7 @@ func (z *zoomService) registerUser(ctx context.Context, su Signup) error {
 	var respBody meeting.RegistrationResponse
 	d := json.NewDecoder(resp.Body)
 	d.Decode(&respBody)
+	su.SetZoomJoinURL(respBody.JoinURL)
 	return nil
 }
 

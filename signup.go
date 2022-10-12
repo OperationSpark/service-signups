@@ -2,6 +2,7 @@ package signup
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -22,6 +23,14 @@ type (
 		SessionId        string    `json:"sessionId" schema:"sessionId"`
 		Token            string    `json:"token" schema:"token"`
 		zoomMeetingID    int64
+		zoomMeetingURL   string
+	}
+
+	SignupAlias Signup
+
+	SignupJSON struct {
+		SignupAlias
+		ZoomJoinURL string `json:"zoomJoinUrl"`
 	}
 
 	welcomeVariables struct {
@@ -35,8 +44,9 @@ type (
 	SignupService struct {
 		// Key-value map with the Central Time meeting start hour (int) as the keys, and Zoom Meeting ID as the values.
 		// Ex: {17: "86935241734"} denotes meeting with ID, "86935241734", starts at 5pm central.
-		meetings map[int]string
-		tasks    []task
+		meetings    map[int]string
+		tasks       []task
+		zoomService mutationTask
 	}
 
 	task interface {
@@ -47,13 +57,27 @@ type (
 		name() string
 	}
 
+	mutationTask interface {
+		run(ctx context.Context, signup *Signup) error
+		name() string
+	}
+
 	signupServiceOptions struct {
 		// Key-value map with the Central Time meeting start hour (int) as the keys, and Zoom Meeting ID as the values.
 		// Ex: {17: "86935241734"} denotes meeting with ID, "86935241734", starts at 5pm central.
 		meetings map[int]string
 		tasks    []task
+		// The Zoom Service needs to mutate the Signup struct with a meeting join URL. Due to this mutation, we need to pull the zoom service out of the task flow and use it before running the tasks.
+		zoomService mutationTask
 	}
 )
+
+func (s Signup) MarshalJSON() ([]byte, error) {
+	return json.Marshal(SignupJSON{
+		SignupAlias(s),
+		s.ZoomMeetingURL(),
+	})
+}
 
 // welcomeData takes a Signup and prepares data for use in the Welcome email template
 func (s *Signup) welcomeData() (welcomeVariables, error) {
@@ -94,19 +118,24 @@ func (su *Signup) SetZoomMeetingID(id int64) {
 	su.zoomMeetingID = id
 }
 
+func (su *Signup) SetZoomJoinURL(url string) {
+	su.zoomMeetingURL = url
+}
+
 func (su Signup) ZoomMeetingID() int64 {
 	// Set in SignupService.attachZoomMeetingID()
 	return su.zoomMeetingID
 }
 
 func (su Signup) ZoomMeetingURL() string {
-	return fmt.Sprintf("https://us06web.zoom.us/s/%d", su.zoomMeetingID)
+	return su.zoomMeetingURL
 }
 
 func newSignupService(o signupServiceOptions) *SignupService {
 	return &SignupService{
-		meetings: o.meetings,
-		tasks:    o.tasks,
+		meetings:    o.meetings,
+		tasks:       o.tasks,
+		zoomService: o.zoomService,
 	}
 }
 
@@ -114,6 +143,10 @@ func newSignupService(o signupServiceOptions) *SignupService {
 func (sc *SignupService) register(ctx context.Context, su Signup) error {
 	// TODO: Create specific errors for each handler
 	sc.attachZoomMeetingID(&su)
+	err := sc.zoomService.run(ctx, &su)
+	if err != nil {
+		return fmt.Errorf("zoomService.run: %v", err)
+	}
 	for _, task := range sc.tasks {
 		err := task.run(ctx, su)
 		if err != nil {

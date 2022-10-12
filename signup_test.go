@@ -3,6 +3,7 @@ package signup
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"strings"
 	"testing"
 	"time"
@@ -25,6 +26,18 @@ func (ms *MockMailgunService) name() string {
 	return "mock mailgun service"
 }
 
+type MockZoomService struct{}
+
+func (*MockZoomService) run(ctx context.Context, su *Signup) error {
+	mockZoomJoinURL := "https://us06web.zoom.us/w/fakemeetingid?tk=faketoken"
+	su.SetZoomJoinURL(mockZoomJoinURL)
+	return nil
+}
+
+func (*MockZoomService) name() string {
+	return "mock zoom service"
+}
+
 func TestRegisterUser(t *testing.T) {
 	t.Run("triggers an 'Welcome Email'", func(t *testing.T) {
 		signup := Signup{
@@ -42,8 +55,11 @@ func TestRegisterUser(t *testing.T) {
 			},
 		}
 
+		zoomService := &MockZoomService{}
+
 		signupService := newSignupService(signupServiceOptions{
-			tasks: []task{mailService},
+			tasks:       []task{mailService},
+			zoomService: zoomService,
 		})
 
 		err := signupService.register(context.Background(), signup)
@@ -127,7 +143,7 @@ func TestWelcomeData(t *testing.T) {
 				LastName:    "Testaroni",
 				SessionDate: "Monday, Feb 28",
 				SessionTime: "5:30 PM CST",
-				ZoomURL:     "https://us06web.zoom.us/s/17171717171",
+				ZoomURL:     "https://us06web.zoom.us/w/fakemeetingid?tk=faketoken",
 			},
 		},
 		{
@@ -166,7 +182,7 @@ func TestWelcomeData(t *testing.T) {
 				LastName:    "Hallward",
 				SessionDate: "Monday, Feb 28",
 				SessionTime: "5:30 PM CST",
-				ZoomURL:     "https://us06web.zoom.us/s/17171717171",
+				ZoomURL:     "https://us06web.zoom.us/w/fakemeetingid?tk=faketoken",
 			},
 		},
 		{
@@ -187,7 +203,7 @@ func TestWelcomeData(t *testing.T) {
 				LastName:    "Carmo",
 				SessionDate: "Monday, Oct 10",
 				SessionTime: "12:00 PM CDT",
-				ZoomURL:     "https://us06web.zoom.us/s/12121212121",
+				ZoomURL:     "https://us06web.zoom.us/w/fakemeetingid?tk=faketoken",
 			},
 		},
 	}
@@ -201,6 +217,7 @@ func TestWelcomeData(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			suSvc.attachZoomMeetingID(&test.signup)
+			test.signup.SetZoomJoinURL("https://us06web.zoom.us/w/fakemeetingid?tk=faketoken")
 			got, err := test.signup.welcomeData()
 			if err != nil {
 				t.Errorf("Unexpected error for input date %v.\n%v", test.signup.StartDateTime, err)
@@ -233,9 +250,6 @@ func TestAttachZoomMeetingID(t *testing.T) {
 
 		assertEqual(t, gotID, wantID)
 
-		gotURL := su.ZoomMeetingURL()
-		wantURL := "https://us06web.zoom.us/s/12123456789" // Meeting for 12p Central
-		assertEqual(t, gotURL, wantURL)
 	})
 }
 
@@ -269,4 +283,21 @@ func TestSummary(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestMarshalJSON(t *testing.T) {
+	t.Run("should contain the 'zoomJoinUrl' field", func(t *testing.T) {
+		su := Signup{
+			zoomMeetingURL: "http://jointhiszoom.com",
+		}
+
+		j, err := json.Marshal(su)
+		if err != nil {
+			t.Fatalf("marshall: %v", err)
+		}
+
+		hasJoinField := bytes.Contains(j, []byte(`"zoomJoinUrl":"http://jointhiszoom.com"`))
+
+		assertEqual(t, hasJoinField, true)
+	})
 }
