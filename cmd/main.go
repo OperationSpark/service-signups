@@ -6,14 +6,15 @@ import (
 	"os"
 
 	"github.com/GoogleCloudPlatform/functions-framework-go/funcframework"
-	signups "github.com/operationspark/slack-session-signups"
+	signup "github.com/operationspark/service-signup"
 )
 
 func main() {
 	ctx := context.Background()
-	if err := funcframework.RegisterHTTPFunctionContext(ctx, "/", signups.HandleSignUp); err != nil {
+	if err := funcframework.RegisterHTTPFunctionContext(ctx, "/", signup.NewServer().HandleSignUp); err != nil {
 		log.Fatalf("funcframework.RegisterHTTPFunctionContext: %v\n", err)
 	}
+
 	// Use PORT environment variable, or default to 8080.
 	port := "8080"
 	if envPort := os.Getenv("PORT"); envPort != "" {
