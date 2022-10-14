@@ -7,6 +7,7 @@ import (
 
 func TestSendSMS(t *testing.T) {
 	t.Run("sends an SMS message to the signed up user", func(t *testing.T) {
+		t.Skip()
 		accountSid := "ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 		authToken := "YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY"
 		fromPhoneNum := "+15041234567"
