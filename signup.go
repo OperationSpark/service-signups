@@ -165,7 +165,12 @@ func (su Signup) shortMessage(infoURL string) (string, error) {
 // ShortMessagingURL produces a custom URL for use on Operation Spark's SMS Messaging Preview service.
 // https://github.com/OperationSpark/sms.opspark.org
 func (su Signup) shortMessagingURL(baseURL string) (string, error) {
-	p := messagingReqParams{}
+	p := messagingReqParams{
+		Template: "InfoSession",
+		ZoomLink: su.zoomMeetingURL,
+		Date:     su.StartDateTime,
+		Name:     su.NameFirst,
+	}
 	encoded, err := structToBase64(p)
 	if err != nil {
 		return "", fmt.Errorf("structToBase64: %v", err)
