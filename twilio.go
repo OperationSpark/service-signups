@@ -63,9 +63,6 @@ func NewTwilioService(o twilioServiceOptions) *smsService {
 }
 
 func (t *smsService) run(ctx context.Context, su Signup) error {
-	// Call [Peter's service] to get the custom messaging page URL.
-	// Create the SMS message body
-	// Send the SMS
 	return t.sendSMS(su)
 }
 
@@ -74,11 +71,13 @@ func (t *smsService) name() string {
 }
 
 func (t *smsService) sendSMS(su Signup) error {
+	// Create URL for the Operation Spark message rendering service. This service will render a page with more details about joining the Info Session.
 	mgsngURL, err := su.shortMessagingURL(t.opSparkMessagingSvcBaseURL)
 	if err != nil {
 		return fmt.Errorf("shortMessagingURL: %v", err)
 	}
 
+	// Create the SMS message body
 	msg, err := su.shortMessage(mgsngURL)
 	if err != nil {
 		return fmt.Errorf("shortMessage: %v", err)
