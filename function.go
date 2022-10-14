@@ -38,6 +38,18 @@ func NewServer() *signupServer {
 		accountID:    zoomAccountID,
 	})
 
+	twilioAcctSID := os.Getenv("TWILIO_ACCOUNT_SID")
+	twilioAuthToken := os.Getenv("TWILIO_AUTH_TOKEN")
+	twilioPhoneNum := os.Getenv("TWILIO_PHONE_NUMBER")
+	osMessagingSvcURL := os.Getenv("OS_MESSAGING_SERVICE_URL")
+
+	twilioSvc := NewTwilioService(twilioServiceOptions{
+		accountSID:          twilioAcctSID,
+		authToken:           twilioAuthToken,
+		fromPhoneNum:        twilioPhoneNum,
+		messagingSvcBaseURL: osMessagingSvcURL,
+	})
+
 	registrationService := newSignupService(
 		signupServiceOptions{
 			meetings: map[int]string{
@@ -55,9 +67,8 @@ func NewServer() *signupServer {
 				mgSvc,
 				// sending a Slack message to #signups channel,
 				slackSvc,
-
-				// TODO:
 				// sending an SMS confirmation message to the user.
+				twilioSvc,
 			},
 		},
 	)
