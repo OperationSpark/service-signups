@@ -14,11 +14,13 @@ func TestSendSMS(t *testing.T) {
 		accountSID := "ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 		authToken := "YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY"
 		fromPhoneNum := "+15041234567"
+		messagingServiceSid := "MGXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
 
 		mockApi := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			r.ParseMultipartForm(128)
 
 			assertEqual(t, r.Form.Get("ShortenUrls"), "true")
+			assertEqual(t, r.Form.Get("MessagingServiceSid"), messagingServiceSid)
 
 			gotBody := r.Form.Get("Body")
 			wantBody := "Mon Mar 14 @ 12:00p CDT"
@@ -29,10 +31,11 @@ func TestSendSMS(t *testing.T) {
 		}))
 
 		tSvc := NewTwilioService(twilioServiceOptions{
-			accountSID:   accountSID,
-			authToken:    authToken,
-			fromPhoneNum: fromPhoneNum,
-			apiBase:      mockApi.URL,
+			accountSID:          accountSID,
+			authToken:           authToken,
+			fromPhoneNum:        fromPhoneNum,
+			messagingServiceSid: messagingServiceSid,
+			apiBase:             mockApi.URL,
 		})
 
 		sessionStartDate, _ := time.Parse(time.RFC822, "14 Mar 22 17:00 UTC")
@@ -40,7 +43,7 @@ func TestSendSMS(t *testing.T) {
 			NameFirst:        "Bob",
 			NameLast:         "Ross",
 			Email:            "bross@pbs.org",
-			Cell:             "+19197654321",
+			Cell:             "+15042313667",
 			Referrer:         "instagram",
 			ReferrerResponse: "",
 			StartDateTime:    sessionStartDate,

@@ -41,13 +41,15 @@ func NewServer() *signupServer {
 	twilioAcctSID := os.Getenv("TWILIO_ACCOUNT_SID")
 	twilioAuthToken := os.Getenv("TWILIO_AUTH_TOKEN")
 	twilioPhoneNum := os.Getenv("TWILIO_PHONE_NUMBER")
+	twilioMessagingServiceSID := os.Getenv("TWILIO_MESSAGING_SERVICE_SID")
 	osMessagingSvcURL := os.Getenv("OS_MESSAGING_SERVICE_URL")
 
 	twilioSvc := NewTwilioService(twilioServiceOptions{
-		accountSID:          twilioAcctSID,
-		authToken:           twilioAuthToken,
-		fromPhoneNum:        twilioPhoneNum,
-		messagingSvcBaseURL: osMessagingSvcURL,
+		accountSID:                 twilioAcctSID,
+		authToken:                  twilioAuthToken,
+		fromPhoneNum:               twilioPhoneNum,
+		opSparkMessagingSvcBaseURL: osMessagingSvcURL,
+		messagingServiceSid:        twilioMessagingServiceSID,
 	})
 
 	registrationService := newSignupService(

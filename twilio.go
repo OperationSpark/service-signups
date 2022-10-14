@@ -19,25 +19,28 @@ type (
 		client *twilio.RestClient
 		// Phone number SMS messages are sent from.
 		fromPhoneNum string
+		// Messaging service SID
+		messagingServiceSid string
 		// Base URL for OpSpark Messaging Service.
 		// Default: https://sms.operationspark.org
-		messagingSvcBaseURL string
+		opSparkMessagingSvcBaseURL string
 	}
 
 	twilioServiceOptions struct {
-		accountSID          string
-		authToken           string
-		client              client.BaseClient
-		fromPhoneNum        string
-		messagingSvcBaseURL string
-		apiBase             string
+		accountSID                 string
+		authToken                  string
+		client                     client.BaseClient
+		fromPhoneNum               string
+		messagingServiceSid        string
+		opSparkMessagingSvcBaseURL string
+		apiBase                    string
 	}
 )
 
 func NewTwilioService(o twilioServiceOptions) *smsService {
 	smsBaseURL := "https://sms.operationspark.org"
-	if len(o.messagingSvcBaseURL) > 0 {
-		smsBaseURL = o.messagingSvcBaseURL
+	if len(o.opSparkMessagingSvcBaseURL) > 0 {
+		smsBaseURL = o.opSparkMessagingSvcBaseURL
 	}
 
 	// Override for testing
@@ -53,8 +56,9 @@ func NewTwilioService(o twilioServiceOptions) *smsService {
 			Password: o.authToken,
 			Client:   o.client,
 		}),
-		fromPhoneNum:        o.fromPhoneNum,
-		messagingSvcBaseURL: smsBaseURL,
+		fromPhoneNum:               o.fromPhoneNum,
+		messagingServiceSid:        o.messagingServiceSid,
+		opSparkMessagingSvcBaseURL: smsBaseURL,
 	}
 }
 
@@ -70,7 +74,7 @@ func (t *smsService) name() string {
 }
 
 func (t *smsService) sendSMS(su Signup) error {
-	mgsngURL, err := su.shortMessagingURL(t.messagingSvcBaseURL)
+	mgsngURL, err := su.shortMessagingURL(t.opSparkMessagingSvcBaseURL)
 	if err != nil {
 		return fmt.Errorf("shortMessagingURL: %v", err)
 	}
@@ -84,15 +88,18 @@ func (t *smsService) sendSMS(su Signup) error {
 	params.SetTo(su.Cell)
 	params.SetFrom(t.fromPhoneNum)
 	params.SetBody(msg)
+	params.SetMessagingServiceSid(t.messagingServiceSid)
 
 	// ** The following is a temporary work around to use the "ShortenUrls" param that is not yet supported by this SDK.
 	// I will put in a PR to add support. If accepted, merged, and released, we can delete these lines, and just use CreateMessage(params).
+	// https://github.com/twilio/twilio-go/issues/194
 	endpoint := fmt.Sprintf("%s/2010-04-01/Accounts/%s/Messages.json", t.apiBase, t.client.Client.AccountSid())
 	data := url.Values{
-		"To":          []string{*params.To},
-		"From":        []string{*params.From},
-		"Body":        []string{*params.Body},
-		"ShortenUrls": []string{"true"},
+		"To":                  []string{*params.To},
+		"From":                []string{*params.From},
+		"Body":                []string{*params.Body},
+		"MessagingServiceSid": []string{*params.MessagingServiceSid},
+		"ShortenUrls":         []string{"true"},
 	}
 	headers := make(map[string]interface{})
 	resp, err := t.client.Post(endpoint, data, headers)
