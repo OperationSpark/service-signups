@@ -70,6 +70,10 @@ func NewTwilioService(o twilioServiceOptions) *smsService {
 	}
 }
 
+// Run sends an Info Session signup confirmation SMS to the registered participant. We use Twilio's Conversations API instead of the Messaging API to allow multiple staff members communicate with the participant through the same outgoing SMS number.
+// The confirmation SMS contains a link that when clicked generates a custom page containing information on the upcoming Info Session. This signup-specific link is shortened before sent.
+//
+// Note: Twilio has a free Link Shortening service, but it is only available with the Messaging API, not Conversations.
 func (t *smsService) run(ctx context.Context, su Signup) error {
 	toNum := t.formatCell(su.Cell)
 	convoName := fmt.Sprintf("%s %s", su.NameFirst, su.NameLast[0:1])
@@ -119,6 +123,7 @@ func (t *smsService) name() string {
 	return "twilio service"
 }
 
+// SendSMSInConversation uses the Twilio Conversations API to send a message to a specific Conversation. Twilio will then broadcast the message to the Conversation participants. In our case, this is two SMS-capable phone numbers.
 func (t *smsService) sendSMSInConversation(body string, convoId string) error {
 	params := &conversations.CreateServiceConversationMessageParams{
 		Body:   &body,
@@ -134,6 +139,7 @@ func (t *smsService) sendSMSInConversation(body string, convoId string) error {
 	return nil
 }
 
+// FindConversationsByNumber finds all Twilio Conversations that have the given phone number as a participant.
 func (t *smsService) findConversationsByNumber(phNum string) ([]conversations.ConversationsV1ParticipantConversation, error) {
 	params := &conversations.ListParticipantConversationParams{}
 	params.SetAddress(phNum)
@@ -146,26 +152,24 @@ func (t *smsService) findConversationsByNumber(phNum string) ([]conversations.Co
 	return resp, nil
 }
 
+// AddNumberToConversation creates a new Conversation and adds two participants - the Operation Spark Service Identity ("services@operationspark.org"), and the SMS recipient's phone number.
 func (t *smsService) addNumberToConversation(phNum, friendlyName string) (string, error) {
 	cp := &conversations.CreateConversationParams{}
 	cp.SetFriendlyName(friendlyName)
 
-	// create new convo
+	// Create new Conversation
 	cResp, err := t.client.ConversationsV1.CreateConversation(cp)
 	if err != nil {
 		return "", fmt.Errorf("createConversation: %v", err)
 	}
-	fmt.Println(cResp)
 
 	// Add Operation Spark Conversation Identity
 	ppp := &conversations.CreateConversationParticipantParams{}
 	ppp.SetIdentity(t.conversationsIdentity)
-	respUser, err := t.client.ConversationsV1.CreateConversationParticipant(*cResp.Sid, ppp)
+	_, err = t.client.ConversationsV1.CreateConversationParticipant(*cResp.Sid, ppp)
 	if err != nil {
 		return "", fmt.Errorf("createConversationParticipant with Identity: %v", err)
 	}
-
-	fmt.Println(respUser)
 
 	// Add SMS Recipient to conversation
 	pp := &conversations.CreateConversationParticipantParams{}
@@ -180,6 +184,7 @@ func (t *smsService) addNumberToConversation(phNum, friendlyName string) (string
 	return *cResp.Sid, nil
 }
 
+// FormatCell prepends the US country code, "+1", and removes any dashes from a phone number string.
 func (t *smsService) formatCell(cell string) string {
 	return "+1" + strings.ReplaceAll(cell, "-", "")
 }
