@@ -19,8 +19,6 @@ type (
 		client *twilio.RestClient
 		// Phone number SMS messages are sent from.
 		fromPhoneNum string
-		// Messaging service SID
-		messagingServiceSid string
 		// Base URL for OpSpark Messaging Service.
 		// Default: https://sms.operationspark.org
 		opSparkMessagingSvcBaseURL string
@@ -34,7 +32,6 @@ type (
 		authToken                  string
 		client                     client.BaseClient
 		fromPhoneNum               string
-		messagingServiceSid        string
 		opSparkMessagingSvcBaseURL string
 		apiBase                    string
 		conversationsSid           string
@@ -67,7 +64,6 @@ func NewTwilioService(o twilioServiceOptions) *smsService {
 			Client:   o.client,
 		}),
 		fromPhoneNum:               o.fromPhoneNum,
-		messagingServiceSid:        o.messagingServiceSid,
 		opSparkMessagingSvcBaseURL: smsBaseURL,
 		conversationsSid:           o.conversationsSid,
 		conversationsIdentity:      conversationsIdentity,
