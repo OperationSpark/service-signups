@@ -6,13 +6,27 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 )
 
-type Shortener struct {
-	baseApiEndpoint string
-	client          http.Client
-	apiKey          string
-}
+type (
+	Shortener struct {
+		baseApiEndpoint string
+		client          http.Client
+		apiKey          string
+	}
+
+	ShortLink struct {
+		ShortURL    string    `json:"shortUrl"`
+		Code        string    `json:"code"`
+		CustomCode  string    `json:"customCode"`
+		OriginalUrl string    `json:"originalUrl"`
+		TotalClicks int       `json:"totalClicks"`
+		CreatedBy   string    `json:"createdBy"`
+		CreatedAt   time.Time `json:"createdAt"`
+		UpdatedAt   time.Time `json:"updatedAt"`
+	}
+)
 
 func NewURLShortener(baseApiEndpoint, apiKey string) *Shortener {
 	return &Shortener{
@@ -22,11 +36,7 @@ func NewURLShortener(baseApiEndpoint, apiKey string) *Shortener {
 	}
 }
 func (s Shortener) ShortenURL(ctx context.Context, url string) (string, error) {
-	type shortLink struct {
-		URL string `json:"url"`
-	}
-
-	body, err := json.Marshal(shortLink{URL: url})
+	body, err := json.Marshal(ShortLink{OriginalUrl: url})
 	if err != nil {
 		return "", fmt.Errorf("marshall: %v", err)
 	}
@@ -49,11 +59,11 @@ func (s Shortener) ShortenURL(ctx context.Context, url string) (string, error) {
 	}
 
 	d := json.NewDecoder(resp.Body)
-	var shortURL shortLink
-	err = d.Decode(&shortURL)
+	var link ShortLink
+	err = d.Decode(&link)
 	if err != nil {
 		return "", fmt.Errorf("decode: %v", err)
 	}
 
-	return shortURL.URL, nil
+	return link.ShortURL, nil
 }

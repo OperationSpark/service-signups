@@ -2,6 +2,7 @@ package signup
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -11,20 +12,33 @@ import (
 func TestShortenURL(t *testing.T) {
 	t.Run("calls shortening service", func(t *testing.T) {
 		apiKey := "TEST_API_KEY"
-		wantURL := "https://ospk.org/ahd2dh1xg2j"
+		shortCode := "ahd2dh1xg2j"
+		wantURL := "https://ospk.org/" + shortCode
+		originalUrl := "http://thisisalongurl.gov/q?x=1&morestuff=everything"
 
 		mockSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.Header.Get("key") != apiKey {
 				fmt.Fprint(w, http.StatusUnauthorized)
 				return
 			}
-			fmt.Fprintf(w, `{"url": %q }`, wantURL)
+
+			var reqBody ShortLink
+			d := json.NewDecoder(r.Body)
+			err := d.Decode(&reqBody)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			assertEqual(t, reqBody.OriginalUrl, originalUrl)
+
+			resp := ShortLink{ShortURL: wantURL, Code: shortCode, OriginalUrl: reqBody.OriginalUrl}
+			e := json.NewEncoder(w)
+			e.Encode(resp)
 		}))
 
-		fmt.Println(mockSrv.URL)
 		shorty := NewURLShortener(mockSrv.URL, apiKey)
 
-		got, err := shorty.ShortenURL(context.Background(), "http://thisisalongurl.gov/q?x=1&morestuff=everything")
+		got, err := shorty.ShortenURL(context.Background(), originalUrl)
 
 		if err != nil {
 			t.Fatal(err)
