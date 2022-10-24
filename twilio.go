@@ -54,6 +54,11 @@ func NewTwilioService(o twilioServiceOptions) *smsService {
 		apiBase = o.apiBase
 	}
 
+	conversationsIdentity := "services@operationspark.org"
+	if len(o.conversationsIdentity) > 0 {
+		conversationsIdentity = o.conversationsIdentity
+	}
+
 	return &smsService{
 		apiBase: apiBase,
 		client: twilio.NewRestClientWithParams(twilio.ClientParams{
@@ -65,7 +70,7 @@ func NewTwilioService(o twilioServiceOptions) *smsService {
 		messagingServiceSid:        o.messagingServiceSid,
 		opSparkMessagingSvcBaseURL: smsBaseURL,
 		conversationsSid:           o.conversationsSid,
-		conversationsIdentity:      o.conversationsIdentity,
+		conversationsIdentity:      conversationsIdentity,
 	}
 }
 
@@ -94,7 +99,8 @@ func (t *smsService) run(ctx context.Context, su Signup) error {
 		return fmt.Errorf("shortMessagingURL: %v", err)
 	}
 
-	shorty := NewURLShortener("https://ospk.org", os.Getenv("URL_SHORTENER_API_KEY"))
+	shorty := NewURLShortener(ShortenerOpts{apiKey: os.Getenv("URL_SHORTENER_API_KEY")})
+
 	shortLink, err := shorty.ShortenURL(ctx, mgsngURL)
 	if err != nil {
 		return fmt.Errorf("shortenURL: %v", err)
@@ -118,7 +124,10 @@ func (t *smsService) name() string {
 }
 
 func (t *smsService) sendSMSInConversation(body string, convoId string) error {
-	params := &conversations.CreateServiceConversationMessageParams{Body: &body}
+	params := &conversations.CreateServiceConversationMessageParams{
+		Body:   &body,
+		Author: &t.conversationsIdentity,
+	}
 
 	resp, err := t.client.ConversationsV1.CreateServiceConversationMessage(t.conversationsSid, convoId, params)
 	if err != nil {

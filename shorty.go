@@ -26,13 +26,23 @@ type (
 		CreatedAt   time.Time `json:"createdAt"`
 		UpdatedAt   time.Time `json:"updatedAt"`
 	}
+
+	ShortenerOpts struct {
+		apiOverride string
+		apiKey      string
+	}
 )
 
-func NewURLShortener(baseApiEndpoint, apiKey string) *Shortener {
+func NewURLShortener(o ShortenerOpts) *Shortener {
+	baseApiEndpoint := "https://ospk.org/api/urls"
+	if len(o.apiOverride) > 0 {
+		baseApiEndpoint = o.apiOverride
+	}
+
 	return &Shortener{
 		baseApiEndpoint: baseApiEndpoint,
 		client:          *http.DefaultClient,
-		apiKey:          apiKey,
+		apiKey:          o.apiKey,
 	}
 }
 func (s Shortener) ShortenURL(ctx context.Context, url string) (string, error) {

@@ -36,7 +36,7 @@ func TestShortenURL(t *testing.T) {
 			e.Encode(resp)
 		}))
 
-		shorty := NewURLShortener(mockSrv.URL, apiKey)
+		shorty := NewURLShortener(ShortenerOpts{mockSrv.URL, apiKey})
 
 		got, err := shorty.ShortenURL(context.Background(), originalUrl)
 
