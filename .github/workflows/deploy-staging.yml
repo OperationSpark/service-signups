@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - "staging"
+      - "feat/twilio"
 jobs:
   build-deploy-cloud-function:
     permissions:
