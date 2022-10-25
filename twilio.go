@@ -175,6 +175,8 @@ func (t *smsService) addNumberToConversation(phNum, friendlyName string) (string
 	pp := &conversations.CreateConversationParticipantParams{}
 	pp.SetMessagingBindingAddress(phNum)
 	pp.SetMessagingBindingProxyAddress(t.fromPhoneNum)
+	friendlyNameWithNum := fmt.Sprintf("%s (%s)", friendlyName, phNum)
+	pp.SetAttributes(fmt.Sprintf(`{"friendlyName": %q}`, friendlyNameWithNum))
 
 	_, err = t.client.ConversationsV1.CreateConversationParticipant(*cResp.Sid, pp)
 	if err != nil {
