@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"reflect"
 	"testing"
+	"time"
 )
 
 func assertEqual(t *testing.T, got, want interface{}) {
 	t.Helper()
 	if got != want {
-		t.Fatalf("Want: %v, but got: %v", want, got)
+		t.Fatalf("Want:\n\n%v\n\nbut got:\n\n%v\n\n", want, got)
 	}
 }
 
@@ -24,4 +25,12 @@ func assertDeepEqual(t *testing.T, got, want interface{}) {
 func prettyPrint(i interface{}) string {
 	s, _ := json.MarshalIndent(i, "", "\t")
 	return string(s)
+}
+
+func mustMakeTime(t *testing.T, layout, value string) time.Time {
+	tiempo, err := time.Parse(layout, value)
+	if err != nil {
+		t.Fatal("could not make time.Time", err)
+	}
+	return tiempo
 }

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -299,5 +300,63 @@ func TestMarshalJSON(t *testing.T) {
 		hasJoinField := bytes.Contains(j, []byte(`"zoomJoinUrl":"http://jointhiszoom.com"`))
 
 		assertEqual(t, hasJoinField, true)
+	})
+}
+
+func TestShortMessage(t *testing.T) {
+	// URLs will be shortened by Twilio in this format
+	mockShortLink := "https://oprk.org/kRds5MKvKI"
+	maxCopyLen := 160
+
+	t.Run(fmt.Sprintf("creates a message of %v characters or less", maxCopyLen), func(t *testing.T) {
+		su := Signup{
+			StartDateTime: mustMakeTime(t, time.RFC3339, "2022-10-31T17:00:00.000Z"),
+		}
+
+		msg, err := su.shortMessage(mockShortLink)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(msg) > maxCopyLen {
+			t.Fatalf("\nMessage is over 160 characters.\nLength: %v\n\nMessage:\n%s", len(msg), msg)
+		}
+	})
+
+	t.Run("creates a a message for SMS", func(t *testing.T) {
+		su := Signup{
+			StartDateTime: mustMakeTime(t, time.RFC3339, "2022-10-31T17:00:00.000Z"),
+		}
+
+		got, err := su.shortMessage(mockShortLink)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		want := `You've signed up for an info session with Operation Spark!
+The session is Mon Oct 31 @ 12:00p CDT.
+View this link for details:
+https://oprk.org/kRds5MKvKI`
+
+		assertEqual(t, got, want)
+	})
+}
+
+func TestStructToBase64(t *testing.T) {
+	t.Run("serializes a struct to base 64 encoding", func(t *testing.T) {
+		params := messagingReqParams{
+			Template: "InfoSession",
+			ZoomLink: "https://us06web.zoom.us/j/12345678910",
+			Date:     mustMakeTime(t, time.RFC3339, "2022-10-05T17:00:00.000Z"),
+			Name:     "FirstName",
+		}
+
+		want := "eyJ0ZW1wbGF0ZSI6IkluZm9TZXNzaW9uIiwiem9vbUxpbmsiOiJodHRwczovL3VzMDZ3ZWIuem9vbS51cy9qLzEyMzQ1Njc4OTEwIiwiZGF0ZSI6IjIwMjItMTAtMDVUMTc6MDA6MDBaIiwibmFtZSI6IkZpcnN0TmFtZSJ9"
+
+		got, err := structToBase64(params)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assertEqual(t, got, want)
 	})
 }

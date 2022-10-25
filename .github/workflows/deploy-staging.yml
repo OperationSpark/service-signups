@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - "staging"
+      - "feat/twilio"
 jobs:
   build-deploy-cloud-function:
     permissions:
@@ -38,6 +39,11 @@ jobs:
             ZOOM_CLIENT_SECRET=${{secrets.ZOOM_CLIENT_SECRET}},
             ZOOM_MEETING_12=${{secrets.ZOOM_MEETING_12}},
             ZOOM_MEETING_17=${{secrets.ZOOM_MEETING_17}},
+            TWILIO_ACCOUNT_SID=${{secrets.TWILIO_ACCOUNT_SID}},
+            TWILIO_AUTH_TOKEN=${{secrets.TWILIO_AUTH_TOKEN}},
+            TWILIO_PHONE_NUMBER=${{secrets.TWILIO_PHONE_NUMBER}},
+            TWILIO_CONVERSATIONS_SID=${{secrets.TWILIO_CONVERSATIONS_SID}},
+            URL_SHORTENER_API_KEY=${{secrets.URL_SHORTENER_API_KEY}},
             APP_ENV=staging
       - id: "trigger-url"
         run: 'echo "${{ steps.deploy.outputs.url }}"'
