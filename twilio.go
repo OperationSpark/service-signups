@@ -130,12 +130,11 @@ func (t *smsService) sendSMSInConversation(body string, convoId string) error {
 		Author: &t.conversationsIdentity,
 	}
 
-	resp, err := t.client.ConversationsV1.CreateServiceConversationMessage(t.conversationsSid, convoId, params)
+	_, err := t.client.ConversationsV1.CreateServiceConversationMessage(t.conversationsSid, convoId, params)
 	if err != nil {
 		return fmt.Errorf("createServiceConversationMessage: %v", err)
 	}
 
-	fmt.Println(resp)
 	return nil
 }
 
