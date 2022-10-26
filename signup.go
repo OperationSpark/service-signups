@@ -2,6 +2,7 @@ package signup
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -70,6 +71,14 @@ type (
 		// The Zoom Service needs to mutate the Signup struct with a meeting join URL. Due to this mutation, we need to pull the zoom service out of the task flow and use it before running the tasks.
 		zoomService mutationTask
 	}
+
+	// Request params for the Operation Spark messaging service.
+	messagingReqParams struct {
+		Template string    `json:"template"`
+		ZoomLink string    `json:"zoomLink"`
+		Date     time.Time `json:"date"`
+		Name     string    `json:"name"`
+	}
 )
 
 func (s Signup) MarshalJSON() ([]byte, error) {
@@ -94,7 +103,7 @@ func (s *Signup) welcomeData() (welcomeVariables, error) {
 	return welcomeVariables{
 		FirstName:   s.NameFirst,
 		LastName:    s.NameLast,
-		SessionDate: s.StartDateTime.Format("Monday, Jan 02"),
+		SessionDate: s.StartDateTime.In(ctz).Format("Monday, Jan 02"),
 		SessionTime: s.StartDateTime.In(ctz).Format("3:04 PM MST"),
 		ZoomURL:     s.ZoomMeetingURL(),
 	}, nil
@@ -129,6 +138,55 @@ func (su Signup) ZoomMeetingID() int64 {
 
 func (su Signup) ZoomMeetingURL() string {
 	return su.zoomMeetingURL
+}
+
+// ShortMessage creates a signup confirmation message in 160 characters or less.
+func (su Signup) shortMessage(infoURL string) (string, error) {
+	ctz, err := time.LoadLocation("America/Chicago")
+	if err != nil {
+		return "", fmt.Errorf("loadLocation: %v", err)
+	}
+	infoTime := su.StartDateTime.In(ctz).Format("3:04p MST")
+	infoDate := su.StartDateTime.In(ctz).Format("Mon Jan 02")
+
+	msg := fmt.Sprintf(
+		"You've signed up for an info session with Operation Spark!\nThe session is %s @ %s.",
+		infoDate,
+		infoTime,
+	)
+
+	if len(infoURL) == 0 {
+		return msg + "\nCheck your email for confirmation.", nil
+	}
+	return msg + fmt.Sprintf("\nView this link for details:\n%s", infoURL), nil
+
+}
+
+// ShortMessagingURL produces a custom URL for use on Operation Spark's SMS Messaging Preview service.
+// https://github.com/OperationSpark/sms.opspark.org
+func (su Signup) shortMessagingURL(baseURL string) (string, error) {
+	p := messagingReqParams{
+		Template: "InfoSession",
+		ZoomLink: su.zoomMeetingURL,
+		Date:     su.StartDateTime,
+		Name:     su.NameFirst,
+	}
+	encoded, err := structToBase64(p)
+	if err != nil {
+		return "", fmt.Errorf("structToBase64: %v", err)
+	}
+	return fmt.Sprintf("%s/m/%s", baseURL, encoded), nil
+
+}
+
+// StructToBase64 marshals a struct to JSON then encodes the string to base64.
+func structToBase64(v interface{}) (string, error) {
+	j, err := json.Marshal(v)
+	if err != nil {
+		return "", fmt.Errorf("marshall: %v", err)
+	}
+
+	return base64.URLEncoding.EncodeToString(j), nil
 }
 
 func newSignupService(o signupServiceOptions) *SignupService {
