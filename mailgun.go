@@ -91,12 +91,10 @@ func (m MailgunService) sendWithTemplate(ctx context.Context, t mgTemplate, reci
 	defer cancel()
 
 	// Send the message with a 10 second timeout
-	respMsg, id, err := m.mgClient.Send(ctxWithTimeout, message)
+	_, _, err := m.mgClient.Send(ctxWithTimeout, message)
 	if err != nil {
 		return fmt.Errorf("send: %v", err)
 	}
-
-	fmt.Printf("mailgun message queued.\nID: %s Resp: %s\n\n", id, respMsg)
 
 	return nil
 }
