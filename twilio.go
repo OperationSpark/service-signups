@@ -3,6 +3,7 @@ package signup
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 
@@ -116,6 +117,11 @@ func (t *smsService) run(ctx context.Context, su Signup) error {
 	if err != nil {
 		return fmt.Errorf("sendSMS: %v", err)
 	}
+
+	err = t.sendConvoWebhook(ctx, convoId)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "sendSMS: %v", err)
+	}
 	return nil
 }
 
@@ -188,4 +194,24 @@ func (t *smsService) addNumberToConversation(phNum, friendlyName string) (string
 // FormatCell prepends the US country code, "+1", and removes any dashes from a phone number string.
 func (t *smsService) formatCell(cell string) string {
 	return "+1" + strings.ReplaceAll(cell, "-", "")
+}
+
+// SendConvoWebhook sends a webhook to OS Messaging Service to indicate a new Conversation was created.
+func (t *smsService) sendConvoWebhook(ctx context.Context, convoID string) error {
+	url := fmt.Sprintf("%s/api/webhooks/conversation/%s", t.opSparkMessagingSvcBaseURL, convoID)
+
+	req, err := http.NewRequest(http.MethodPost, url, nil)
+	if err != nil {
+		return fmt.Errorf("newRequest: %v", err)
+	}
+	req.Header.Add("key", os.Getenv("URL_SHORTENER_API_KEY"))
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("do: %v", err)
+	}
+
+	if resp.StatusCode >= 300 {
+		return handleHTTPError(resp)
+	}
+	return nil
 }
