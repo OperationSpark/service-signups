@@ -48,4 +48,21 @@ func TestShortenURL(t *testing.T) {
 			t.Fatalf("want %q, but got %q", wantURL, got)
 		}
 	})
+
+	t.Run("returns the original URL if an error occurs", func(t *testing.T) {
+		originalURL := "http://thisisalongurl.gov/q?x=1&morestuff=everything"
+		wantURL := originalURL
+
+		shorty := NewURLShortener(ShortenerOpts{})
+		got, err := shorty.ShortenURL(context.Background(), originalURL)
+		if err == nil {
+			// Error should be EOF since there is no server to communicate with.
+			// The error type is irrelevant though.
+			t.Fatal("Error should not be nil")
+		}
+
+		if got != wantURL {
+			t.Fatalf("want original URL on errors:\n%q, but got:\n%q", wantURL, got)
+		}
+	})
 }
