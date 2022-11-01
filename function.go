@@ -62,8 +62,8 @@ func NewServer() *signupServer {
 			// registering the user for the Zoom meeting,
 			zoomService: zoomSvc,
 			// Registration tasks:
-			// (executed serially)
-			tasks: []task{
+			// (executed concurrently)
+			tasks: []Task{
 				// posting a WebHook to Greenlight,
 				glSvc,
 				// sending a "Welcome Email",

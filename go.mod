@@ -19,4 +19,5 @@ require (
 	github.com/twilio/twilio-go v0.26.0
 	go.uber.org/multierr v1.8.0 // indirect
 	go.uber.org/zap v1.23.0 // indirect
+	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f
 )

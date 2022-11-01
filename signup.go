@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"golang.org/x/sync/errgroup"
 )
 
 type (
@@ -46,11 +48,11 @@ type (
 		// Key-value map with the Central Time meeting start hour (int) as the keys, and Zoom Meeting ID as the values.
 		// Ex: {17: "86935241734"} denotes meeting with ID, "86935241734", starts at 5pm central.
 		meetings    map[int]string
-		tasks       []task
+		tasks       []Task
 		zoomService mutationTask
 	}
 
-	task interface {
+	Task interface {
 		// Run takes a signup form struct and executes some action.
 		// Ex.: Send an email, post a Slack message.
 		run(ctx context.Context, signup Signup) error
@@ -67,7 +69,7 @@ type (
 		// Key-value map with the Central Time meeting start hour (int) as the keys, and Zoom Meeting ID as the values.
 		// Ex: {17: "86935241734"} denotes meeting with ID, "86935241734", starts at 5pm central.
 		meetings map[int]string
-		tasks    []task
+		tasks    []Task
 		// The Zoom Service needs to mutate the Signup struct with a meeting join URL. Due to this mutation, we need to pull the zoom service out of the task flow and use it before running the tasks.
 		zoomService mutationTask
 	}
@@ -197,7 +199,7 @@ func newSignupService(o signupServiceOptions) *SignupService {
 	}
 }
 
-// Register executes a series of tasks in order. If one fails, the remaining tasks are cancelled.
+// Register concurrently executes a list of tasks. Completion of tasks are not dependent on each other.
 func (sc *SignupService) register(ctx context.Context, su Signup) error {
 	// TODO: Create specific errors for each handler
 	sc.attachZoomMeetingID(&su)
@@ -205,11 +207,22 @@ func (sc *SignupService) register(ctx context.Context, su Signup) error {
 	if err != nil {
 		return fmt.Errorf("zoomService.run: %v", err)
 	}
+
+	// Run each task in a go routine for concurrent execution
+	g, ctx := errgroup.WithContext(ctx)
 	for _, task := range sc.tasks {
-		err := task.run(ctx, su)
-		if err != nil {
-			return fmt.Errorf("task failed: %q: %v", task.name(), err)
-		}
+		func(t Task) {
+			g.Go(func() error {
+				err := t.run(ctx, su)
+				if err != nil {
+					return fmt.Errorf("task failed: %q: %v", t.name(), err)
+				}
+				return nil
+			})
+		}(task)
+	}
+	if err := g.Wait(); err != nil {
+		return fmt.Errorf("errorGroup: %v", err)
 	}
 	return nil
 }

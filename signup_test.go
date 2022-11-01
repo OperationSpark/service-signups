@@ -59,7 +59,7 @@ func TestRegisterUser(t *testing.T) {
 		zoomService := &MockZoomService{}
 
 		signupService := newSignupService(signupServiceOptions{
-			tasks:       []task{mailService},
+			tasks:       []Task{mailService},
 			zoomService: zoomService,
 		})
 
