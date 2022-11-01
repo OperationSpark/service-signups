@@ -360,3 +360,29 @@ func TestStructToBase64(t *testing.T) {
 		assertEqual(t, got, want)
 	})
 }
+
+func TestString(t *testing.T) {
+	t.Run("returns a human readable string", func(t *testing.T) {
+		s := Signup{
+			NameFirst:     "Yasiin",
+			NameLast:      "Bey",
+			Cell:          "555-555-5555",
+			StartDateTime: mustMakeTime(t, time.RFC3339, "2022-03-14T17:00:00.000Z"),
+			Cohort:        "is-mar-14-22-12pm",
+			Email:         "yasiin@blackstar.net",
+			SessionId:     "WpkB3jcw6gCw2uEMf",
+		}
+
+		got := s.String()
+		want := `"Yasiin"
+"Bey"
+"yasiin@blackstar.net"
+"555-555-5555"
+"14 Mar 22 12:00 CDT"
+"WpkB3jcw6gCw2uEMf"`
+
+		if !strings.Contains(got, want) {
+			t.Fatal(got)
+		}
+	})
+}

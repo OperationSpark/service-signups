@@ -181,6 +181,19 @@ func (su Signup) shortMessagingURL(baseURL string) (string, error) {
 
 }
 
+// String creates a human-readable Signup for debugging purposes.
+func (su Signup) String() string {
+	ctz, _ := time.LoadLocation("America/Chicago")
+	return fmt.Sprintf("%q\n%q\n%q\n%q\n%q\n%q\n",
+		su.NameFirst,
+		su.NameLast,
+		su.Email,
+		su.Cell,
+		su.StartDateTime.In(ctz).Format(time.RFC822),
+		su.SessionId,
+	)
+}
+
 // StructToBase64 marshals a struct to JSON then encodes the string to base64.
 func structToBase64(v interface{}) (string, error) {
 	j, err := json.Marshal(v)
