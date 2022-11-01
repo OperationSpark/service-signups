@@ -104,7 +104,9 @@ func (t *smsService) run(ctx context.Context, su Signup) error {
 
 	shortLink, err := shorty.ShortenURL(ctx, mgsngURL)
 	if err != nil {
-		return fmt.Errorf("shortenURL: %v", err)
+		fmt.Fprintf(os.Stderr, "shortenURL ERROR: %v", err)
+		// Don't early return. ShortenURL returns the original URL if there is a failure
+		// Fallback to long URL if shortener fails
 	}
 
 	// Create the SMS message body
