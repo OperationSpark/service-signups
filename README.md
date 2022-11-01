@@ -1,9 +1,11 @@
 # Session Sign Up Service
+
 ![Coverage](https://img.shields.io/badge/Coverage-58.4%25-yellow)
 
 When someone signs up for an Info Session on [operationspark.org](https://operationspark.org),
 this service runs a series of tasks:
-- Sends a webhook to Greenlight 
+
+- Sends a webhook to Greenlight
 - Sends a Slack message to the [#signups](https://operationspark.slack.com/archives/G3F2KFGJH) channel.
 - Sends the user a confirmation email
 - Registers the user for the Info Session's Zoom meeting
@@ -66,7 +68,7 @@ slackSvc := NewSlackService(slackWebhookURL)
 registrationService := newSignupService(
 		signupServiceOptions{
 			// Registration tasks:
-			// (executed serially)
+			// (executed concurrently)
 			tasks: []task{
 				// posting a WebHook to Greenlight,
 				glSvc,
