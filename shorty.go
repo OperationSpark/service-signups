@@ -58,34 +58,35 @@ func NewURLShortener(o ShortenerOpts) *Shortener {
 }
 
 // ShortenURL POSTs a URL to Operation Spark's URL shortener service and returns the shortened URL result. Ex: "https://www.google.com/search?q=url+shortener&source=hp&ei=lwFXY7CTOOmVwbkPx6GZEA&oq=url+shortener" -> https://ospk.org/bas12d21dc
+// If there is an error, the original URL is returned along with the error.
 func (s Shortener) ShortenURL(ctx context.Context, url string) (string, error) {
 	body, err := json.Marshal(ShortLink{OriginalUrl: url})
 	if err != nil {
-		return "", fmt.Errorf("marshall: %v", err)
+		return url, fmt.Errorf("marshall: %v", err)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.baseApiEndpoint, bytes.NewReader(body))
 	if err != nil {
-		return "", fmt.Errorf("newRequestWithContext: %v", err)
+		return url, fmt.Errorf("newRequestWithContext: %v", err)
 	}
 
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("key", s.apiKey)
 	resp, err := s.client.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("post: %v", err)
+		return url, fmt.Errorf("post: %v", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 300 {
-		return "", fmt.Errorf("post: %v", handleHTTPError(resp))
+		return url, fmt.Errorf("post: %v", handleHTTPError(resp))
 	}
 
 	d := json.NewDecoder(resp.Body)
 	var link ShortLink
 	err = d.Decode(&link)
 	if err != nil {
-		return "", fmt.Errorf("decode: %v", err)
+		return url, fmt.Errorf("decode: %v", err)
 	}
 
 	return link.ShortURL, nil
