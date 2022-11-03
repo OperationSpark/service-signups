@@ -142,6 +142,12 @@ func (su Signup) ZoomMeetingURL() string {
 
 // ShortMessage creates a signup confirmation message in 160 characters or less.
 func (su Signup) shortMessage(infoURL string) (string, error) {
+	// Handle "None of these fit my schedule"
+	if su.StartDateTime.IsZero() {
+		return fmt.Sprintf("Hello from Operation Spark!\nView this link for details:\n%s", infoURL), nil
+	}
+
+	// Set times to Central time
 	ctz, err := time.LoadLocation("America/Chicago")
 	if err != nil {
 		return "", fmt.Errorf("loadLocation: %v", err)
@@ -155,9 +161,11 @@ func (su Signup) shortMessage(infoURL string) (string, error) {
 		infoTime,
 	)
 
+	// Refer to email if the Information Link is not set for some reason.
 	if len(infoURL) == 0 {
 		return msg + "\nCheck your email for confirmation.", nil
 	}
+	// Append the Information Short Link
 	return msg + fmt.Sprintf("\nView this link for details:\n%s", infoURL), nil
 
 }
