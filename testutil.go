@@ -34,3 +34,10 @@ func mustMakeTime(t *testing.T, layout, value string) time.Time {
 	}
 	return tiempo
 }
+
+func assertNilError(t *testing.T, got error) {
+	t.Helper()
+	if got != nil {
+		t.Fatalf("Expected nil error, but got:\n%v", got)
+	}
+}
