@@ -244,7 +244,8 @@ func TestAttachZoomMeetingID(t *testing.T) {
 			StartDateTime: sessionStartDate,
 		}
 
-		suSvc.attachZoomMeetingID(&su)
+		err := suSvc.attachZoomMeetingID(&su)
+		assertNilError(t, err)
 
 		gotID := su.ZoomMeetingID()
 		wantID := int64(12123456789) // Meeting for 12p Central
@@ -328,9 +329,7 @@ func TestShortMessage(t *testing.T) {
 		}
 
 		got, err := su.shortMessage(mockShortLink)
-		if err != nil {
-			t.Fatal(err)
-		}
+		assertNilError(t, err)
 
 		want := `You've signed up for an info session with Operation Spark!
 The session is Mon Oct 31 @ 12:00p CDT.
@@ -338,6 +337,21 @@ View this link for details:
 https://oprk.org/kRds5MKvKI`
 
 		assertEqual(t, got, want)
+	})
+
+	t.Run("send proper message when someone select 'None of these [sessions] fit my schedule'", func(t *testing.T) {
+
+		su := Signup{
+			NameFirst: "Jamey",
+			NameLast:  "Ramet",
+			Email:     "jramet0@narod.ru",
+		}
+
+		got, err := su.shortMessage(mockShortLink)
+		assertNilError(t, err)
+		want := "Hello from Operation Spark!\nView this link for details:\nhttps://oprk.org/kRds5MKvKI"
+		assertEqual(t, got, want)
+
 	})
 }
 
