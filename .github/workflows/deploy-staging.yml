@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - "staging"
+      - "feat/concurrent-reqs"
 jobs:
   build-deploy-cloud-function:
     permissions:
