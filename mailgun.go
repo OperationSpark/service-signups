@@ -22,10 +22,10 @@ func NewMailgunService(domain, apiKey, baseAPIurlOverride string) *MailgunServic
 		mgClient.SetAPIBase(baseAPIurlOverride)
 	}
 	return &MailgunService{
-		domain,
-		fmt.Sprintf("Operation Spark <admissions@%s>", domain),
-		"info-session-signup",
-		mgClient,
+		domain:          domain,
+		defaultSender:   fmt.Sprintf("Operation Spark <admissions@%s>", domain),
+		defaultTemplate: "info-session-signup",
+		mgClient:        mgClient,
 	}
 }
 
@@ -53,7 +53,12 @@ func (m MailgunService) sendWelcome(ctx context.Context, su Signup) error {
 			"sessionTime": vars.SessionTime,
 			"sessionDate": vars.SessionDate,
 			"zoomURL":     vars.ZoomURL,
+			"address":     vars.Address,
 		},
+	}
+
+	if su.LocationType == "HYBRID" {
+		t.name = "info-session-signup-hybrid"
 	}
 
 	if isStagingEnv {

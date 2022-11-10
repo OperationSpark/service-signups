@@ -99,4 +99,42 @@ func TestSendWelcome(t *testing.T) {
 		}
 
 	})
+
+	t.Run("uses the 'info-session-signup-hybrid' template when 'hybrid' is true", func(t *testing.T) {
+
+		signUp := Signup{
+			LocationType: "HYBRID",
+			GooglePlace: GooglePlace{
+				Address: "123 Main St",
+			},
+			StartDateTime: mustMakeTime(t, time.RFC3339, "2022-12-05T18:00:00.000Z"),
+		}
+
+		mockMailgunAPI := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			r.ParseMultipartForm(128)
+
+			assertEqual(t, r.FormValue("template"), "info-session-signup-hybrid")
+
+			// Check the template variables are correct
+			jsonVars := r.Form.Get("h:X-Mailgun-Variables")
+			var gotVars welcomeVariables
+			json.Unmarshal([]byte(jsonVars), &gotVars)
+
+			assertEqual(t, gotVars.Address, signUp.GooglePlace.Address)
+
+			w.Write([]byte("{}"))
+		}))
+
+		mgSvc := NewMailgunService(
+			"mail.example.com",
+			"api-key",
+			mockMailgunAPI.URL+"/v4",
+		)
+
+		err := mgSvc.sendWelcome(context.Background(), signUp)
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
 }

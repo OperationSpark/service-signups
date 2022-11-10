@@ -11,6 +11,18 @@ import (
 )
 
 type (
+	GooglePlace struct {
+		PlaceID  string `json:"placeId"`
+		Name     string `json:"name"`
+		Address  string `json:"address"`
+		Phone    string `json:"phone"`
+		Website  string `json:"website"`
+		Geometry struct {
+			Lat float64 `json:"lat"`
+			Lng float64 `json:"lng"`
+		} `json:"geometry"`
+	}
+
 	Signup struct {
 		ProgramId        string    `json:"programId" schema:"programId"`
 		NameFirst        string    `json:"nameFirst" schema:"nameFirst"`
@@ -23,8 +35,11 @@ type (
 		Cohort           string    `json:"cohort" schema:"cohort"`
 		SessionId        string    `json:"sessionId" schema:"sessionId"`
 		Token            string    `json:"token" schema:"token"`
-		zoomMeetingID    int64
-		zoomMeetingURL   string
+		// TODO: make LocationType an enum
+		LocationType   string      `json:"locationType" schema:"locationType"`
+		GooglePlace    GooglePlace `json:"googlePlace" schema:"googlePlace"`
+		zoomMeetingID  int64
+		zoomMeetingURL string
 	}
 
 	SignupAlias Signup
@@ -40,6 +55,7 @@ type (
 		SessionTime string `json:"sessionTime"`
 		SessionDate string `json:"sessionDate"`
 		ZoomURL     string `json:"zoomURL"`
+		Address     string `json:"address"`
 	}
 
 	SignupService struct {
@@ -88,7 +104,7 @@ func (s Signup) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// welcomeData takes a Signup and prepares data for use in the Welcome email template
+// WelcomeData takes a Signup and prepares template variables for use in the Welcome email template.
 func (s *Signup) welcomeData() (welcomeVariables, error) {
 	if s.StartDateTime.IsZero() {
 		return welcomeVariables{
@@ -106,6 +122,7 @@ func (s *Signup) welcomeData() (welcomeVariables, error) {
 		SessionDate: s.StartDateTime.In(ctz).Format("Monday, Jan 02"),
 		SessionTime: s.StartDateTime.In(ctz).Format("3:04 PM MST"),
 		ZoomURL:     s.ZoomMeetingURL(),
+		Address:     s.GooglePlace.Address,
 	}, nil
 }
 
