@@ -24,21 +24,22 @@ type (
 	}
 
 	Signup struct {
-		ProgramId        string      `json:"programId" schema:"programId"`
-		NameFirst        string      `json:"nameFirst" schema:"nameFirst"`
-		NameLast         string      `json:"nameLast" schema:"nameLast"`
-		Email            string      `json:"email" schema:"email"`
-		Cell             string      `json:"cell" schema:"cell"`
-		Referrer         string      `json:"referrer" schema:"referrer"`
-		ReferrerResponse string      `json:"referrerResponse" schema:"referrerResponse"`
-		StartDateTime    time.Time   `json:"startDateTime,omitempty" schema:"startDateTime"`
-		Cohort           string      `json:"cohort" schema:"cohort"`
-		SessionId        string      `json:"sessionId" schema:"sessionId"`
-		Token            string      `json:"token" schema:"token"`
-		LocationType     string      `json:"locationType" schema:"locationType"`
-		GooglePlace      GooglePlace `json:"googlePlace" schema:"googlePlace"`
-		zoomMeetingID    int64
-		zoomMeetingURL   string
+		ProgramId        string    `json:"programId" schema:"programId"`
+		NameFirst        string    `json:"nameFirst" schema:"nameFirst"`
+		NameLast         string    `json:"nameLast" schema:"nameLast"`
+		Email            string    `json:"email" schema:"email"`
+		Cell             string    `json:"cell" schema:"cell"`
+		Referrer         string    `json:"referrer" schema:"referrer"`
+		ReferrerResponse string    `json:"referrerResponse" schema:"referrerResponse"`
+		StartDateTime    time.Time `json:"startDateTime,omitempty" schema:"startDateTime"`
+		Cohort           string    `json:"cohort" schema:"cohort"`
+		SessionId        string    `json:"sessionId" schema:"sessionId"`
+		Token            string    `json:"token" schema:"token"`
+		// TODO: make LocationType an enum
+		LocationType   string      `json:"locationType" schema:"locationType"`
+		GooglePlace    GooglePlace `json:"googlePlace" schema:"googlePlace"`
+		zoomMeetingID  int64
+		zoomMeetingURL string
 	}
 
 	SignupAlias Signup
@@ -102,7 +103,7 @@ func (s Signup) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// welcomeData takes a Signup and prepares data for use in the Welcome email template
+// WelcomeData takes a Signup and prepares template variables for use in the Welcome email template.
 func (s *Signup) welcomeData() (welcomeVariables, error) {
 	if s.StartDateTime.IsZero() {
 		return welcomeVariables{

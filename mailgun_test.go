@@ -99,4 +99,26 @@ func TestSendWelcome(t *testing.T) {
 		}
 
 	})
+
+	t.Run("uses the 'info-session-signup-hybrid' template when 'hybrid' is true", func(t *testing.T) {
+		mockMailgunAPI := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			r.ParseMultipartForm(128)
+
+			assertEqual(t, r.FormValue("template"), "info-session-signup-hybrid")
+
+			w.Write([]byte("{}"))
+		}))
+
+		mgSvc := NewMailgunService(
+			"mail.example.com",
+			"api-key",
+			mockMailgunAPI.URL+"/v4",
+		)
+
+		err := mgSvc.sendWelcome(context.Background(), Signup{LocationType: "HYBRID"})
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
 }

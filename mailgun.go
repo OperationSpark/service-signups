@@ -22,10 +22,10 @@ func NewMailgunService(domain, apiKey, baseAPIurlOverride string) *MailgunServic
 		mgClient.SetAPIBase(baseAPIurlOverride)
 	}
 	return &MailgunService{
-		domain,
-		fmt.Sprintf("Operation Spark <admissions@%s>", domain),
-		"info-session-signup",
-		mgClient,
+		domain:          domain,
+		defaultSender:   fmt.Sprintf("Operation Spark <admissions@%s>", domain),
+		defaultTemplate: "info-session-signup",
+		mgClient:        mgClient,
 	}
 }
 
