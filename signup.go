@@ -55,6 +55,7 @@ type (
 		SessionTime string `json:"sessionTime"`
 		SessionDate string `json:"sessionDate"`
 		ZoomURL     string `json:"zoomURL"`
+		Address     string `json:"address"`
 	}
 
 	SignupService struct {
@@ -121,6 +122,7 @@ func (s *Signup) welcomeData() (welcomeVariables, error) {
 		SessionDate: s.StartDateTime.In(ctz).Format("Monday, Jan 02"),
 		SessionTime: s.StartDateTime.In(ctz).Format("3:04 PM MST"),
 		ZoomURL:     s.ZoomMeetingURL(),
+		Address:     s.GooglePlace.Address,
 	}, nil
 }
 
