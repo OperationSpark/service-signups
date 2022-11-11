@@ -131,6 +131,7 @@ func TestSendWelcome(t *testing.T) {
 
 			assertEqual(t, gotVars.LocationLine1, "514 Franklin Ave")
 			assertEqual(t, gotVars.LocationCityStateZip, "New Orleans, LA 70117")
+			assertEqual(t, gotVars.LocationMapURL, "https://www.google.com/maps/place/514+Franklin+Ave%2CNew+Orleans%2C+LA+70117")
 
 			w.Write([]byte("{}"))
 		}))

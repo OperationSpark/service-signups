@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -58,6 +59,7 @@ type (
 		ZoomURL              string `json:"zoomURL"`
 		LocationLine1        string `json:"locationLine1"`
 		LocationCityStateZip string `json:"locationCityStateZip"`
+		LocationMapURL       string `json:"locationMapUrl"`
 	}
 
 	SignupService struct {
@@ -106,6 +108,8 @@ func (s Signup) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// ParseAddress returns two strings, location line1 and cityStateZip
+// It takes a full address and splits the string into the street address string and a cityStateZip string
 func parseAddress(address string) (line1, cityStateZip string) {
 	location := strings.SplitN(address, ",", 2)
 	if address == "" {
@@ -116,6 +120,20 @@ func parseAddress(address string) (line1, cityStateZip string) {
 	}
 
 	return strings.TrimSpace(location[0]), strings.TrimSpace(strings.TrimSuffix(location[1], ", USA"))
+}
+
+// GoogleLocationLink returns a google maps link of the input address
+// It uses the parseAddress function to split the address up and then url encode the strings to make the url
+func googleLocationLink(address string) string {
+	if address == "" {
+		return ""
+	}
+	line1, cityStateZip := parseAddress(address)
+	if line1 == "" || cityStateZip == "" {
+		return ""
+	}
+	addressPath := url.QueryEscape(line1 + "," + cityStateZip)
+	return "https://www.google.com/maps/place/" + addressPath
 }
 
 // WelcomeData takes a Signup and prepares template variables for use in the Welcome email template.
@@ -140,6 +158,7 @@ func (s *Signup) welcomeData() (welcomeVariables, error) {
 		ZoomURL:              s.ZoomMeetingURL(),
 		LocationLine1:        line1,
 		LocationCityStateZip: cityStateZip,
+		LocationMapURL:       googleLocationLink(s.GooglePlace.Address),
 	}, nil
 }
 

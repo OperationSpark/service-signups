@@ -55,6 +55,7 @@ func (m MailgunService) sendWelcome(ctx context.Context, su Signup) error {
 			"zoomURL":              vars.ZoomURL,
 			"locationLine1":        vars.LocationLine1,
 			"locationCityStateZip": vars.LocationCityStateZip,
+			"locationMapUrl":       vars.LocationMapURL,
 		},
 	}
 
