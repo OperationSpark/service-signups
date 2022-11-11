@@ -85,7 +85,7 @@ func (z *zoomService) registerUser(ctx context.Context, su *Signup) error {
 	// Authenticate client
 	if !z.isAuthenticated() {
 		if err := z.authenticate(ctx); err != nil {
-			return fmt.Errorf("authenticate: %v", err)
+			return fmt.Errorf("authenticate: %w", err)
 		}
 	}
 
@@ -97,7 +97,7 @@ func (z *zoomService) registerUser(ctx context.Context, su *Signup) error {
 	}
 	jsonBody, err := json.Marshal(reqBody)
 	if err != nil {
-		return fmt.Errorf("marshall: %v", err)
+		return fmt.Errorf("marshall: %w", err)
 	}
 
 	// Register for a specific occurrence for the recurring meeting
@@ -115,7 +115,7 @@ func (z *zoomService) registerUser(ctx context.Context, su *Signup) error {
 		bytes.NewBuffer(jsonBody),
 	)
 	if err != nil {
-		return fmt.Errorf("newRequestWithContext: %v", err)
+		return fmt.Errorf("newRequestWithContext: %w", err)
 	}
 
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", z.accessToken))
@@ -123,7 +123,7 @@ func (z *zoomService) registerUser(ctx context.Context, su *Signup) error {
 
 	resp, err := z.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("client.Do: %v", err)
+		return fmt.Errorf("client.Do: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -149,14 +149,14 @@ func (z *zoomService) authenticate(ctx context.Context) error {
 		nil,
 	)
 	if err != nil {
-		return fmt.Errorf("NewRequestWithContext: %v", err)
+		return fmt.Errorf("NewRequestWithContext: %w", err)
 	}
 
 	req.Header.Add("Authorization", "Basic "+z.encodeCredentials())
 
 	resp, err := z.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("client.do: %v", err)
+		return fmt.Errorf("client.do: %w", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 300 {

@@ -38,18 +38,18 @@ type message struct {
 func sendWebhook(ctx context.Context, url string, msg message) error {
 	body, err := json.Marshal(msg)
 	if err != nil {
-		return fmt.Errorf("marshall: %v", err)
+		return fmt.Errorf("marshall: %w", err)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(body))
 	if err != nil {
-		return fmt.Errorf("new request: %v", err)
+		return fmt.Errorf("new request: %w", err)
 	}
 	req.Header.Add("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("post request: %v", err)
+		return fmt.Errorf("post request: %w", err)
 	}
 	defer resp.Body.Close()
 
