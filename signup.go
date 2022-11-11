@@ -106,6 +106,18 @@ func (s Signup) MarshalJSON() ([]byte, error) {
 	})
 }
 
+func parseAddress(address string) (line1, cityStateZip string) {
+	location := strings.SplitN(address, ",", 2)
+	if address == "" {
+		return "", ""
+	}
+	if len(location) == 1 {
+		return strings.TrimSpace(location[0]), ""
+	}
+
+	return strings.TrimSpace(location[0]), strings.TrimSpace(strings.TrimSuffix(location[1], ", USA"))
+}
+
 // WelcomeData takes a Signup and prepares template variables for use in the Welcome email template.
 func (s *Signup) welcomeData() (welcomeVariables, error) {
 	if s.StartDateTime.IsZero() {
@@ -118,16 +130,16 @@ func (s *Signup) welcomeData() (welcomeVariables, error) {
 	if err != nil {
 		return welcomeVariables{}, err
 	}
-	location := strings.SplitN(s.GooglePlace.Address, ", ", 2)
 
+	line1, cityStateZip := parseAddress(s.GooglePlace.Address)
 	return welcomeVariables{
 		FirstName:            s.NameFirst,
 		LastName:             s.NameLast,
 		SessionDate:          s.StartDateTime.In(ctz).Format("Monday, Jan 02"),
 		SessionTime:          s.StartDateTime.In(ctz).Format("3:04 PM MST"),
 		ZoomURL:              s.ZoomMeetingURL(),
-		LocationLine1:        location[0],
-		LocationCityStateZip: location[1], // TODO: remove USA from string
+		LocationLine1:        line1,
+		LocationCityStateZip: cityStateZip,
 	}, nil
 }
 
