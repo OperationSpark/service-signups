@@ -20,5 +20,13 @@ func handleHTTPError(resp *http.Response) error {
 	if err != nil {
 		return fmt.Errorf("response Body: %s", resp.Status)
 	}
-	return fmt.Errorf("HTTP: %s\nresponse body: %s", resp.Status, string(body))
+
+	reqLabel := fmt.Sprintf(
+		"%s: %s://%s\n%s\n",
+		resp.Request.Method,
+		resp.Request.URL.Scheme,
+		resp.Request.URL.Host,
+		resp.Request.URL.RequestURI(),
+	)
+	return fmt.Errorf("HTTP Error:\n%s\nResponse:\n%s\n%s", reqLabel, resp.Status, string(body))
 }
