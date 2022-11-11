@@ -12,7 +12,7 @@ import (
 func main() {
 	ctx := context.Background()
 	if err := funcframework.RegisterHTTPFunctionContext(ctx, "/", signup.NewServer().HandleSignUp); err != nil {
-		log.Fatalf("funcframework.RegisterHTTPFunctionContext: %w\n", err)
+		log.Fatalf("funcframework.RegisterHTTPFunctionContext: %v\n", err)
 	}
 
 	// Use PORT environment variable, or default to 8080.
@@ -21,6 +21,6 @@ func main() {
 		port = envPort
 	}
 	if err := funcframework.Start(port); err != nil {
-		log.Fatalf("funcframework.Start: %w\n", err)
+		log.Fatalf("funcframework.Start: %v\n", err)
 	}
 }
