@@ -68,7 +68,6 @@ func NewTwilioService(o twilioServiceOptions) *smsService {
 		opSparkMessagingSvcBaseURL: smsBaseURL,
 		conversationsSid:           o.conversationsSid,
 		conversationsIdentity:      conversationsIdentity,
-		messagingServiceSid:        o.messagingServiceSid,
 	}
 }
 
