@@ -68,6 +68,7 @@ func NewTwilioService(o twilioServiceOptions) *smsService {
 		opSparkMessagingSvcBaseURL: smsBaseURL,
 		conversationsSid:           o.conversationsSid,
 		conversationsIdentity:      conversationsIdentity,
+		messagingServiceSid:        o.messagingServiceSid,
 	}
 }
 
@@ -161,11 +162,11 @@ func (t *smsService) findConversationsByNumber(phNum string) ([]conversations.Co
 
 // AddNumberToConversation creates a new Conversation and adds two participants - the Operation Spark Service Identity ("services@operationspark.org"), and the SMS recipient's phone number.
 func (t *smsService) addNumberToConversation(phNum, friendlyName string) (string, error) {
-	cp := &conversations.CreateConversationParams{}
+	cp := &conversations.CreateServiceConversationParams{}
 	cp.SetFriendlyName(friendlyName)
 
 	// Create new Conversation
-	cResp, err := t.client.ConversationsV1.CreateConversation(cp)
+	cResp, err := t.client.ConversationsV1.CreateServiceConversation(t.conversationsSid, cp)
 	if err != nil {
 		return "", fmt.Errorf("createConversation: %w", err)
 	}
