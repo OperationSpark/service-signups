@@ -5,12 +5,26 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
 )
 
 type (
+	Geometry struct {
+		Lat float64 `json:"lat"`
+		Lng float64 `json:"lng"`
+	}
+	GooglePlace struct {
+		PlaceID  string   `json:"placeId"`
+		Name     string   `json:"name"`
+		Address  string   `json:"address"`
+		Phone    string   `json:"phone"`
+		Website  string   `json:"website"`
+		Geometry Geometry `json:"geometry"`
+	}
+
 	Signup struct {
 		ProgramId        string    `json:"programId" schema:"programId"`
 		NameFirst        string    `json:"nameFirst" schema:"nameFirst"`
@@ -23,8 +37,11 @@ type (
 		Cohort           string    `json:"cohort" schema:"cohort"`
 		SessionId        string    `json:"sessionId" schema:"sessionId"`
 		Token            string    `json:"token" schema:"token"`
-		zoomMeetingID    int64
-		zoomMeetingURL   string
+		// TODO: make LocationType an enum
+		LocationType   string      `json:"locationType" schema:"locationType"`
+		GooglePlace    GooglePlace `json:"googlePlace" schema:"googlePlace"`
+		zoomMeetingID  int64
+		zoomMeetingURL string
 	}
 
 	SignupAlias Signup
@@ -35,11 +52,14 @@ type (
 	}
 
 	welcomeVariables struct {
-		FirstName   string `json:"firstName"`
-		LastName    string `json:"lastName"`
-		SessionTime string `json:"sessionTime"`
-		SessionDate string `json:"sessionDate"`
-		ZoomURL     string `json:"zoomURL"`
+		FirstName            string `json:"firstName"`
+		LastName             string `json:"lastName"`
+		SessionTime          string `json:"sessionTime"`
+		SessionDate          string `json:"sessionDate"`
+		ZoomURL              string `json:"zoomURL"`
+		LocationLine1        string `json:"locationLine1"`
+		LocationCityStateZip string `json:"locationCityStateZip"`
+		LocationMapURL       string `json:"locationMapUrl"`
 	}
 
 	SignupService struct {
@@ -88,7 +108,35 @@ func (s Signup) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// welcomeData takes a Signup and prepares data for use in the Welcome email template
+// ParseAddress returns two strings, location line1 and cityStateZip
+// It takes a full address and splits the string into the street address string and a cityStateZip string
+func parseAddress(address string) (line1, cityStateZip string) {
+	location := strings.SplitN(address, ",", 2)
+	if address == "" {
+		return "", ""
+	}
+	if len(location) == 1 {
+		return strings.TrimSpace(location[0]), ""
+	}
+
+	return strings.TrimSpace(location[0]), strings.TrimSpace(strings.TrimSuffix(location[1], ", USA"))
+}
+
+// GoogleLocationLink returns a google maps link of the input address
+// It uses the parseAddress function to split the address up and then url encode the strings to make the url
+func googleLocationLink(address string) string {
+	if address == "" {
+		return ""
+	}
+	line1, cityStateZip := parseAddress(address)
+	if line1 == "" || cityStateZip == "" {
+		return ""
+	}
+	addressPath := url.QueryEscape(line1 + "," + cityStateZip)
+	return "https://www.google.com/maps/place/" + addressPath
+}
+
+// WelcomeData takes a Signup and prepares template variables for use in the Welcome email template.
 func (s *Signup) welcomeData() (welcomeVariables, error) {
 	if s.StartDateTime.IsZero() {
 		return welcomeVariables{
@@ -100,12 +148,17 @@ func (s *Signup) welcomeData() (welcomeVariables, error) {
 	if err != nil {
 		return welcomeVariables{}, err
 	}
+
+	line1, cityStateZip := parseAddress(s.GooglePlace.Address)
 	return welcomeVariables{
-		FirstName:   s.NameFirst,
-		LastName:    s.NameLast,
-		SessionDate: s.StartDateTime.In(ctz).Format("Monday, Jan 02"),
-		SessionTime: s.StartDateTime.In(ctz).Format("3:04 PM MST"),
-		ZoomURL:     s.ZoomMeetingURL(),
+		FirstName:            s.NameFirst,
+		LastName:             s.NameLast,
+		SessionDate:          s.StartDateTime.In(ctz).Format("Monday, Jan 02"),
+		SessionTime:          s.StartDateTime.In(ctz).Format("3:04 PM MST"),
+		ZoomURL:              s.ZoomMeetingURL(),
+		LocationLine1:        line1,
+		LocationCityStateZip: cityStateZip,
+		LocationMapURL:       googleLocationLink(s.GooglePlace.Address),
 	}, nil
 }
 

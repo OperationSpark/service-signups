@@ -400,3 +400,54 @@ func TestString(t *testing.T) {
 		}
 	})
 }
+
+func TestParseAddress(t *testing.T) {
+	t.Run("parses an address string into street address string and cityStateZip string", func(t *testing.T) {
+		address := "514 Franklin Ave, New Orleans, LA 70117, USA"
+
+		line1, cityStateZip := parseAddress(address)
+		assertEqual(t, line1, "514 Franklin Ave")
+		assertEqual(t, cityStateZip, "New Orleans, LA 70117")
+
+	})
+
+	t.Run("handles empty string", func(t *testing.T) {
+		address := ""
+
+		line1, cityStateZip := parseAddress(address)
+		assertEqual(t, line1, "")
+		assertEqual(t, cityStateZip, "")
+
+	})
+
+	t.Run("handles addresses with a street address only", func(t *testing.T) {
+		address := "514 Franklin Ave"
+
+		line1, cityStateZip := parseAddress(address)
+		assertEqual(t, line1, "514 Franklin Ave")
+		assertEqual(t, cityStateZip, "")
+
+	})
+}
+
+func TestGoogleLocationLink(t *testing.T) {
+	t.Run("returns the google maps link to address", func(t *testing.T) {
+		address := "514 Franklin Ave, New Orleans, LA 70117, USA"
+
+		assertEqual(t, googleLocationLink(address), "https://www.google.com/maps/place/514+Franklin+Ave%2CNew+Orleans%2C+LA+70117")
+	})
+
+	t.Run("handles empty string", func(t *testing.T) {
+		address := ""
+
+		assertEqual(t, googleLocationLink((address)), "")
+
+	})
+
+	t.Run("handles addresses with a street address only", func(t *testing.T) {
+		address := "514 Franklin Ave"
+
+		assertEqual(t, googleLocationLink(address), "")
+
+	})
+}
