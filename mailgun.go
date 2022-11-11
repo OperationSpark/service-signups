@@ -42,7 +42,7 @@ func (m MailgunService) sendWelcome(ctx context.Context, su Signup) error {
 
 	vars, err := su.welcomeData()
 	if err != nil {
-		return fmt.Errorf("welcomeData: %v", err)
+		return fmt.Errorf("welcomeData: %w", err)
 	}
 
 	t := mgTemplate{
@@ -83,7 +83,7 @@ func (m MailgunService) sendWithTemplate(ctx context.Context, t mgTemplate, reci
 	for k, v := range t.variables {
 		err := message.AddTemplateVariable(k, v)
 		if err != nil {
-			return fmt.Errorf("add template variable: %v ", err)
+			return fmt.Errorf("add template variable: %w ", err)
 		}
 	}
 
@@ -93,7 +93,7 @@ func (m MailgunService) sendWithTemplate(ctx context.Context, t mgTemplate, reci
 	// Send the message with a 10 second timeout
 	_, _, err := m.mgClient.Send(ctxWithTimeout, message)
 	if err != nil {
-		return fmt.Errorf("send: %v", err)
+		return fmt.Errorf("send: %w", err)
 	}
 
 	return nil
