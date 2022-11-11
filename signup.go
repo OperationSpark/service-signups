@@ -11,16 +11,17 @@ import (
 )
 
 type (
+	Geometry struct {
+		Lat float64 `json:"lat"`
+		Lng float64 `json:"lng"`
+	}
 	GooglePlace struct {
-		PlaceID  string `json:"placeId"`
-		Name     string `json:"name"`
-		Address  string `json:"address"`
-		Phone    string `json:"phone"`
-		Website  string `json:"website"`
-		Geometry struct {
-			Lat float64 `json:"lat"`
-			Lng float64 `json:"lng"`
-		} `json:"geometry"`
+		PlaceID  string   `json:"placeId"`
+		Name     string   `json:"name"`
+		Address  string   `json:"address"`
+		Phone    string   `json:"phone"`
+		Website  string   `json:"website"`
+		Geometry Geometry `json:"geometry"`
 	}
 
 	Signup struct {
@@ -50,12 +51,13 @@ type (
 	}
 
 	welcomeVariables struct {
-		FirstName   string `json:"firstName"`
-		LastName    string `json:"lastName"`
-		SessionTime string `json:"sessionTime"`
-		SessionDate string `json:"sessionDate"`
-		ZoomURL     string `json:"zoomURL"`
-		Address     string `json:"address"`
+		FirstName            string `json:"firstName"`
+		LastName             string `json:"lastName"`
+		SessionTime          string `json:"sessionTime"`
+		SessionDate          string `json:"sessionDate"`
+		ZoomURL              string `json:"zoomURL"`
+		LocationLine1        string `json:"locationLine1"`
+		LocationCityStateZip string `json:"locationCityStateZip"`
 	}
 
 	SignupService struct {
@@ -116,13 +118,16 @@ func (s *Signup) welcomeData() (welcomeVariables, error) {
 	if err != nil {
 		return welcomeVariables{}, err
 	}
+	location := strings.SplitN(s.GooglePlace.Address, ", ", 2)
+
 	return welcomeVariables{
-		FirstName:   s.NameFirst,
-		LastName:    s.NameLast,
-		SessionDate: s.StartDateTime.In(ctz).Format("Monday, Jan 02"),
-		SessionTime: s.StartDateTime.In(ctz).Format("3:04 PM MST"),
-		ZoomURL:     s.ZoomMeetingURL(),
-		Address:     s.GooglePlace.Address,
+		FirstName:            s.NameFirst,
+		LastName:             s.NameLast,
+		SessionDate:          s.StartDateTime.In(ctz).Format("Monday, Jan 02"),
+		SessionTime:          s.StartDateTime.In(ctz).Format("3:04 PM MST"),
+		ZoomURL:              s.ZoomMeetingURL(),
+		LocationLine1:        location[0],
+		LocationCityStateZip: location[1], // TODO: remove USA from string
 	}, nil
 }
 

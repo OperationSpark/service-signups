@@ -48,12 +48,13 @@ func (m MailgunService) sendWelcome(ctx context.Context, su Signup) error {
 	t := mgTemplate{
 		name: m.defaultTemplate,
 		variables: map[string]string{
-			"firstName":   vars.FirstName,
-			"lastName":    vars.LastName,
-			"sessionTime": vars.SessionTime,
-			"sessionDate": vars.SessionDate,
-			"zoomURL":     vars.ZoomURL,
-			"address":     vars.Address,
+			"firstName":            vars.FirstName,
+			"lastName":             vars.LastName,
+			"sessionTime":          vars.SessionTime,
+			"sessionDate":          vars.SessionDate,
+			"zoomURL":              vars.ZoomURL,
+			"locationLine1":        vars.LocationLine1,
+			"locationCityStateZip": vars.LocationCityStateZip,
 		},
 	}
 

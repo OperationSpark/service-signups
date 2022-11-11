@@ -105,8 +105,17 @@ func TestSendWelcome(t *testing.T) {
 		signUp := Signup{
 			LocationType: "HYBRID",
 			GooglePlace: GooglePlace{
-				Address: "123 Main St",
+				PlaceID: "ChIJ7YchCHSmIIYRYsAEPZN_E0o",
+				Name:    "Operation Spark",
+				Address: "514 Franklin Ave, New Orleans, LA 70117, USA",
+				Phone:   "+1 504-534-8277",
+				Website: "https://www.operationspark.org/",
+				Geometry: Geometry{
+					Lat: 29.96325999999999,
+					Lng: -90.052138,
+				},
 			},
+
 			StartDateTime: mustMakeTime(t, time.RFC3339, "2022-12-05T18:00:00.000Z"),
 		}
 
@@ -120,7 +129,8 @@ func TestSendWelcome(t *testing.T) {
 			var gotVars welcomeVariables
 			json.Unmarshal([]byte(jsonVars), &gotVars)
 
-			assertEqual(t, gotVars.Address, signUp.GooglePlace.Address)
+			assertEqual(t, gotVars.LocationLine1, "514 Franklin Ave")
+			assertEqual(t, gotVars.LocationCityStateZip, "New Orleans, LA 70117")
 
 			w.Write([]byte("{}"))
 		}))
