@@ -203,7 +203,7 @@ func (su Signup) shortMessage(infoURL string) (string, error) {
 	// Set times to Central time
 	ctz, err := time.LoadLocation("America/Chicago")
 	if err != nil {
-		return "", fmt.Errorf("loadLocation: %v", err)
+		return "", fmt.Errorf("loadLocation: %w", err)
 	}
 	infoTime := su.StartDateTime.In(ctz).Format("3:04p MST")
 	infoDate := su.StartDateTime.In(ctz).Format("Mon Jan 02")
@@ -234,7 +234,7 @@ func (su Signup) shortMessagingURL(baseURL string) (string, error) {
 	}
 	encoded, err := structToBase64(p)
 	if err != nil {
-		return "", fmt.Errorf("structToBase64: %v", err)
+		return "", fmt.Errorf("structToBase64: %w", err)
 	}
 	return fmt.Sprintf("%s/m/%s", baseURL, encoded), nil
 
@@ -257,7 +257,7 @@ func (su Signup) String() string {
 func structToBase64(v interface{}) (string, error) {
 	j, err := json.Marshal(v)
 	if err != nil {
-		return "", fmt.Errorf("marshall: %v", err)
+		return "", fmt.Errorf("marshall: %w", err)
 	}
 
 	return base64.URLEncoding.EncodeToString(j), nil
@@ -277,12 +277,12 @@ func (sc *SignupService) register(ctx context.Context, su Signup) error {
 	sc.attachZoomMeetingID(&su)
 	err := sc.zoomService.run(ctx, &su)
 	if err != nil {
-		return fmt.Errorf("zoomService.run: %v", err)
+		return fmt.Errorf("zoomService.run: %w", err)
 	}
 	for _, task := range sc.tasks {
 		err := task.run(ctx, su)
 		if err != nil {
-			return fmt.Errorf("task failed: %q: %v", task.name(), err)
+			return fmt.Errorf("task failed: %q: %w", task.name(), err)
 		}
 	}
 	return nil
@@ -292,7 +292,7 @@ func (sc *SignupService) register(ctx context.Context, su Signup) error {
 func (sc *SignupService) attachZoomMeetingID(su *Signup) error {
 	loc, err := time.LoadLocation("America/Chicago")
 	if err != nil {
-		return fmt.Errorf("loadLocation: %v", err)
+		return fmt.Errorf("loadLocation: %w", err)
 	}
 	sessionStart := su.StartDateTime
 	centralStart := sessionStart.In(loc)
@@ -302,7 +302,7 @@ func (sc *SignupService) attachZoomMeetingID(su *Signup) error {
 	}
 	id, err := strconv.Atoi(sc.meetings[centralStart.Hour()])
 	if err != nil {
-		return fmt.Errorf("convert string to int: %v", err)
+		return fmt.Errorf("convert string to int: %w", err)
 	}
 	su.SetZoomMeetingID(int64(id))
 	return nil

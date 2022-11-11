@@ -62,31 +62,31 @@ func NewURLShortener(o ShortenerOpts) *Shortener {
 func (s Shortener) ShortenURL(ctx context.Context, url string) (string, error) {
 	body, err := json.Marshal(ShortLink{OriginalUrl: url})
 	if err != nil {
-		return url, fmt.Errorf("marshall: %v", err)
+		return url, fmt.Errorf("marshall: %w", err)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.baseApiEndpoint, bytes.NewReader(body))
 	if err != nil {
-		return url, fmt.Errorf("newRequestWithContext: %v", err)
+		return url, fmt.Errorf("newRequestWithContext: %w", err)
 	}
 
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("key", s.apiKey)
 	resp, err := s.client.Do(req)
 	if err != nil {
-		return url, fmt.Errorf("post: %v", err)
+		return url, fmt.Errorf("post: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 300 {
-		return url, fmt.Errorf("post: %v", handleHTTPError(resp))
+		return url, fmt.Errorf("post: %w", handleHTTPError(resp))
 	}
 
 	d := json.NewDecoder(resp.Body)
 	var link ShortLink
 	err = d.Decode(&link)
 	if err != nil {
-		return url, fmt.Errorf("decode: %v", err)
+		return url, fmt.Errorf("decode: %w", err)
 	}
 
 	return link.ShortURL, nil

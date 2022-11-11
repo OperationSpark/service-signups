@@ -1,15 +1,15 @@
-name: GCP Cloud Functions Deploy (Staging)
+name: GCP Cloud Functions Deploy (Testing)
 on:
   push:
     branches:
-      - "staging"
+      - "testing"
 jobs:
   build-deploy-cloud-function:
     permissions:
       contents: "read"
       id-token: "write"
 
-    environment: staging
+    environment: testing
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -22,7 +22,7 @@ jobs:
       - id: "deploy"
         uses: "google-github-actions/deploy-cloud-functions@v0"
         with:
-          name: "session-signups-dev"
+          name: "session-signups-testing"
           entry_point: "HandleSignUp"
           https_trigger_security_level: "secure-always"
           project_id: "operationspark-org"
@@ -44,6 +44,6 @@ jobs:
             TWILIO_PHONE_NUMBER=${{secrets.TWILIO_PHONE_NUMBER}},
             TWILIO_CONVERSATIONS_SID=${{secrets.TWILIO_CONVERSATIONS_SID}},
             URL_SHORTENER_API_KEY=${{secrets.URL_SHORTENER_API_KEY}},
-            APP_ENV=staging
+            APP_ENV=testing
       - id: "trigger-url"
         run: 'echo "${{ steps.deploy.outputs.url }}"'
