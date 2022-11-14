@@ -46,6 +46,7 @@ jobs:
             TWILIO_PHONE_NUMBER=${{secrets.TWILIO_PHONE_NUMBER}},
             TWILIO_CONVERSATIONS_SID=${{secrets.TWILIO_CONVERSATIONS_SID}},
             URL_SHORTENER_API_KEY=${{secrets.URL_SHORTENER_API_KEY}},
+            OS_MESSAGING_SERVICE_URL=${{secrets.OS_MESSAGING_SERVICE_URL}},
             APP_ENV=testing
       - id: "trigger-url"
         run: 'echo "${{ steps.deploy.outputs.url }}"'
