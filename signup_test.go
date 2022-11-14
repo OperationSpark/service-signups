@@ -375,6 +375,51 @@ func TestStructToBase64(t *testing.T) {
 	})
 }
 
+func TestFromBase64(t *testing.T) {
+	t.Run("decodes", func(t *testing.T) {
+		wantParams := messagingReqParams{
+			Template: "InfoSession",
+			ZoomLink: "https://us06web.zoom.us/j/12345678910",
+			Date:     mustMakeTime(t, "January 02, 2006 3pm MST", "December 25, 2022 1pm CST"),
+			Name:     "Halle Bot",
+		}
+
+		encoded, err := structToBase64(wantParams)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		var gotParams messagingReqParams
+
+		err = gotParams.fromBase64(encoded)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assertEqual(t, gotParams.Name, wantParams.Name)
+		assertEqual(t, gotParams.Date.Format("January 02, 2006 3pm MST"), "December 25, 2022 1pm CST")
+		assertEqual(t, gotParams.ZoomLink, wantParams.ZoomLink)
+		assertEqual(t, gotParams.Template, wantParams.Template)
+
+	})
+
+	t.Run("decodes pre-encoded info session details link", func(t *testing.T) {
+		var params messagingReqParams
+
+		err := params.fromBase64("eyJ0ZW1wbGF0ZSI6IkluZm9TZXNzaW9uIiwiem9vbUxpbmsiOiJodHRwczovL3VzMDZ3ZWIuem9vbS51cy9qLzEyMzQ1Njc4OTEwIiwiZGF0ZSI6IjIwMjItMTAtMDVUMTc6MDA6MDAuMDAwWiIsIm5hbWUiOiJGaXJzdE5hbWUiLCJsb2NhdGlvblR5cGUiOiJIWUJSSUQiLCJsb2NhdGlvbiI6eyJuYW1lIjoiU29tZSBQbGFjZSIsImxpbmUxIjoiMTIzIE1haW4gU3QiLCJjaXR5U3RhdGVaaXAiOiJDaXR5LCBTdGF0ZSAxMjM0NSIsIm1hcFVybCI6Imh0dHBzOi8vd3d3Lmdvb2dsZS5jb20vbWFwcy9wbGFjZS8xMjMrTWFpbitTdCwrQ2l0eSwrU3RhdGUrMTIzNDUifX0=")
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assertEqual(t, params.Name, "FirstName")
+		assertEqual(t, params.Template, "InfoSession")
+		assertEqual(t, params.Date.Format(time.RFC3339), "2022-10-05T17:00:00Z")
+		assertEqual(t, params.ZoomLink, "https://us06web.zoom.us/j/12345678910")
+	})
+
+}
+
 func TestString(t *testing.T) {
 	t.Run("returns a human readable string", func(t *testing.T) {
 		s := Signup{
@@ -450,4 +495,43 @@ func TestGoogleLocationLink(t *testing.T) {
 		assertEqual(t, googleLocationLink(address), "")
 
 	})
+}
+
+func TestShortMessagingURL(t *testing.T) {
+	t.Skip()
+	t.Run("creates a user specific info session details URL", func(t *testing.T) {
+		s := Signup{
+			NameFirst:     "Yasiin",
+			NameLast:      "Bey",
+			Cell:          "555-555-5555",
+			StartDateTime: mustMakeTime(t, time.RFC3339, "2022-03-14T17:00:00.000Z"),
+			Cohort:        "is-mar-14-22-12pm",
+			Email:         "yasiin@blackstar.net",
+			SessionId:     "WpkB3jcw6gCw2uEMf",
+			LocationType:  "HYBRID",
+			GooglePlace: GooglePlace{
+				Name:    "Some Place",
+				Address: "123 Main St, City, State 12345",
+			},
+		}
+
+		baseUrl := "https://sms.opspark.org"
+
+		// wantMessagingServiceParams := messagingReqParams{
+		// 	Template: "InfoSession",
+		// 	ZoomLink: s.zoomMeetingURL,
+		// 	Date:     s.StartDateTime,
+		// 	Name:     s.NameFirst,
+		// }
+
+		want := "https://sms.opspark.org/m/eyJ0ZW1wbGF0ZSI6IkluZm9TZXNzaW9uIiwiem9vbUxpbmsiOiJodHRwczovL3VzMDZ3ZWIuem9vbS51cy9qLzEyMzQ1Njc4OTEwIiwiZGF0ZSI6IjIwMjItMTAtMDVUMTc6MDA6MDAuMDAwWiIsIm5hbWUiOiJGaXJzdE5hbWUiLCJsb2NhdGlvblR5cGUiOiJIWUJSSUQiLCJsb2NhdGlvbiI6eyJuYW1lIjoiU29tZSBQbGFjZSIsImxpbmUxIjoiMTIzIE1haW4gU3QiLCJjaXR5U3RhdGVaaXAiOiJDaXR5LCBTdGF0ZSAxMjM0NSIsIm1hcFVybCI6Imh0dHBzOi8vd3d3Lmdvb2dsZS5jb20vbWFwcy9wbGFjZS8xMjMrTWFpbitTdCwrQ2l0eSwrU3RhdGUrMTIzNDUifX0="
+
+		got, err := s.shortMessagingURL(baseUrl)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assertEqual(t, got, want)
+	})
+
 }

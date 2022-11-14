@@ -101,6 +101,26 @@ type (
 	}
 )
 
+// StructToBase64 marshals a struct to JSON then encodes the string to base64.
+func structToBase64(v interface{}) (string, error) {
+	j, err := json.Marshal(v)
+	if err != nil {
+		return "", fmt.Errorf("marshall: %w", err)
+	}
+
+	return base64.URLEncoding.EncodeToString(j), nil
+}
+
+// FromBase64 decodes a base64 string into a messagingReqParams struct.
+func (m *messagingReqParams) fromBase64(encoded string) error {
+	jsonBytes, err := base64.URLEncoding.DecodeString(encoded)
+	if err != nil {
+		return err
+	}
+
+	return json.Unmarshal(jsonBytes, m)
+}
+
 func (s Signup) MarshalJSON() ([]byte, error) {
 	return json.Marshal(SignupJSON{
 		SignupAlias(s),
@@ -251,16 +271,6 @@ func (su Signup) String() string {
 		su.StartDateTime.In(ctz).Format(time.RFC822),
 		su.SessionId,
 	)
-}
-
-// StructToBase64 marshals a struct to JSON then encodes the string to base64.
-func structToBase64(v interface{}) (string, error) {
-	j, err := json.Marshal(v)
-	if err != nil {
-		return "", fmt.Errorf("marshall: %w", err)
-	}
-
-	return base64.URLEncoding.EncodeToString(j), nil
 }
 
 func newSignupService(o signupServiceOptions) *SignupService {

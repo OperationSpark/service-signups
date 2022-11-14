@@ -95,6 +95,7 @@ func (t *smsService) run(ctx context.Context, su Signup) error {
 		convoId = *existing[0].ConversationSid
 	}
 
+	// create user-specific info session details URL
 	mgsngURL, err := su.shortMessagingURL(t.opSparkMessagingSvcBaseURL)
 	if err != nil {
 		return fmt.Errorf("shortMessagingURL: %w", err)
