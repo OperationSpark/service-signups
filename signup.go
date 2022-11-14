@@ -102,8 +102,8 @@ type (
 )
 
 // StructToBase64 marshals a struct to JSON then encodes the string to base64.
-func structToBase64(v interface{}) (string, error) {
-	j, err := json.Marshal(v)
+func (m *messagingReqParams) toBase64() (string, error) {
+	j, err := json.Marshal(m)
 	if err != nil {
 		return "", fmt.Errorf("marshall: %w", err)
 	}
@@ -252,7 +252,7 @@ func (su Signup) shortMessagingURL(baseURL string) (string, error) {
 		Date:     su.StartDateTime,
 		Name:     su.NameFirst,
 	}
-	encoded, err := structToBase64(p)
+	encoded, err := p.toBase64()
 	if err != nil {
 		return "", fmt.Errorf("structToBase64: %w", err)
 	}

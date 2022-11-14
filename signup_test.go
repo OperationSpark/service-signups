@@ -366,7 +366,7 @@ func TestStructToBase64(t *testing.T) {
 
 		want := "eyJ0ZW1wbGF0ZSI6IkluZm9TZXNzaW9uIiwiem9vbUxpbmsiOiJodHRwczovL3VzMDZ3ZWIuem9vbS51cy9qLzEyMzQ1Njc4OTEwIiwiZGF0ZSI6IjIwMjItMTAtMDVUMTc6MDA6MDBaIiwibmFtZSI6IkZpcnN0TmFtZSJ9"
 
-		got, err := structToBase64(params)
+		got, err := params.toBase64()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -384,7 +384,7 @@ func TestFromBase64(t *testing.T) {
 			Name:     "Halle Bot",
 		}
 
-		encoded, err := structToBase64(wantParams)
+		encoded, err := wantParams.toBase64()
 		if err != nil {
 			t.Fatal(err)
 		}
