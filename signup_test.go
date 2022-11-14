@@ -498,7 +498,6 @@ func TestGoogleLocationLink(t *testing.T) {
 }
 
 func TestShortMessagingURL(t *testing.T) {
-	t.Skip()
 	t.Run("creates a user specific info session details URL", func(t *testing.T) {
 		s := Signup{
 			NameFirst:     "Yasiin",
@@ -517,21 +516,38 @@ func TestShortMessagingURL(t *testing.T) {
 
 		baseUrl := "https://sms.opspark.org"
 
-		// wantMessagingServiceParams := messagingReqParams{
-		// 	Template: "InfoSession",
-		// 	ZoomLink: s.zoomMeetingURL,
-		// 	Date:     s.StartDateTime,
-		// 	Name:     s.NameFirst,
-		// }
+		wantParams := messagingReqParams{
+			Template: "InfoSession",
+			ZoomLink: s.zoomMeetingURL,
+			Date:     s.StartDateTime,
+			Name:     s.NameFirst,
+		}
 
-		want := "https://sms.opspark.org/m/eyJ0ZW1wbGF0ZSI6IkluZm9TZXNzaW9uIiwiem9vbUxpbmsiOiJodHRwczovL3VzMDZ3ZWIuem9vbS51cy9qLzEyMzQ1Njc4OTEwIiwiZGF0ZSI6IjIwMjItMTAtMDVUMTc6MDA6MDAuMDAwWiIsIm5hbWUiOiJGaXJzdE5hbWUiLCJsb2NhdGlvblR5cGUiOiJIWUJSSUQiLCJsb2NhdGlvbiI6eyJuYW1lIjoiU29tZSBQbGFjZSIsImxpbmUxIjoiMTIzIE1haW4gU3QiLCJjaXR5U3RhdGVaaXAiOiJDaXR5LCBTdGF0ZSAxMjM0NSIsIm1hcFVybCI6Imh0dHBzOi8vd3d3Lmdvb2dsZS5jb20vbWFwcy9wbGFjZS8xMjMrTWFpbitTdCwrQ2l0eSwrU3RhdGUrMTIzNDUifX0="
+		wantURLPrefix := "https://sms.opspark.org/m/"
 
-		got, err := s.shortMessagingURL(baseUrl)
+		gotURL, err := s.shortMessagingURL(baseUrl)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		assertEqual(t, got, want)
+		if !strings.HasPrefix(gotURL, wantURLPrefix) {
+			t.Fatalf("URL: %q doesn't have prefix: %q", wantURLPrefix, gotURL)
+		}
+
+		encoded := strings.TrimPrefix(gotURL, wantURLPrefix)
+
+		var gotParams messagingReqParams
+
+		err = gotParams.fromBase64(encoded)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// decode the url and check the params
+		assertEqual(t, gotParams.Name, wantParams.Name)
+		assertEqual(t, gotParams.Date.Format(time.RFC3339), "2022-03-14T17:00:00Z")
+		assertEqual(t, gotParams.ZoomLink, wantParams.ZoomLink)
+		assertEqual(t, gotParams.Template, wantParams.Template)
 	})
 
 }
