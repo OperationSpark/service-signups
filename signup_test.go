@@ -411,7 +411,7 @@ func TestFromBase64(t *testing.T) {
 		}
 
 		assertEqual(t, gotParams.Name, wantParams.Name)
-		assertEqual(t, gotParams.Date.Format("January 02, 2006 3pm MST"), "December 25, 2022 1pm CST")
+		assertEqual(t, gotParams.Date.Equal(wantParams.Date), true)
 		assertEqual(t, gotParams.ZoomLink, wantParams.ZoomLink)
 		assertEqual(t, gotParams.Template, wantParams.Template)
 		assertEqual(t, gotParams.LocationType, wantParams.LocationType)
