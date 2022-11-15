@@ -129,7 +129,7 @@ func TestWelcomeData(t *testing.T) {
 		{
 			name: "18:00 UTC is converted to noon central standard time",
 			signup: Signup{
-				ProgramId:        "",
+				ProgramID:        "",
 				NameFirst:        "Henri",
 				NameLast:         "Testaroni",
 				Email:            "henri@email.com",
@@ -150,7 +150,7 @@ func TestWelcomeData(t *testing.T) {
 		{
 			name: "handle empty startDateTime",
 			signup: Signup{
-				ProgramId:     "",
+				ProgramID:     "",
 				NameFirst:     "Cordell",
 				NameLast:      "Kinavan",
 				Email:         "henri@email.com",
@@ -168,7 +168,7 @@ func TestWelcomeData(t *testing.T) {
 		{
 			name: "contains the correct Zoom URL",
 			signup: Signup{
-				ProgramId:        "",
+				ProgramID:        "",
 				NameFirst:        "Delcina",
 				NameLast:         "Hallward",
 				Email:            "henri@email.com",
@@ -189,7 +189,7 @@ func TestWelcomeData(t *testing.T) {
 		{
 			name: "contains the correct Zoom URL",
 			signup: Signup{
-				ProgramId:        "",
+				ProgramID:        "",
 				NameFirst:        "Miquela",
 				NameLast:         "Carmo",
 				Email:            "mcarmo2@opensource.org",
@@ -448,7 +448,7 @@ func TestString(t *testing.T) {
 			StartDateTime: mustMakeTime(t, time.RFC3339, "2022-03-14T17:00:00.000Z"),
 			Cohort:        "is-mar-14-22-12pm",
 			Email:         "yasiin@blackstar.net",
-			SessionId:     "WpkB3jcw6gCw2uEMf",
+			SessionID:     "WpkB3jcw6gCw2uEMf",
 		}
 
 		got := s.String()
@@ -525,7 +525,7 @@ func TestShortMessagingURL(t *testing.T) {
 			StartDateTime: mustMakeTime(t, time.RFC3339, "2022-03-14T17:00:00.000Z"),
 			Cohort:        "is-mar-14-22-12pm",
 			Email:         "yasiin@blackstar.net",
-			SessionId:     "WpkB3jcw6gCw2uEMf",
+			SessionID:     "WpkB3jcw6gCw2uEMf",
 			LocationType:  "HYBRID",
 			GooglePlace: GooglePlace{
 				Name:    "Some Place",

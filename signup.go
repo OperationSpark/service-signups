@@ -26,7 +26,7 @@ type (
 	}
 
 	Signup struct {
-		ProgramId        string    `json:"programId" schema:"programId"`
+		ProgramID        string    `json:"programId" schema:"programId"`
 		NameFirst        string    `json:"nameFirst" schema:"nameFirst"`
 		NameLast         string    `json:"nameLast" schema:"nameLast"`
 		Email            string    `json:"email" schema:"email"`
@@ -35,7 +35,7 @@ type (
 		ReferrerResponse string    `json:"referrerResponse" schema:"referrerResponse"`
 		StartDateTime    time.Time `json:"startDateTime,omitempty" schema:"startDateTime"`
 		Cohort           string    `json:"cohort" schema:"cohort"`
-		SessionId        string    `json:"sessionId" schema:"sessionId"`
+		SessionID        string    `json:"sessionId" schema:"sessionId"`
 		Token            string    `json:"token" schema:"token"`
 		// TODO: make LocationType an enum
 		LocationType   string      `json:"locationType" schema:"locationType"`
@@ -287,7 +287,7 @@ func (su Signup) String() string {
 		su.Email,
 		su.Cell,
 		su.StartDateTime.In(ctz).Format(time.RFC822),
-		su.SessionId,
+		su.SessionID,
 	)
 }
 
