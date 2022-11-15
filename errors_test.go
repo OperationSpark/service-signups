@@ -14,6 +14,50 @@ type JSONErr struct {
 }
 
 func TestHandleHTTPError(t *testing.T) {
+	t.Run("prints human-readable message for HTTP error status responses", func(t *testing.T) {
+		mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Respond with an error
+			http.Error(w, "Invalid API key", http.StatusUnauthorized)
+		}))
+
+		resp, err := http.DefaultClient.Get(mockServer.URL)
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = handleHTTPError(resp)
+		assertEqual(t, err.Error(), fmt.Sprintf(`HTTP Error:
+GET: %s
+/
+
+Response:
+401 Unauthorized
+Invalid API key`+"\n", mockServer.URL))
+	})
+
+	t.Run("does not print HTML bodies", func(t *testing.T) {
+		respBody := "<html><body>{A giant chunk of HTML we don't want to see in the logs}</body></html>"
+		mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Respond with HTML not found page
+			w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, respBody)
+		}))
+
+		resp, err := http.DefaultClient.Get(mockServer.URL)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = handleHTTPError(resp)
+		assertEqual(t, err.Error(), fmt.Sprintf(`HTTP Error:
+GET: %s
+/
+
+Response:
+404 Not Found
+[HTML response removed]`, mockServer.URL))
+	})
+
 	t.Run("prints the request context and HTTP Error response", func(t *testing.T) {
 		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			tooManyErr := JSONErr{

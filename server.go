@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gorilla/schema"
@@ -54,7 +55,7 @@ func (ss *signupServer) HandleSignUp(w http.ResponseWriter, r *http.Request) {
 	// depending on what we get back, respond accordingly
 	if err != nil {
 		// TODO: handle different kinds of errors differently
-		fmt.Printf("problem signing user up: %v\n\n", err)
+		fmt.Fprintf(os.Stderr, "\nproblem signing user up: %v\n\n", err)
 		fmt.Printf("Signup:\n%s\n", su)
 		http.Error(w, "problem signing user up\n", http.StatusInternalServerError)
 		return

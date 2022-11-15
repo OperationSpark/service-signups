@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - "staging"
+
 jobs:
   build-deploy-cloud-function:
     permissions:
