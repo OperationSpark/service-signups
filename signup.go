@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -13,8 +14,21 @@ import (
 )
 
 type (
+	Geometry struct {
+		Lat float64 `json:"lat"`
+		Lng float64 `json:"lng"`
+	}
+	GooglePlace struct {
+		PlaceID  string   `json:"placeId"`
+		Name     string   `json:"name"`
+		Address  string   `json:"address"`
+		Phone    string   `json:"phone"`
+		Website  string   `json:"website"`
+		Geometry Geometry `json:"geometry"`
+	}
+
 	Signup struct {
-		ProgramId        string    `json:"programId" schema:"programId"`
+		ProgramID        string    `json:"programId" schema:"programId"`
 		NameFirst        string    `json:"nameFirst" schema:"nameFirst"`
 		NameLast         string    `json:"nameLast" schema:"nameLast"`
 		Email            string    `json:"email" schema:"email"`
@@ -23,10 +37,13 @@ type (
 		ReferrerResponse string    `json:"referrerResponse" schema:"referrerResponse"`
 		StartDateTime    time.Time `json:"startDateTime,omitempty" schema:"startDateTime"`
 		Cohort           string    `json:"cohort" schema:"cohort"`
-		SessionId        string    `json:"sessionId" schema:"sessionId"`
+		SessionID        string    `json:"sessionId" schema:"sessionId"`
 		Token            string    `json:"token" schema:"token"`
-		zoomMeetingID    int64
-		zoomMeetingURL   string
+		// TODO: make LocationType an enum
+		LocationType   string      `json:"locationType" schema:"locationType"`
+		GooglePlace    GooglePlace `json:"googlePlace" schema:"googlePlace"`
+		zoomMeetingID  int64
+		zoomMeetingURL string
 	}
 
 	SignupAlias Signup
@@ -37,11 +54,14 @@ type (
 	}
 
 	welcomeVariables struct {
-		FirstName   string `json:"firstName"`
-		LastName    string `json:"lastName"`
-		SessionTime string `json:"sessionTime"`
-		SessionDate string `json:"sessionDate"`
-		ZoomURL     string `json:"zoomURL"`
+		FirstName            string `json:"firstName"`
+		LastName             string `json:"lastName"`
+		SessionTime          string `json:"sessionTime"`
+		SessionDate          string `json:"sessionDate"`
+		ZoomURL              string `json:"zoomURL"`
+		LocationLine1        string `json:"locationLine1"`
+		LocationCityStateZip string `json:"locationCityStateZip"`
+		LocationMapURL       string `json:"locationMapUrl"`
 	}
 
 	SignupService struct {
@@ -74,14 +94,43 @@ type (
 		zoomService mutationTask
 	}
 
+	Location struct {
+		Name         string `json:"name"`
+		Line1        string `json:"line1"`
+		CityStateZip string `json:"cityStateZip"`
+		MapURL       string `json:"mapUrl"`
+	}
+
 	// Request params for the Operation Spark messaging service.
 	messagingReqParams struct {
-		Template string    `json:"template"`
-		ZoomLink string    `json:"zoomLink"`
-		Date     time.Time `json:"date"`
-		Name     string    `json:"name"`
+		Template     string    `json:"template"`
+		ZoomLink     string    `json:"zoomLink"`
+		Date         time.Time `json:"date"`
+		Name         string    `json:"name"`
+		LocationType string    `json:"locationType"`
+		Location     Location  `json:"location"`
 	}
 )
+
+// StructToBase64 marshals a struct to JSON then encodes the string to base64.
+func (m *messagingReqParams) toBase64() (string, error) {
+	j, err := json.Marshal(m)
+	if err != nil {
+		return "", fmt.Errorf("marshall: %w", err)
+	}
+
+	return base64.URLEncoding.EncodeToString(j), nil
+}
+
+// FromBase64 decodes a base64 string into a messagingReqParams struct.
+func (m *messagingReqParams) fromBase64(encoded string) error {
+	jsonBytes, err := base64.URLEncoding.DecodeString(encoded)
+	if err != nil {
+		return err
+	}
+
+	return json.Unmarshal(jsonBytes, m)
+}
 
 func (s Signup) MarshalJSON() ([]byte, error) {
 	return json.Marshal(SignupJSON{
@@ -90,7 +139,35 @@ func (s Signup) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// welcomeData takes a Signup and prepares data for use in the Welcome email template
+// ParseAddress returns two strings, location line1 and cityStateZip
+// It takes a full address and splits the string into the street address string and a cityStateZip string
+func parseAddress(address string) (line1, cityStateZip string) {
+	location := strings.SplitN(address, ",", 2)
+	if address == "" {
+		return "", ""
+	}
+	if len(location) == 1 {
+		return strings.TrimSpace(location[0]), ""
+	}
+
+	return strings.TrimSpace(location[0]), strings.TrimSpace(strings.TrimSuffix(location[1], ", USA"))
+}
+
+// GoogleLocationLink returns a google maps link of the input address
+// It uses the parseAddress function to split the address up and then url encode the strings to make the url
+func googleLocationLink(address string) string {
+	if address == "" {
+		return ""
+	}
+	line1, cityStateZip := parseAddress(address)
+	if line1 == "" || cityStateZip == "" {
+		return ""
+	}
+	addressPath := url.QueryEscape(line1 + "," + cityStateZip)
+	return "https://www.google.com/maps/place/" + addressPath
+}
+
+// WelcomeData takes a Signup and prepares template variables for use in the Welcome email template.
 func (s *Signup) welcomeData() (welcomeVariables, error) {
 	if s.StartDateTime.IsZero() {
 		return welcomeVariables{
@@ -102,12 +179,17 @@ func (s *Signup) welcomeData() (welcomeVariables, error) {
 	if err != nil {
 		return welcomeVariables{}, err
 	}
+
+	line1, cityStateZip := parseAddress(s.GooglePlace.Address)
 	return welcomeVariables{
-		FirstName:   s.NameFirst,
-		LastName:    s.NameLast,
-		SessionDate: s.StartDateTime.In(ctz).Format("Monday, Jan 02"),
-		SessionTime: s.StartDateTime.In(ctz).Format("3:04 PM MST"),
-		ZoomURL:     s.ZoomMeetingURL(),
+		FirstName:            s.NameFirst,
+		LastName:             s.NameLast,
+		SessionDate:          s.StartDateTime.In(ctz).Format("Monday, Jan 02"),
+		SessionTime:          s.StartDateTime.In(ctz).Format("3:04 PM MST"),
+		ZoomURL:              s.ZoomMeetingURL(),
+		LocationLine1:        line1,
+		LocationCityStateZip: cityStateZip,
+		LocationMapURL:       googleLocationLink(s.GooglePlace.Address),
 	}, nil
 }
 
@@ -144,9 +226,15 @@ func (su Signup) ZoomMeetingURL() string {
 
 // ShortMessage creates a signup confirmation message in 160 characters or less.
 func (su Signup) shortMessage(infoURL string) (string, error) {
+	// Handle "None of these fit my schedule"
+	if su.StartDateTime.IsZero() {
+		return fmt.Sprintf("Hello from Operation Spark!\nView this link for details:\n%s", infoURL), nil
+	}
+
+	// Set times to Central time
 	ctz, err := time.LoadLocation("America/Chicago")
 	if err != nil {
-		return "", fmt.Errorf("loadLocation: %v", err)
+		return "", fmt.Errorf("loadLocation: %w", err)
 	}
 	infoTime := su.StartDateTime.In(ctz).Format("3:04p MST")
 	infoDate := su.StartDateTime.In(ctz).Format("Mon Jan 02")
@@ -157,9 +245,11 @@ func (su Signup) shortMessage(infoURL string) (string, error) {
 		infoTime,
 	)
 
+	// Refer to email if the Information Link is not set for some reason.
 	if len(infoURL) == 0 {
 		return msg + "\nCheck your email for confirmation.", nil
 	}
+	// Append the Information Short Link
 	return msg + fmt.Sprintf("\nView this link for details:\n%s", infoURL), nil
 
 }
@@ -167,15 +257,24 @@ func (su Signup) shortMessage(infoURL string) (string, error) {
 // ShortMessagingURL produces a custom URL for use on Operation Spark's SMS Messaging Preview service.
 // https://github.com/OperationSpark/sms.opspark.org
 func (su Signup) shortMessagingURL(baseURL string) (string, error) {
+	line1, cityStateZip := parseAddress(su.GooglePlace.Address)
+
 	p := messagingReqParams{
-		Template: "InfoSession",
-		ZoomLink: su.zoomMeetingURL,
-		Date:     su.StartDateTime,
-		Name:     su.NameFirst,
+		Template:     "InfoSession",
+		ZoomLink:     su.zoomMeetingURL,
+		Date:         su.StartDateTime,
+		Name:         su.NameFirst,
+		LocationType: su.LocationType,
+		Location: Location{
+			Name:         su.GooglePlace.Name,
+			Line1:        line1,
+			CityStateZip: cityStateZip,
+			MapURL:       googleLocationLink(su.GooglePlace.Address),
+		},
 	}
-	encoded, err := structToBase64(p)
+	encoded, err := p.toBase64()
 	if err != nil {
-		return "", fmt.Errorf("structToBase64: %v", err)
+		return "", fmt.Errorf("structToBase64: %w", err)
 	}
 	return fmt.Sprintf("%s/m/%s", baseURL, encoded), nil
 
@@ -190,18 +289,8 @@ func (su Signup) String() string {
 		su.Email,
 		su.Cell,
 		su.StartDateTime.In(ctz).Format(time.RFC822),
-		su.SessionId,
+		su.SessionID,
 	)
-}
-
-// StructToBase64 marshals a struct to JSON then encodes the string to base64.
-func structToBase64(v interface{}) (string, error) {
-	j, err := json.Marshal(v)
-	if err != nil {
-		return "", fmt.Errorf("marshall: %v", err)
-	}
-
-	return base64.URLEncoding.EncodeToString(j), nil
 }
 
 func newSignupService(o signupServiceOptions) *SignupService {
@@ -218,7 +307,7 @@ func (sc *SignupService) register(ctx context.Context, su Signup) error {
 	sc.attachZoomMeetingID(&su)
 	err := sc.zoomService.run(ctx, &su)
 	if err != nil {
-		return fmt.Errorf("zoomService.run: %v", err)
+		return fmt.Errorf("zoomService.run: %w", err)
 	}
 
 	// Run each task in a go routine for concurrent execution
@@ -244,7 +333,7 @@ func (sc *SignupService) register(ctx context.Context, su Signup) error {
 func (sc *SignupService) attachZoomMeetingID(su *Signup) error {
 	loc, err := time.LoadLocation("America/Chicago")
 	if err != nil {
-		return fmt.Errorf("loadLocation: %v", err)
+		return fmt.Errorf("loadLocation: %w", err)
 	}
 	sessionStart := su.StartDateTime
 	centralStart := sessionStart.In(loc)
@@ -254,7 +343,7 @@ func (sc *SignupService) attachZoomMeetingID(su *Signup) error {
 	}
 	id, err := strconv.Atoi(sc.meetings[centralStart.Hour()])
 	if err != nil {
-		return fmt.Errorf("convert string to int: %v", err)
+		return fmt.Errorf("convert string to int: %w", err)
 	}
 	su.SetZoomMeetingID(int64(id))
 	return nil

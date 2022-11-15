@@ -81,23 +81,24 @@ func (t *smsService) run(ctx context.Context, su Signup) error {
 	convoId := ""
 	existing, err := t.findConversationsByNumber(toNum)
 	if err != nil {
-		return fmt.Errorf("findConversationsByNumber: %v", err)
+		return fmt.Errorf("findConversationsByNumber: %w", err)
 	}
 
 	// Create a new conversation if none exists
 	if len(existing) == 0 {
 		convoId, err = t.addNumberToConversation(toNum, convoName)
 		if err != nil {
-			return fmt.Errorf("addNumberToConversation: %v", err)
+			return fmt.Errorf("addNumberToConversation: %w", err)
 		}
 	} else {
 		// TODO: Fix this potentially faulty logic if picking the first existing conversation
 		convoId = *existing[0].ConversationSid
 	}
 
+	// create user-specific info session details URL
 	mgsngURL, err := su.shortMessagingURL(t.opSparkMessagingSvcBaseURL)
 	if err != nil {
-		return fmt.Errorf("shortMessagingURL: %v", err)
+		return fmt.Errorf("shortMessagingURL: %w", err)
 	}
 
 	shorty := NewURLShortener(ShortenerOpts{apiKey: os.Getenv("URL_SHORTENER_API_KEY")})
@@ -112,12 +113,12 @@ func (t *smsService) run(ctx context.Context, su Signup) error {
 	// Create the SMS message body
 	msg, err := su.shortMessage(shortLink)
 	if err != nil {
-		return fmt.Errorf("shortMessage: %v", err)
+		return fmt.Errorf("shortMessage: %w", err)
 	}
 
 	err = t.sendSMSInConversation(msg, convoId)
 	if err != nil {
-		return fmt.Errorf("sendSMS: %v", err)
+		return fmt.Errorf("sendSMS: %w", err)
 	}
 
 	err = t.sendConvoWebhook(ctx, convoId)
@@ -140,54 +141,54 @@ func (t *smsService) sendSMSInConversation(body string, convoId string) error {
 
 	_, err := t.client.ConversationsV1.CreateServiceConversationMessage(t.conversationsSid, convoId, params)
 	if err != nil {
-		return fmt.Errorf("createServiceConversationMessage: %v", err)
+		return fmt.Errorf("createServiceConversationMessage: %w", err)
 	}
 
 	return nil
 }
 
 // FindConversationsByNumber finds all Twilio Conversations that have the given phone number as a participant.
-func (t *smsService) findConversationsByNumber(phNum string) ([]conversations.ConversationsV1ParticipantConversation, error) {
-	params := &conversations.ListParticipantConversationParams{}
+func (t *smsService) findConversationsByNumber(phNum string) ([]conversations.ConversationsV1ServiceParticipantConversation, error) {
+	params := &conversations.ListServiceParticipantConversationParams{}
 	params.SetAddress(phNum)
 	params.SetLimit(20)
 
-	resp, err := t.client.ConversationsV1.ListParticipantConversation(params)
+	resp, err := t.client.ConversationsV1.ListServiceParticipantConversation(t.conversationsSid, params)
 	if err != nil {
-		return resp, fmt.Errorf("listParticipantConversation: %v", err)
+		return resp, fmt.Errorf("listServiceParticipantConversation: %w", err)
 	}
 	return resp, nil
 }
 
 // AddNumberToConversation creates a new Conversation and adds two participants - the Operation Spark Service Identity ("services@operationspark.org"), and the SMS recipient's phone number.
 func (t *smsService) addNumberToConversation(phNum, friendlyName string) (string, error) {
-	cp := &conversations.CreateConversationParams{}
+	cp := &conversations.CreateServiceConversationParams{}
 	cp.SetFriendlyName(friendlyName)
 
 	// Create new Conversation
-	cResp, err := t.client.ConversationsV1.CreateConversation(cp)
+	cResp, err := t.client.ConversationsV1.CreateServiceConversation(t.conversationsSid, cp)
 	if err != nil {
-		return "", fmt.Errorf("createConversation: %v", err)
+		return "", fmt.Errorf("createServiceConversation: %w", err)
 	}
 
 	// Add Operation Spark Conversation Identity
-	ppp := &conversations.CreateConversationParticipantParams{}
+	ppp := &conversations.CreateServiceConversationParticipantParams{}
 	ppp.SetIdentity(t.conversationsIdentity)
-	_, err = t.client.ConversationsV1.CreateConversationParticipant(*cResp.Sid, ppp)
+	_, err = t.client.ConversationsV1.CreateServiceConversationParticipant(t.conversationsSid, *cResp.Sid, ppp)
 	if err != nil {
-		return "", fmt.Errorf("createConversationParticipant with Identity: %v", err)
+		return "", fmt.Errorf("createServiceConversationParticipant with Identity: %w", err)
 	}
 
 	// Add SMS Recipient to conversation
-	pp := &conversations.CreateConversationParticipantParams{}
+	pp := &conversations.CreateServiceConversationParticipantParams{}
 	pp.SetMessagingBindingAddress(phNum)
 	pp.SetMessagingBindingProxyAddress(t.fromPhoneNum)
 	friendlyNameWithNum := fmt.Sprintf("%s (%s)", friendlyName, phNum)
 	pp.SetAttributes(fmt.Sprintf(`{"friendlyName": %q}`, friendlyNameWithNum))
 
-	_, err = t.client.ConversationsV1.CreateConversationParticipant(*cResp.Sid, pp)
+	_, err = t.client.ConversationsV1.CreateServiceConversationParticipant(t.conversationsSid, *cResp.Sid, pp)
 	if err != nil {
-		return "", fmt.Errorf("createConversationParticipant: %v", err)
+		return "", fmt.Errorf("createServiceConversationParticipant: %w", err)
 	}
 
 	return *cResp.Sid, nil
@@ -204,12 +205,12 @@ func (t *smsService) sendConvoWebhook(ctx context.Context, convoID string) error
 
 	req, err := http.NewRequest(http.MethodPost, url, nil)
 	if err != nil {
-		return fmt.Errorf("newRequest: %v", err)
+		return fmt.Errorf("newRequest: %w", err)
 	}
 	req.Header.Add("key", os.Getenv("URL_SHORTENER_API_KEY"))
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("do: %v", err)
+		return fmt.Errorf("do: %w", err)
 	}
 
 	if resp.StatusCode >= 300 {

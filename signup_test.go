@@ -129,7 +129,7 @@ func TestWelcomeData(t *testing.T) {
 		{
 			name: "18:00 UTC is converted to noon central standard time",
 			signup: Signup{
-				ProgramId:        "",
+				ProgramID:        "",
 				NameFirst:        "Henri",
 				NameLast:         "Testaroni",
 				Email:            "henri@email.com",
@@ -150,7 +150,7 @@ func TestWelcomeData(t *testing.T) {
 		{
 			name: "handle empty startDateTime",
 			signup: Signup{
-				ProgramId:     "",
+				ProgramID:     "",
 				NameFirst:     "Cordell",
 				NameLast:      "Kinavan",
 				Email:         "henri@email.com",
@@ -168,7 +168,7 @@ func TestWelcomeData(t *testing.T) {
 		{
 			name: "contains the correct Zoom URL",
 			signup: Signup{
-				ProgramId:        "",
+				ProgramID:        "",
 				NameFirst:        "Delcina",
 				NameLast:         "Hallward",
 				Email:            "henri@email.com",
@@ -189,7 +189,7 @@ func TestWelcomeData(t *testing.T) {
 		{
 			name: "contains the correct Zoom URL",
 			signup: Signup{
-				ProgramId:        "",
+				ProgramID:        "",
 				NameFirst:        "Miquela",
 				NameLast:         "Carmo",
 				Email:            "mcarmo2@opensource.org",
@@ -244,7 +244,8 @@ func TestAttachZoomMeetingID(t *testing.T) {
 			StartDateTime: sessionStartDate,
 		}
 
-		suSvc.attachZoomMeetingID(&su)
+		err := suSvc.attachZoomMeetingID(&su)
+		assertNilError(t, err)
 
 		gotID := su.ZoomMeetingID()
 		wantID := int64(12123456789) // Meeting for 12p Central
@@ -328,9 +329,7 @@ func TestShortMessage(t *testing.T) {
 		}
 
 		got, err := su.shortMessage(mockShortLink)
-		if err != nil {
-			t.Fatal(err)
-		}
+		assertNilError(t, err)
 
 		want := `You've signed up for an info session with Operation Spark!
 The session is Mon Oct 31 @ 12:00p CDT.
@@ -339,26 +338,105 @@ https://oprk.org/kRds5MKvKI`
 
 		assertEqual(t, got, want)
 	})
+
+	t.Run("send proper message when someone select 'None of these [sessions] fit my schedule'", func(t *testing.T) {
+
+		su := Signup{
+			NameFirst: "Jamey",
+			NameLast:  "Ramet",
+			Email:     "jramet0@narod.ru",
+		}
+
+		got, err := su.shortMessage(mockShortLink)
+		assertNilError(t, err)
+		want := "Hello from Operation Spark!\nView this link for details:\nhttps://oprk.org/kRds5MKvKI"
+		assertEqual(t, got, want)
+
+	})
 }
 
 func TestStructToBase64(t *testing.T) {
 	t.Run("serializes a struct to base 64 encoding", func(t *testing.T) {
 		params := messagingReqParams{
-			Template: "InfoSession",
-			ZoomLink: "https://us06web.zoom.us/j/12345678910",
-			Date:     mustMakeTime(t, time.RFC3339, "2022-10-05T17:00:00.000Z"),
-			Name:     "FirstName",
+			Template:     "InfoSession",
+			ZoomLink:     "https://us06web.zoom.us/j/12345678910",
+			Date:         mustMakeTime(t, time.RFC3339, "2022-10-05T17:00:00.000Z"),
+			Name:         "FirstName",
+			LocationType: "Hybrid",
+			Location: Location{
+				Name:         "Some Place",
+				Line1:        "123 Main St",
+				CityStateZip: "City, State 12345",
+				MapURL:       "https://www.google.com/maps/place/123+Main+St,+City,+State+12345",
+			},
 		}
 
-		want := "eyJ0ZW1wbGF0ZSI6IkluZm9TZXNzaW9uIiwiem9vbUxpbmsiOiJodHRwczovL3VzMDZ3ZWIuem9vbS51cy9qLzEyMzQ1Njc4OTEwIiwiZGF0ZSI6IjIwMjItMTAtMDVUMTc6MDA6MDBaIiwibmFtZSI6IkZpcnN0TmFtZSJ9"
+		want := "eyJ0ZW1wbGF0ZSI6IkluZm9TZXNzaW9uIiwiem9vbUxpbmsiOiJodHRwczovL3VzMDZ3ZWIuem9vbS51cy9qLzEyMzQ1Njc4OTEwIiwiZGF0ZSI6IjIwMjItMTAtMDVUMTc6MDA6MDBaIiwibmFtZSI6IkZpcnN0TmFtZSIsImxvY2F0aW9uVHlwZSI6Ikh5YnJpZCIsImxvY2F0aW9uIjp7Im5hbWUiOiJTb21lIFBsYWNlIiwibGluZTEiOiIxMjMgTWFpbiBTdCIsImNpdHlTdGF0ZVppcCI6IkNpdHksIFN0YXRlIDEyMzQ1IiwibWFwVXJsIjoiaHR0cHM6Ly93d3cuZ29vZ2xlLmNvbS9tYXBzL3BsYWNlLzEyMytNYWluK1N0LCtDaXR5LCtTdGF0ZSsxMjM0NSJ9fQ=="
 
-		got, err := structToBase64(params)
+		got, err := params.toBase64()
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		assertEqual(t, got, want)
 	})
+}
+
+func TestFromBase64(t *testing.T) {
+	t.Run("decodes", func(t *testing.T) {
+		wantParams := messagingReqParams{
+			Template:     "InfoSession",
+			ZoomLink:     "https://us06web.zoom.us/j/12345678910",
+			Date:         mustMakeTime(t, "January 02, 2006 3pm MST", "December 25, 2022 1pm CST"),
+			Name:         "Halle Bot",
+			LocationType: "Hybrid",
+			Location: Location{
+				Name:         "Some Place",
+				Line1:        "123 Main St",
+				CityStateZip: "City, State 12345",
+				MapURL:       "https://www.google.com/maps/place/123+Main+St,+City,+State+12345",
+			},
+		}
+
+		encoded, err := wantParams.toBase64()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		var gotParams messagingReqParams
+
+		err = gotParams.fromBase64(encoded)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assertEqual(t, gotParams.Name, wantParams.Name)
+		assertEqual(t, gotParams.Date.Equal(wantParams.Date), true)
+		assertEqual(t, gotParams.ZoomLink, wantParams.ZoomLink)
+		assertEqual(t, gotParams.Template, wantParams.Template)
+		assertEqual(t, gotParams.LocationType, wantParams.LocationType)
+		assertEqual(t, gotParams.Location.Name, wantParams.Location.Name)
+		assertEqual(t, gotParams.Location.Line1, wantParams.Location.Line1)
+		assertEqual(t, gotParams.Location.CityStateZip, wantParams.Location.CityStateZip)
+		assertEqual(t, gotParams.Location.MapURL, wantParams.Location.MapURL)
+
+	})
+
+	t.Run("decodes pre-encoded info session details link", func(t *testing.T) {
+		var params messagingReqParams
+
+		err := params.fromBase64("eyJ0ZW1wbGF0ZSI6IkluZm9TZXNzaW9uIiwiem9vbUxpbmsiOiJodHRwczovL3VzMDZ3ZWIuem9vbS51cy9qLzEyMzQ1Njc4OTEwIiwiZGF0ZSI6IjIwMjItMTAtMDVUMTc6MDA6MDAuMDAwWiIsIm5hbWUiOiJGaXJzdE5hbWUiLCJsb2NhdGlvblR5cGUiOiJIWUJSSUQiLCJsb2NhdGlvbiI6eyJuYW1lIjoiU29tZSBQbGFjZSIsImxpbmUxIjoiMTIzIE1haW4gU3QiLCJjaXR5U3RhdGVaaXAiOiJDaXR5LCBTdGF0ZSAxMjM0NSIsIm1hcFVybCI6Imh0dHBzOi8vd3d3Lmdvb2dsZS5jb20vbWFwcy9wbGFjZS8xMjMrTWFpbitTdCwrQ2l0eSwrU3RhdGUrMTIzNDUifX0=")
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assertEqual(t, params.Name, "FirstName")
+		assertEqual(t, params.Template, "InfoSession")
+		assertEqual(t, params.Date.Format(time.RFC3339), "2022-10-05T17:00:00Z")
+		assertEqual(t, params.ZoomLink, "https://us06web.zoom.us/j/12345678910")
+	})
+
 }
 
 func TestString(t *testing.T) {
@@ -370,7 +448,7 @@ func TestString(t *testing.T) {
 			StartDateTime: mustMakeTime(t, time.RFC3339, "2022-03-14T17:00:00.000Z"),
 			Cohort:        "is-mar-14-22-12pm",
 			Email:         "yasiin@blackstar.net",
-			SessionId:     "WpkB3jcw6gCw2uEMf",
+			SessionID:     "WpkB3jcw6gCw2uEMf",
 		}
 
 		got := s.String()
@@ -385,4 +463,108 @@ func TestString(t *testing.T) {
 			t.Fatal(got)
 		}
 	})
+}
+
+func TestParseAddress(t *testing.T) {
+	t.Run("parses an address string into street address string and cityStateZip string", func(t *testing.T) {
+		address := "514 Franklin Ave, New Orleans, LA 70117, USA"
+
+		line1, cityStateZip := parseAddress(address)
+		assertEqual(t, line1, "514 Franklin Ave")
+		assertEqual(t, cityStateZip, "New Orleans, LA 70117")
+
+	})
+
+	t.Run("handles empty string", func(t *testing.T) {
+		address := ""
+
+		line1, cityStateZip := parseAddress(address)
+		assertEqual(t, line1, "")
+		assertEqual(t, cityStateZip, "")
+
+	})
+
+	t.Run("handles addresses with a street address only", func(t *testing.T) {
+		address := "514 Franklin Ave"
+
+		line1, cityStateZip := parseAddress(address)
+		assertEqual(t, line1, "514 Franklin Ave")
+		assertEqual(t, cityStateZip, "")
+
+	})
+}
+
+func TestGoogleLocationLink(t *testing.T) {
+	t.Run("returns the google maps link to address", func(t *testing.T) {
+		address := "514 Franklin Ave, New Orleans, LA 70117, USA"
+
+		assertEqual(t, googleLocationLink(address), "https://www.google.com/maps/place/514+Franklin+Ave%2CNew+Orleans%2C+LA+70117")
+	})
+
+	t.Run("handles empty string", func(t *testing.T) {
+		address := ""
+
+		assertEqual(t, googleLocationLink((address)), "")
+
+	})
+
+	t.Run("handles addresses with a street address only", func(t *testing.T) {
+		address := "514 Franklin Ave"
+
+		assertEqual(t, googleLocationLink(address), "")
+
+	})
+}
+
+func TestShortMessagingURL(t *testing.T) {
+	t.Run("creates a user specific info session details URL", func(t *testing.T) {
+		s := Signup{
+			NameFirst:     "Yasiin",
+			NameLast:      "Bey",
+			Cell:          "555-555-5555",
+			StartDateTime: mustMakeTime(t, time.RFC3339, "2022-03-14T17:00:00.000Z"),
+			Cohort:        "is-mar-14-22-12pm",
+			Email:         "yasiin@blackstar.net",
+			SessionID:     "WpkB3jcw6gCw2uEMf",
+			LocationType:  "HYBRID",
+			GooglePlace: GooglePlace{
+				Name:    "Some Place",
+				Address: "2723 Guess Rd, Durham, NC 27705",
+			},
+		}
+
+		wantURLPrefix := "https://sms.opspark.org/m/"
+
+		// method under test
+		gotURL, err := s.shortMessagingURL("https://sms.opspark.org")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// the messaging URL should be prefixed with the passed in base URL
+		if !strings.HasPrefix(gotURL, wantURLPrefix) {
+			t.Fatalf("URL: %q doesn't have prefix: %q", wantURLPrefix, gotURL)
+		}
+
+		// grab the encoded info session details from the URL
+		encoded := strings.TrimPrefix(gotURL, wantURLPrefix)
+
+		// decode the params
+		var gotParams messagingReqParams
+		err = gotParams.fromBase64(encoded)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		assertEqual(t, gotParams.Name, s.NameFirst)
+		assertEqual(t, gotParams.Date.Equal(s.StartDateTime), true)
+		assertEqual(t, gotParams.ZoomLink, s.zoomMeetingURL)
+		assertEqual(t, gotParams.Template, "InfoSession")
+		assertEqual(t, gotParams.LocationType, "HYBRID")
+		assertEqual(t, gotParams.Location.Name, "Some Place")
+		assertEqual(t, gotParams.Location.Line1, "2723 Guess Rd")
+		assertEqual(t, gotParams.Location.CityStateZip, "Durham, NC 27705")
+		assertEqual(t, gotParams.Location.MapURL, "https://www.google.com/maps/place/2723+Guess+Rd%2CDurham%2C+NC+27705")
+	})
+
 }

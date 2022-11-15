@@ -22,10 +22,10 @@ func NewMailgunService(domain, apiKey, baseAPIurlOverride string) *MailgunServic
 		mgClient.SetAPIBase(baseAPIurlOverride)
 	}
 	return &MailgunService{
-		domain,
-		fmt.Sprintf("Operation Spark <admissions@%s>", domain),
-		"info-session-signup",
-		mgClient,
+		domain:          domain,
+		defaultSender:   fmt.Sprintf("Operation Spark <admissions@%s>", domain),
+		defaultTemplate: "info-session-signup",
+		mgClient:        mgClient,
 	}
 }
 
@@ -42,18 +42,25 @@ func (m MailgunService) sendWelcome(ctx context.Context, su Signup) error {
 
 	vars, err := su.welcomeData()
 	if err != nil {
-		return fmt.Errorf("welcomeData: %v", err)
+		return fmt.Errorf("welcomeData: %w", err)
 	}
 
 	t := mgTemplate{
 		name: m.defaultTemplate,
 		variables: map[string]string{
-			"firstName":   vars.FirstName,
-			"lastName":    vars.LastName,
-			"sessionTime": vars.SessionTime,
-			"sessionDate": vars.SessionDate,
-			"zoomURL":     vars.ZoomURL,
+			"firstName":            vars.FirstName,
+			"lastName":             vars.LastName,
+			"sessionTime":          vars.SessionTime,
+			"sessionDate":          vars.SessionDate,
+			"zoomURL":              vars.ZoomURL,
+			"locationLine1":        vars.LocationLine1,
+			"locationCityStateZip": vars.LocationCityStateZip,
+			"locationMapUrl":       vars.LocationMapURL,
 		},
+	}
+
+	if su.LocationType == "HYBRID" {
+		t.name = "info-session-signup-hybrid"
 	}
 
 	if isStagingEnv {
@@ -83,7 +90,7 @@ func (m MailgunService) sendWithTemplate(ctx context.Context, t mgTemplate, reci
 	for k, v := range t.variables {
 		err := message.AddTemplateVariable(k, v)
 		if err != nil {
-			return fmt.Errorf("add template variable: %v ", err)
+			return fmt.Errorf("add template variable: %w ", err)
 		}
 	}
 
@@ -93,7 +100,7 @@ func (m MailgunService) sendWithTemplate(ctx context.Context, t mgTemplate, reci
 	// Send the message with a 10 second timeout
 	_, _, err := m.mgClient.Send(ctxWithTimeout, message)
 	if err != nil {
-		return fmt.Errorf("send: %v", err)
+		return fmt.Errorf("send: %w", err)
 	}
 
 	return nil
