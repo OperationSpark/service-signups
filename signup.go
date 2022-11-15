@@ -92,12 +92,21 @@ type (
 		zoomService mutationTask
 	}
 
+	Location struct {
+		Name         string `json:"name"`
+		Line1        string `json:"line1"`
+		CityStateZip string `json:"cityStateZip"`
+		MapURL       string `json:"mapURL"`
+	}
+
 	// Request params for the Operation Spark messaging service.
 	messagingReqParams struct {
-		Template string    `json:"template"`
-		ZoomLink string    `json:"zoomLink"`
-		Date     time.Time `json:"date"`
-		Name     string    `json:"name"`
+		Template     string    `json:"template"`
+		ZoomLink     string    `json:"zoomLink"`
+		Date         time.Time `json:"date"`
+		Name         string    `json:"name"`
+		LocationType string    `json:"locationType"`
+		Location     Location  `json:"location"`
 	}
 )
 
@@ -246,11 +255,20 @@ func (su Signup) shortMessage(infoURL string) (string, error) {
 // ShortMessagingURL produces a custom URL for use on Operation Spark's SMS Messaging Preview service.
 // https://github.com/OperationSpark/sms.opspark.org
 func (su Signup) shortMessagingURL(baseURL string) (string, error) {
+	line1, cityStateZip := parseAddress(su.GooglePlace.Address)
+
 	p := messagingReqParams{
-		Template: "InfoSession",
-		ZoomLink: su.zoomMeetingURL,
-		Date:     su.StartDateTime,
-		Name:     su.NameFirst,
+		Template:     "InfoSession",
+		ZoomLink:     su.zoomMeetingURL,
+		Date:         su.StartDateTime,
+		Name:         su.NameFirst,
+		LocationType: su.LocationType,
+		Location: Location{
+			Name:         su.GooglePlace.Name,
+			Line1:        line1,
+			CityStateZip: cityStateZip,
+			MapURL:       su.GooglePlace.Website,
+		},
 	}
 	encoded, err := p.toBase64()
 	if err != nil {
