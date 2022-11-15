@@ -24,7 +24,7 @@ func TestPostWebhook(t *testing.T) {
 			ReferrerResponse: "",
 			StartDateTime:    sessionStartDate,
 			Cohort:           "is-mar-14-22-12pm",
-			SessionId:        "X5TsABhN94yesyMEi",
+			SessionID:        "X5TsABhN94yesyMEi",
 		}
 		mockGreenlightSvr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Sends API Key header

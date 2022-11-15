@@ -99,4 +99,53 @@ func TestSendWelcome(t *testing.T) {
 		}
 
 	})
+
+	t.Run("uses the 'info-session-signup-hybrid' template when 'hybrid' is true", func(t *testing.T) {
+
+		signUp := Signup{
+			LocationType: "HYBRID",
+			GooglePlace: GooglePlace{
+				PlaceID: "ChIJ7YchCHSmIIYRYsAEPZN_E0o",
+				Name:    "Operation Spark",
+				Address: "514 Franklin Ave, New Orleans, LA 70117, USA",
+				Phone:   "+1 504-534-8277",
+				Website: "https://www.operationspark.org/",
+				Geometry: Geometry{
+					Lat: 29.96325999999999,
+					Lng: -90.052138,
+				},
+			},
+
+			StartDateTime: mustMakeTime(t, time.RFC3339, "2022-12-05T18:00:00.000Z"),
+		}
+
+		mockMailgunAPI := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			r.ParseMultipartForm(128)
+
+			assertEqual(t, r.FormValue("template"), "info-session-signup-hybrid")
+
+			// Check the template variables are correct
+			jsonVars := r.Form.Get("h:X-Mailgun-Variables")
+			var gotVars welcomeVariables
+			json.Unmarshal([]byte(jsonVars), &gotVars)
+
+			assertEqual(t, gotVars.LocationLine1, "514 Franklin Ave")
+			assertEqual(t, gotVars.LocationCityStateZip, "New Orleans, LA 70117")
+			assertEqual(t, gotVars.LocationMapURL, "https://www.google.com/maps/place/514+Franklin+Ave%2CNew+Orleans%2C+LA+70117")
+
+			w.Write([]byte("{}"))
+		}))
+
+		mgSvc := NewMailgunService(
+			"mail.example.com",
+			"api-key",
+			mockMailgunAPI.URL+"/v4",
+		)
+
+		err := mgSvc.sendWelcome(context.Background(), signUp)
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
 }
