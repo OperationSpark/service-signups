@@ -95,6 +95,7 @@ func (t *smsService) run(ctx context.Context, su Signup) error {
 		convoId = *existing[0].ConversationSid
 	}
 
+	// create user-specific info session details URL
 	mgsngURL, err := su.shortMessagingURL(t.opSparkMessagingSvcBaseURL)
 	if err != nil {
 		return fmt.Errorf("shortMessagingURL: %w", err)
@@ -147,47 +148,47 @@ func (t *smsService) sendSMSInConversation(body string, convoId string) error {
 }
 
 // FindConversationsByNumber finds all Twilio Conversations that have the given phone number as a participant.
-func (t *smsService) findConversationsByNumber(phNum string) ([]conversations.ConversationsV1ParticipantConversation, error) {
-	params := &conversations.ListParticipantConversationParams{}
+func (t *smsService) findConversationsByNumber(phNum string) ([]conversations.ConversationsV1ServiceParticipantConversation, error) {
+	params := &conversations.ListServiceParticipantConversationParams{}
 	params.SetAddress(phNum)
 	params.SetLimit(20)
 
-	resp, err := t.client.ConversationsV1.ListParticipantConversation(params)
+	resp, err := t.client.ConversationsV1.ListServiceParticipantConversation(t.conversationsSid, params)
 	if err != nil {
-		return resp, fmt.Errorf("listParticipantConversation: %w", err)
+		return resp, fmt.Errorf("listServiceParticipantConversation: %w", err)
 	}
 	return resp, nil
 }
 
 // AddNumberToConversation creates a new Conversation and adds two participants - the Operation Spark Service Identity ("services@operationspark.org"), and the SMS recipient's phone number.
 func (t *smsService) addNumberToConversation(phNum, friendlyName string) (string, error) {
-	cp := &conversations.CreateConversationParams{}
+	cp := &conversations.CreateServiceConversationParams{}
 	cp.SetFriendlyName(friendlyName)
 
 	// Create new Conversation
-	cResp, err := t.client.ConversationsV1.CreateConversation(cp)
+	cResp, err := t.client.ConversationsV1.CreateServiceConversation(t.conversationsSid, cp)
 	if err != nil {
-		return "", fmt.Errorf("createConversation: %w", err)
+		return "", fmt.Errorf("createServiceConversation: %w", err)
 	}
 
 	// Add Operation Spark Conversation Identity
-	ppp := &conversations.CreateConversationParticipantParams{}
+	ppp := &conversations.CreateServiceConversationParticipantParams{}
 	ppp.SetIdentity(t.conversationsIdentity)
-	_, err = t.client.ConversationsV1.CreateConversationParticipant(*cResp.Sid, ppp)
+	_, err = t.client.ConversationsV1.CreateServiceConversationParticipant(t.conversationsSid, *cResp.Sid, ppp)
 	if err != nil {
-		return "", fmt.Errorf("createConversationParticipant with Identity: %w", err)
+		return "", fmt.Errorf("createServiceConversationParticipant with Identity: %w", err)
 	}
 
 	// Add SMS Recipient to conversation
-	pp := &conversations.CreateConversationParticipantParams{}
+	pp := &conversations.CreateServiceConversationParticipantParams{}
 	pp.SetMessagingBindingAddress(phNum)
 	pp.SetMessagingBindingProxyAddress(t.fromPhoneNum)
 	friendlyNameWithNum := fmt.Sprintf("%s (%s)", friendlyName, phNum)
 	pp.SetAttributes(fmt.Sprintf(`{"friendlyName": %q}`, friendlyNameWithNum))
 
-	_, err = t.client.ConversationsV1.CreateConversationParticipant(*cResp.Sid, pp)
+	_, err = t.client.ConversationsV1.CreateServiceConversationParticipant(t.conversationsSid, *cResp.Sid, pp)
 	if err != nil {
-		return "", fmt.Errorf("createConversationParticipant: %w", err)
+		return "", fmt.Errorf("createServiceConversationParticipant: %w", err)
 	}
 
 	return *cResp.Sid, nil
