@@ -371,7 +371,7 @@ func TestStructToBase64(t *testing.T) {
 			},
 		}
 
-		want := "eyJ0ZW1wbGF0ZSI6IkluZm9TZXNzaW9uIiwiem9vbUxpbmsiOiJodHRwczovL3VzMDZ3ZWIuem9vbS51cy9qLzEyMzQ1Njc4OTEwIiwiZGF0ZSI6IjIwMjItMTAtMDVUMTc6MDA6MDBaIiwibmFtZSI6IkZpcnN0TmFtZSIsImxvY2F0aW9uVHlwZSI6Ikh5YnJpZCIsImxvY2F0aW9uIjp7Im5hbWUiOiJTb21lIFBsYWNlIiwibGluZTEiOiIxMjMgTWFpbiBTdCIsImNpdHlTdGF0ZVppcCI6IkNpdHksIFN0YXRlIDEyMzQ1IiwibWFwVVJMIjoiaHR0cHM6Ly93d3cuZ29vZ2xlLmNvbS9tYXBzL3BsYWNlLzEyMytNYWluK1N0LCtDaXR5LCtTdGF0ZSsxMjM0NSJ9fQ=="
+		want := "eyJ0ZW1wbGF0ZSI6IkluZm9TZXNzaW9uIiwiem9vbUxpbmsiOiJodHRwczovL3VzMDZ3ZWIuem9vbS51cy9qLzEyMzQ1Njc4OTEwIiwiZGF0ZSI6IjIwMjItMTAtMDVUMTc6MDA6MDBaIiwibmFtZSI6IkZpcnN0TmFtZSIsImxvY2F0aW9uVHlwZSI6Ikh5YnJpZCIsImxvY2F0aW9uIjp7Im5hbWUiOiJTb21lIFBsYWNlIiwibGluZTEiOiIxMjMgTWFpbiBTdCIsImNpdHlTdGF0ZVppcCI6IkNpdHksIFN0YXRlIDEyMzQ1IiwibWFwVXJsIjoiaHR0cHM6Ly93d3cuZ29vZ2xlLmNvbS9tYXBzL3BsYWNlLzEyMytNYWluK1N0LCtDaXR5LCtTdGF0ZSsxMjM0NSJ9fQ=="
 
 		got, err := params.toBase64()
 		if err != nil {
@@ -529,59 +529,42 @@ func TestShortMessagingURL(t *testing.T) {
 			LocationType:  "HYBRID",
 			GooglePlace: GooglePlace{
 				Name:    "Some Place",
-				Address: "123 Main St, City, State 12345",
-				Website: "https://www.google.com/maps/place/123+Main+St,+City,+State+12345",
-			},
-		}
-
-		baseUrl := "https://sms.opspark.org"
-
-		line1, cityStateZip := parseAddress(s.GooglePlace.Address)
-
-		wantParams := messagingReqParams{
-			Template:     "InfoSession",
-			ZoomLink:     s.zoomMeetingURL,
-			Date:         s.StartDateTime,
-			Name:         s.NameFirst,
-			LocationType: s.LocationType,
-			Location: Location{
-				Name:         s.GooglePlace.Name,
-				Line1:        line1,
-				CityStateZip: cityStateZip,
-				MapURL:       s.GooglePlace.Website,
+				Address: "2723 Guess Rd, Durham, NC 27705",
 			},
 		}
 
 		wantURLPrefix := "https://sms.opspark.org/m/"
 
-		gotURL, err := s.shortMessagingURL(baseUrl)
+		// method under test
+		gotURL, err := s.shortMessagingURL("https://sms.opspark.org")
 		if err != nil {
 			t.Fatal(err)
 		}
 
+		// the messaging URL should be prefixed with the passed in base URL
 		if !strings.HasPrefix(gotURL, wantURLPrefix) {
 			t.Fatalf("URL: %q doesn't have prefix: %q", wantURLPrefix, gotURL)
 		}
 
+		// grab the encoded info session details from the URL
 		encoded := strings.TrimPrefix(gotURL, wantURLPrefix)
 
+		// decode the params
 		var gotParams messagingReqParams
-
 		err = gotParams.fromBase64(encoded)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		// decode the url and check the params
-		assertEqual(t, gotParams.Name, wantParams.Name)
-		assertEqual(t, gotParams.Date.Format(time.RFC3339), "2022-03-14T17:00:00Z")
-		assertEqual(t, gotParams.ZoomLink, wantParams.ZoomLink)
-		assertEqual(t, gotParams.Template, wantParams.Template)
-		assertEqual(t, gotParams.LocationType, wantParams.LocationType)
-		assertEqual(t, gotParams.Location.Name, wantParams.Location.Name)
-		assertEqual(t, gotParams.Location.Line1, wantParams.Location.Line1)
-		assertEqual(t, gotParams.Location.CityStateZip, wantParams.Location.CityStateZip)
-		assertEqual(t, gotParams.Location.MapURL, wantParams.Location.MapURL)
+		assertEqual(t, gotParams.Name, s.NameFirst)
+		assertEqual(t, gotParams.Date.Equal(s.StartDateTime), true)
+		assertEqual(t, gotParams.ZoomLink, s.zoomMeetingURL)
+		assertEqual(t, gotParams.Template, "InfoSession")
+		assertEqual(t, gotParams.LocationType, "HYBRID")
+		assertEqual(t, gotParams.Location.Name, "Some Place")
+		assertEqual(t, gotParams.Location.Line1, "2723 Guess Rd")
+		assertEqual(t, gotParams.Location.CityStateZip, "Durham, NC 27705")
+		assertEqual(t, gotParams.Location.MapURL, "https://www.google.com/maps/place/2723+Guess+Rd%2CDurham%2C+NC+27705")
 	})
 
 }

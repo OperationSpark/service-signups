@@ -96,7 +96,7 @@ type (
 		Name         string `json:"name"`
 		Line1        string `json:"line1"`
 		CityStateZip string `json:"cityStateZip"`
-		MapURL       string `json:"mapURL"`
+		MapURL       string `json:"mapUrl"`
 	}
 
 	// Request params for the Operation Spark messaging service.
@@ -267,7 +267,7 @@ func (su Signup) shortMessagingURL(baseURL string) (string, error) {
 			Name:         su.GooglePlace.Name,
 			Line1:        line1,
 			CityStateZip: cityStateZip,
-			MapURL:       su.GooglePlace.Website,
+			MapURL:       googleLocationLink(su.GooglePlace.Address),
 		},
 	}
 	encoded, err := p.toBase64()
