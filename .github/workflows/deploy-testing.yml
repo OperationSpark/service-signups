@@ -3,7 +3,7 @@ on:
   push:
     branches:
       - "testing"
-      - "28-support-hybrid-in-personvirtual-info-sessions"
+      - "feat/concurrent-reqs"
 
 jobs:
   build-deploy-cloud-function:

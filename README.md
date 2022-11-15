@@ -68,7 +68,7 @@ slackSvc := NewSlackService(slackWebhookURL)
 registrationService := newSignupService(
 		signupServiceOptions{
 			// Registration tasks:
-			// (executed serially)
+			// (executed concurrently)
 			tasks: []task{
 				// posting a WebHook to Greenlight,
 				glSvc,

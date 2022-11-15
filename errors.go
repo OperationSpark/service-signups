@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 )
 
 type InvalidFieldError struct {
@@ -16,11 +17,6 @@ func (e *InvalidFieldError) Error() string {
 
 // HandleHTTPError parses and prints the response body.
 func handleHTTPError(resp *http.Response) error {
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("response Body: %s", resp.Status)
-	}
-
 	reqLabel := fmt.Sprintf(
 		"%s: %s://%s\n%s\n",
 		resp.Request.Method,
@@ -28,5 +24,19 @@ func handleHTTPError(resp *http.Response) error {
 		resp.Request.URL.Host,
 		resp.Request.URL.RequestURI(),
 	)
-	return fmt.Errorf("HTTP Error:\n%s\nResponse:\n%s\n%s", reqLabel, resp.Status, string(body))
+
+	errMsg := fmt.Sprintf("HTTP Error:\n%s\nResponse:\n%s", reqLabel, resp.Status)
+
+	// Ignore response body if it's HTML to avoid flooding the logs
+	isHTML := strings.Contains(resp.Header.Get("Content-Type"), "text/html")
+	if isHTML {
+		return fmt.Errorf("%s\n[HTML response removed]", errMsg)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("response code: %s", resp.Status)
+	}
+
+	return fmt.Errorf("%s\n%s", errMsg, body)
 }
