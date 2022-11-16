@@ -3,7 +3,7 @@ on:
   push:
     branches:
       - "testing"
-      - "feat/concurrent-reqs"
+      - "fix/zoom-meeting-error"
 
 jobs:
   build-deploy-cloud-function:
