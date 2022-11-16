@@ -48,6 +48,7 @@ func TestRegisterUser(t *testing.T) {
 			Cell:             "555-123-4567",
 			Referrer:         "instagram",
 			ReferrerResponse: "",
+			StartDateTime:    mustMakeTime(t, time.RFC822, "16 Nov 22 18:00 UTC"), // 12 central
 		}
 
 		mailService := &MockMailgunService{
@@ -61,7 +62,8 @@ func TestRegisterUser(t *testing.T) {
 		signupService := newSignupService(signupServiceOptions{
 			tasks:       []Task{mailService},
 			zoomService: zoomService,
-			meetings:    map[int]string{18: "mock-meeting-id"},
+			// zoom meeting id for 12 central
+			meetings: map[int]string{12: "mock-zoom-meeting-id"},
 		})
 
 		err := signupService.register(context.Background(), signup)
