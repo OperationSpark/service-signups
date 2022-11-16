@@ -304,8 +304,11 @@ func newSignupService(o signupServiceOptions) *SignupService {
 // Register concurrently executes a list of tasks. Completion of tasks are not dependent on each other.
 func (sc *SignupService) register(ctx context.Context, su Signup) error {
 	// TODO: Create specific errors for each handler
-	sc.attachZoomMeetingID(&su)
-	err := sc.zoomService.run(ctx, &su)
+	err := sc.attachZoomMeetingID(&su)
+	if err != nil {
+		return fmt.Errorf("attachZoomMeetingID: %w", err)
+	}
+	err = sc.zoomService.run(ctx, &su)
 	if err != nil {
 		return fmt.Errorf("zoomService.run: %w", err)
 	}
@@ -324,7 +327,7 @@ func (sc *SignupService) register(ctx context.Context, su Signup) error {
 		}(task)
 	}
 	if err := g.Wait(); err != nil {
-		return fmt.Errorf("errorGroup: %v", err)
+		return err
 	}
 	return nil
 }

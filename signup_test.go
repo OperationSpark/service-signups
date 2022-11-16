@@ -61,6 +61,7 @@ func TestRegisterUser(t *testing.T) {
 		signupService := newSignupService(signupServiceOptions{
 			tasks:       []Task{mailService},
 			zoomService: zoomService,
+			meetings:    map[int]string{18: "mock-meeting-id"},
 		})
 
 		err := signupService.register(context.Background(), signup)
