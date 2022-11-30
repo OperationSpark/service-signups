@@ -75,6 +75,40 @@ func TestRegisterUser(t *testing.T) {
 			t.Fatalf("mailService.SendWelcome should have been called")
 		}
 	})
+
+	t.Run("sends an email even when 'None of these fit my schedule' selected.", func(t *testing.T) {
+		signup := Signup{
+			NameFirst:        "Henri",
+			NameLast:         "Testaroni",
+			Email:            "henri@email.com",
+			Cell:             "555-123-4567",
+			Referrer:         "instagram",
+			ReferrerResponse: "",
+			StartDateTime:    time.Time{}, // Empty session start time
+		}
+
+		mailService := &MockMailgunService{
+			WelcomeFunc: func(ctx context.Context, s Signup) error {
+				return nil
+			},
+		}
+
+		zoomService := &MockZoomService{}
+
+		signupService := newSignupService(signupServiceOptions{
+			tasks:       []Task{mailService},
+			zoomService: zoomService,
+		})
+
+		err := signupService.register(context.Background(), signup)
+		if err != nil {
+			t.Fatalf("register: %v", err)
+		}
+
+		if !mailService.called {
+			t.Fatal("mailService.SendWelcome should have been called")
+		}
+	})
 }
 
 func TestHandleJson(t *testing.T) {

@@ -334,6 +334,10 @@ func (sc *SignupService) register(ctx context.Context, su Signup) error {
 
 // AttachZoomMeetingID sets the Zoom meeting ID on the Signup based on the Signup's StartDateTime and the SignService's Zoom sessions.
 func (sc *SignupService) attachZoomMeetingID(su *Signup) error {
+	// Do nothing if the user has not signed up for a specific session
+	if su.StartDateTime.IsZero() {
+		return nil
+	}
 	loc, err := time.LoadLocation("America/Chicago")
 	if err != nil {
 		return fmt.Errorf("loadLocation: %w", err)
