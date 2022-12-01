@@ -3,7 +3,7 @@ on:
   push:
     branches:
       - "testing"
-      - "fix/zoom-meeting-error"
+      - "fix/none-of-these"
 
 jobs:
   build-deploy-cloud-function:
