@@ -19,23 +19,24 @@ func TestPostWebhook(t *testing.T) {
 			NameFirst:        "Bob",
 			NameLast:         "Ross",
 			Email:            "bross@pbs.org",
-			Cell:             `json:"cell" schema:"cell"`,
+			Cell:             "555-123-4567",
 			Referrer:         "instagram",
 			ReferrerResponse: "",
 			StartDateTime:    sessionStartDate,
 			Cohort:           "is-mar-14-22-12pm",
 			SessionID:        "X5TsABhN94yesyMEi",
+			UserLocation:     "Louisiana",
 		}
 		mockGreenlightSvr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Sends API Key header
 			assertEqual(t, r.Header.Get("X-Greenlight-Signup-Api-Key"), apiKey)
 
 			// POSTs correct JSON body
-			var resp Signup
+			var glReq Signup
 			d := json.NewDecoder(r.Body)
-			d.Decode(&resp)
+			d.Decode(&glReq)
 
-			assertDeepEqual(t, resp, su)
+			assertDeepEqual(t, glReq, su)
 		}))
 
 		glSvc := NewGreenlightService(mockGreenlightSvr.URL, apiKey)

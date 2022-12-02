@@ -42,6 +42,7 @@ type (
 		// TODO: make LocationType an enum
 		LocationType   string      `json:"locationType" schema:"locationType"`
 		GooglePlace    GooglePlace `json:"googlePlace" schema:"googlePlace"`
+		UserLocation   string      `json:"userLocation" schema:"userLocation"`
 		zoomMeetingID  int64
 		zoomMeetingURL string
 	}
