@@ -3,7 +3,7 @@ on:
   push:
     branches:
       - "testing"
-      - "fix/none-of-these"
+      - "feat/user-location"
 
 jobs:
   build-deploy-cloud-function:
