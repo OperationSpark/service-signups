@@ -28,21 +28,24 @@ type (
 	}
 
 	Signup struct {
-		ProgramID        string    `json:"programId" schema:"programId"`
+		// Wether the person is attending "IN_PERSON" | "VIRTUAL"ly.
+		AttendingLocation string      `json:"attendingLocation" schema:"attendingLocation"`
+		Cell              string      `json:"cell" schema:"cell"`
+		Cohort            string      `json:"cohort" schema:"cohort"`
+		Email             string      `json:"email" schema:"email"`
+		GooglePlace       GooglePlace `json:"googlePlace" schema:"googlePlace"`
+		// TODO: make LocationType an enum
+		LocationType     string    `json:"locationType" schema:"locationType"`
 		NameFirst        string    `json:"nameFirst" schema:"nameFirst"`
 		NameLast         string    `json:"nameLast" schema:"nameLast"`
-		Email            string    `json:"email" schema:"email"`
-		Cell             string    `json:"cell" schema:"cell"`
+		ProgramID        string    `json:"programId" schema:"programId"`
 		Referrer         string    `json:"referrer" schema:"referrer"`
 		ReferrerResponse string    `json:"referrerResponse" schema:"referrerResponse"`
-		StartDateTime    time.Time `json:"startDateTime,omitempty" schema:"startDateTime"`
-		Cohort           string    `json:"cohort" schema:"cohort"`
 		SessionID        string    `json:"sessionId" schema:"sessionId"`
+		StartDateTime    time.Time `json:"startDateTime,omitempty" schema:"startDateTime"`
 		Token            string    `json:"token" schema:"token"`
-		// TODO: make LocationType an enum
-		LocationType   string      `json:"locationType" schema:"locationType"`
-		GooglePlace    GooglePlace `json:"googlePlace" schema:"googlePlace"`
-		UserLocation   string      `json:"userLocation" schema:"userLocation"`
+		// State or country where the person resides.
+		UserLocation   string `json:"userLocation" schema:"userLocation"`
 		zoomMeetingID  int64
 		zoomMeetingURL string
 	}
