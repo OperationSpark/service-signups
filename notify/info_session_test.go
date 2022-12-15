@@ -13,7 +13,6 @@ import (
 
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestGetUpcomingSessions(t *testing.T) {
@@ -30,18 +29,19 @@ func TestGetUpcomingSessions(t *testing.T) {
 			insertFutureSession(t, mSrv, daysInFuture)
 		}
 
-		daysInFuture := 7
-		sessions, err := mSrv.getUpcomingSessions(context.Background(), daysInFuture)
+		daysOut := 7
+		inTheNextWeek := time.Hour * 24 * time.Duration(daysOut)
+		sessions, err := mSrv.getUpcomingSessions(context.Background(), inTheNextWeek)
 		require.NoError(t, err)
 
 		require.WithinRange(
 			t,
 			sessions[0].Times.Start.DateTime,
 			time.Now(),
-			time.Now().AddDate(0, 0, daysInFuture),
+			time.Now().Add(inTheNextWeek),
 		)
 
-		require.Len(t, sessions, 7, "should find the a session for each of the next 7 days")
+		require.Len(t, sessions, daysOut, fmt.Sprintf("should find the a session for each of the next %d days", daysOut))
 	})
 
 	t.Run("session responses contain the expected attendees of the given session", func(t *testing.T) {
@@ -55,7 +55,8 @@ func TestGetUpcomingSessions(t *testing.T) {
 		infoSessID := insertFutureSession(t, mSrv, 1)
 		insertRandSignups(t, mSrv, infoSessID, 10)
 
-		got, err := mSrv.getUpcomingSessions(context.Background(), 1)
+		daysOut := time.Hour * 24 * 10
+		got, err := mSrv.getUpcomingSessions(context.Background(), daysOut)
 		require.NoError(t, err)
 
 		require.Len(t, got[0].Participants, 10)
@@ -65,9 +66,9 @@ func TestGetUpcomingSessions(t *testing.T) {
 	})
 }
 
-func insertFutureSession(t *testing.T, m *MongoService, daysInFuture int) primitive.ObjectID {
+func insertFutureSession(t *testing.T, m *MongoService, daysInFuture int) string {
 	s := Session{
-		ID:        primitive.NewObjectID(),
+		ID:        randID(),
 		ProgramID: INFO_SESSION_PROGRAM_ID,
 		CreatedAt: time.Now(),
 	}
@@ -78,20 +79,20 @@ func insertFutureSession(t *testing.T, m *MongoService, daysInFuture int) primit
 		InsertOne(context.Background(), s)
 	require.NoError(t, err)
 
-	id, ok := res.InsertedID.(primitive.ObjectID)
+	id, ok := res.InsertedID.(string)
 	if !ok {
-		require.NoError(t, errors.New("insertedID is not an ObjectID"))
+		require.NoError(t, errors.New("insertedID is not a string"))
 	}
 	return id
 }
 
-func insertRandSignups(t *testing.T, m *MongoService, infoSessionID primitive.ObjectID, n int) error {
+func insertRandSignups(t *testing.T, m *MongoService, infoSessionID string, n int) error {
 	signups := make([]interface{}, 0)
 	for i := 0; i < n; i++ {
 		attendee := gofakeit.Person()
 		signups = append(signups, Signup{
 			CreatedAt:   time.Now(),
-			ID:          primitive.NewObjectID(),
+			ID:          randID(),
 			SessionID:   infoSessionID,
 			Email:       attendee.Contact.Email,
 			NameFirst:   attendee.FirstName,
@@ -123,4 +124,16 @@ func mustRandHex(t *testing.T, n int) string {
 	_, err := rand.Read(bytes)
 	require.NoError(t, err)
 	return hex.EncodeToString(bytes)
+}
+
+// RandID generates a random 17-character string to simulate Meteor's Mongo ID generation.
+// Meteor did not originally use Mongo's ObjectID() for document IDs.
+func randID() string {
+	var letters = []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	length := 17
+	b := make([]rune, length)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
 }

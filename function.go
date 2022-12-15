@@ -24,9 +24,24 @@ func NewServer() *http.ServeMux {
 }
 
 func NewNotifyServer() *notify.Server {
-	// TODO: Pull in all the necessary env vars/services
 	mongoURI := os.Getenv("MONGO_URI")
-	return notify.NewServer(notify.ServerOpts{MongoURI: mongoURI})
+	twilioAcctSID := os.Getenv("TWILIO_ACCOUNT_SID")
+	twilioAuthToken := os.Getenv("TWILIO_AUTH_TOKEN")
+	twilioPhoneNum := os.Getenv("TWILIO_PHONE_NUMBER")
+	twilioConversationsSid := os.Getenv("TWILIO_CONVERSATIONS_SID")
+
+	// TODO: Should we just use the once instance of a Twilio service?
+	twilioSvc := NewTwilioService(twilioServiceOptions{
+		accountSID:       twilioAcctSID,
+		authToken:        twilioAuthToken,
+		fromPhoneNum:     twilioPhoneNum,
+		conversationsSid: twilioConversationsSid,
+	})
+
+	return notify.NewServer(notify.ServerOpts{
+		MongoURI:      mongoURI,
+		TwilioService: twilioSvc,
+	})
 }
 
 func NewSignupServer() *signupServer {
