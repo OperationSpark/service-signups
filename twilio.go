@@ -218,3 +218,9 @@ func (t *smsService) sendConvoWebhook(ctx context.Context, convoID string) error
 	}
 	return nil
 }
+
+// Send sends an SMS message to the given toNum and returns an error.
+func (t *smsService) Send(ctx context.Context, toNum string, msg string) error {
+	fmt.Println(toNum, msg)
+	return nil
+}

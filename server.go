@@ -21,10 +21,6 @@ type signupServer struct {
 	service registerer
 }
 
-func newSignupServer(service registerer) *signupServer {
-	return &signupServer{service: service}
-}
-
 func (ss *signupServer) HandleSignUp(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 

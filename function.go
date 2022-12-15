@@ -1,19 +1,50 @@
 package signup
 
 import (
+	"net/http"
 	"os"
 
 	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
+	"github.com/operationspark/service-signup/notify"
 )
 
 func init() {
 	// Register an HTTP function with the Functions Framework
 	// This handler name maps to the entry point name in the Google Cloud Function platform.
 	// https://cloud.google.com/functions/docs/writing/write-http-functions
-	functions.HTTP("HandleSignUp", NewServer().HandleSignUp)
+	functions.HTTP("HandleSignUp", NewServer().ServeHTTP)
 }
 
-func NewServer() *signupServer {
+func NewServer() *http.ServeMux {
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/", NewSignupServer().HandleSignUp)
+	mux.HandleFunc("/notify", NewNotifyServer().ServeHTTP)
+	return mux
+}
+
+func NewNotifyServer() *notify.Server {
+	mongoURI := os.Getenv("MONGO_URI")
+	twilioAcctSID := os.Getenv("TWILIO_ACCOUNT_SID")
+	twilioAuthToken := os.Getenv("TWILIO_AUTH_TOKEN")
+	twilioPhoneNum := os.Getenv("TWILIO_PHONE_NUMBER")
+	twilioConversationsSid := os.Getenv("TWILIO_CONVERSATIONS_SID")
+
+	// TODO: Should we just use the once instance of a Twilio service?
+	twilioSvc := NewTwilioService(twilioServiceOptions{
+		accountSID:       twilioAcctSID,
+		authToken:        twilioAuthToken,
+		fromPhoneNum:     twilioPhoneNum,
+		conversationsSid: twilioConversationsSid,
+	})
+
+	return notify.NewServer(notify.ServerOpts{
+		MongoURI:      mongoURI,
+		TwilioService: twilioSvc,
+	})
+}
+
+func NewSignupServer() *signupServer {
 	// Set up services/tasks to run when someone signs up for an Info Session.
 	mgDomain := os.Getenv("MAIL_DOMAIN")
 	mgAPIKey := os.Getenv("MAILGUN_API_KEY")
@@ -76,6 +107,5 @@ func NewServer() *signupServer {
 		},
 	)
 
-	server := newSignupServer(registrationService)
-	return server
+	return &signupServer{registrationService}
 }
