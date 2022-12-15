@@ -1,19 +1,35 @@
 package signup
 
 import (
+	"net/http"
 	"os"
 
 	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
+	"github.com/operationspark/service-signup/notify"
 )
 
 func init() {
 	// Register an HTTP function with the Functions Framework
 	// This handler name maps to the entry point name in the Google Cloud Function platform.
 	// https://cloud.google.com/functions/docs/writing/write-http-functions
-	functions.HTTP("HandleSignUp", NewServer().HandleSignUp)
+	functions.HTTP("HandleSignUp", NewServer().ServeHTTP)
 }
 
-func NewServer() *signupServer {
+func NewServer() *http.ServeMux {
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/", NewSignupServer().HandleSignUp)
+	mux.HandleFunc("/notify", NewNotifyServer().ServeHTTP)
+	return mux
+}
+
+func NewNotifyServer() *notify.Server {
+	// TODO: Pull in all the necessary env vars/services
+	mongoURI := os.Getenv("MONGO_URI")
+	return notify.NewServer(notify.ServerOpts{MongoURI: mongoURI})
+}
+
+func NewSignupServer() *signupServer {
 	// Set up services/tasks to run when someone signs up for an Info Session.
 	mgDomain := os.Getenv("MAIL_DOMAIN")
 	mgAPIKey := os.Getenv("MAILGUN_API_KEY")
@@ -76,6 +92,5 @@ func NewServer() *signupServer {
 		},
 	)
 
-	server := newSignupServer(registrationService)
-	return server
+	return &signupServer{registrationService}
 }
