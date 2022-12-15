@@ -17,11 +17,11 @@ import (
 )
 
 func TestGetUpcomingSessions(t *testing.T) {
-	uri := fmt.Sprintf("mongodb://localhost:27017/%s", dbName)
-
 	t.Run("Only Retrieves sessions in the given time frame", func(t *testing.T) {
-		mSrv, err := NewMongoService(context.Background(), uri)
-		require.NoError(t, err)
+		mSrv := &MongoService{
+			dbName: dbName,
+			client: dbClient,
+		}
 
 		dropDatabase(context.Background(), mSrv)
 
@@ -45,8 +45,10 @@ func TestGetUpcomingSessions(t *testing.T) {
 	})
 
 	t.Run("session responses contain the expected attendees of the given session", func(t *testing.T) {
-		mSrv, err := NewMongoService(context.Background(), uri)
-		require.NoError(t, err)
+		mSrv := &MongoService{
+			dbName: dbName,
+			client: dbClient,
+		}
 
 		dropDatabase(context.Background(), mSrv)
 
