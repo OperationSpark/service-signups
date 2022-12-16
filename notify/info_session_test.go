@@ -180,7 +180,6 @@ func dropDatabase(ctx context.Context, m *MongoService) error {
 func mustFakeZoomURL(t *testing.T) string {
 	rand.NewSource(time.Now().Unix())
 	id := rand.Intn(int(math.Pow10(11)))
-	fmt.Println(id)
 	return fmt.Sprintf("https://us06web.zoom.us/w/%d?tk=%s.%s", id, mustRandHex(t, 43), mustRandHex(t, 20))
 }
 

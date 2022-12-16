@@ -58,7 +58,7 @@ func NewNotifyServer() *notify.Server {
 	mongoURI := os.Getenv("MONGO_URI")
 	isCI := os.Getenv("CI") == "true"
 	parsed, err := url.Parse(mongoURI)
-	if (!isCI && mongoURI == "") || err != nil {
+	if isCI || (mongoURI == "" || err != nil) {
 		fmt.Printf("Invalid 'MONGO_URI' environmental variable: %q\n", mongoURI)
 		fmt.Printf("If you're running tests, you can ignore this message.\n\n")
 		// See StubStore comment above
