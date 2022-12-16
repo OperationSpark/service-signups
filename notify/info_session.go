@@ -3,16 +3,11 @@ package notify
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
-	"net/url"
-	"os"
-	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -36,7 +31,6 @@ type (
 	MongoService struct {
 		dbName string
 		client *mongo.Client
-		uri    string
 	}
 
 	SMSSender interface {
@@ -45,7 +39,7 @@ type (
 
 	Server struct {
 		twilioService SMSSender
-		mongoService  *MongoService
+		store         Store
 	}
 
 	Times struct {
@@ -77,22 +71,22 @@ type (
 		ZoomJoinURL string    `bson:"zoomJoinUrl"`
 	}
 
+	Store interface {
+		GetUpcomingSessions(context.Context, time.Duration) ([]*UpcomingSession, error)
+	}
+
 	ServerOpts struct {
-		MongoURI      string
-		TwilioService SMSSender
+		Store      Store
+		SMSService SMSSender
 	}
 )
 
 const INFO_SESSION_PROGRAM_ID = "5sTmB97DzcqCwEZFR"
 
 func NewServer(o ServerOpts) *Server {
-	mongoSvc, err := NewMongoService(context.Background(), o.MongoURI)
-	if err != nil && os.Getenv("CI") != "true" {
-		log.Fatalf("Could not connect to MongoDB: %s", o.MongoURI)
-	}
 	return &Server{
-		mongoService:  mongoSvc,
-		twilioService: o.TwilioService,
+		store:         o.Store,
+		twilioService: o.SMSService,
 	}
 }
 
@@ -106,7 +100,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Remind attendees for today's info session(s)
 	// Get from request body/params?
 	hoursInFuture := time.Hour * 24 * 1
-	sessions, err := s.mongoService.getUpcomingSessions(r.Context(), hoursInFuture)
+	sessions, err := s.store.GetUpcomingSessions(r.Context(), hoursInFuture)
 	if err != nil {
 		fmt.Println(err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -128,25 +122,15 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func NewMongoService(ctx context.Context, uri string) (*MongoService, error) {
-	parsed, err := url.Parse(uri)
-	isCI := os.Getenv("CI") == "true"
-	if (!isCI && uri == "") || err != nil {
-		log.Fatalf("Invalid 'MONGO_URI' environmental variable: %q", uri)
-	}
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
-	if err != nil {
-		return nil, err
-	}
+func NewMongoService(dbClient *mongo.Client, dbName string) *MongoService {
 	return &MongoService{
-		dbName: strings.TrimPrefix(parsed.Path, "/"),
-		uri:    uri,
-		client: client,
-	}, nil
+		dbName: dbName,
+		client: dbClient,
+	}
 }
 
 // GetUpcomingSessions queries the database for Info Sessions starting between not and some time in the future. Returns the upcoming Info Sessions and the email addresses of each session's prospective participants.
-func (m *MongoService) getUpcomingSessions(ctx context.Context, inFuture time.Duration) ([]*UpcomingSession, error) {
+func (m *MongoService) GetUpcomingSessions(ctx context.Context, inFuture time.Duration) ([]*UpcomingSession, error) {
 	sessions := m.client.Database(m.dbName).Collection("sessions")
 
 	infoSessionProgID := "5sTmB97DzcqCwEZFR"

@@ -1,12 +1,17 @@
 package notify
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"math"
 	"math/rand"
+	"net/http"
+	"net/http/httptest"
 	"regexp"
 	"testing"
 	"time"
@@ -14,6 +19,28 @@ import (
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/stretchr/testify/require"
 )
+
+type (
+	Request struct {
+		JobName string  `json:"jobName"`
+		JobArgs JobArgs `json:"jobArgs"`
+	}
+
+	JobArgs struct {
+		Period string `json:"period"`
+	}
+
+	MockSMSService struct {
+		called     bool
+		calledWith []string
+	}
+)
+
+func (m *MockSMSService) Send(ctx context.Context, toNum string, msg string) error {
+	m.called = true
+	m.calledWith = []string{toNum, msg}
+	return nil
+}
 
 func TestGetUpcomingSessions(t *testing.T) {
 	t.Run("Only Retrieves sessions in the given time frame", func(t *testing.T) {
@@ -31,7 +58,7 @@ func TestGetUpcomingSessions(t *testing.T) {
 
 		daysOut := 7
 		inTheNextWeek := time.Hour * 24 * time.Duration(daysOut)
-		sessions, err := mSrv.getUpcomingSessions(context.Background(), inTheNextWeek)
+		sessions, err := mSrv.GetUpcomingSessions(context.Background(), inTheNextWeek)
 		require.NoError(t, err)
 
 		require.WithinRange(
@@ -56,13 +83,40 @@ func TestGetUpcomingSessions(t *testing.T) {
 		insertRandSignups(t, mSrv, infoSessID, 10)
 
 		daysOut := time.Hour * 24 * 10
-		got, err := mSrv.getUpcomingSessions(context.Background(), daysOut)
+		got, err := mSrv.GetUpcomingSessions(context.Background(), daysOut)
 		require.NoError(t, err)
 
 		require.Len(t, got[0].Participants, 10)
 		for _, p := range got[0].Participants {
 			require.Regexp(t, regexp.MustCompile(`\w+@\w`), p.Email, "contains a valid email address")
 		}
+	})
+}
+
+func TestServer(t *testing.T) {
+	t.Run("Sends SMS messages to attendees of any upcoming sessions", func(t *testing.T) {
+		var body bytes.Buffer
+		e := json.NewEncoder(&body)
+		e.Encode(Request{
+			JobName: "info-session-reminder",
+			JobArgs: JobArgs{Period: "1 day"},
+		})
+		req := mustMakeReq(t, &body)
+		resp := httptest.NewRecorder()
+
+		mockTwilio := MockSMSService{}
+		mongoService := NewMongoService(dbClient, dbName)
+
+		srv := NewServer(ServerOpts{
+			Store:      mongoService,
+			SMSService: &mockTwilio,
+		})
+
+		srv.ServeHTTP(resp, req)
+
+		require.Equal(t, resp.Result().StatusCode, http.StatusOK)
+		require.True(t, mockTwilio.called)
+		// require.Contains(t, mockTwilio.calledWith, )
 	})
 }
 
@@ -136,4 +190,10 @@ func randID() string {
 		b[i] = letters[rand.Intn(len(letters))]
 	}
 	return string(b)
+}
+
+func mustMakeReq(t *testing.T, body io.Reader) *http.Request {
+	req, err := http.NewRequest(http.MethodPost, "/notify", body)
+	require.NoError(t, err)
+	return req
 }
