@@ -8,6 +8,8 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	"github.com/operationspark/service-signup/greenlight"
 )
 
 func TestSendWelcome(t *testing.T) {
@@ -104,13 +106,13 @@ func TestSendWelcome(t *testing.T) {
 
 		signUp := Signup{
 			LocationType: "HYBRID",
-			GooglePlace: GooglePlace{
+			GooglePlace: greenlight.GooglePlace{
 				PlaceID: "ChIJ7YchCHSmIIYRYsAEPZN_E0o",
 				Name:    "Operation Spark",
 				Address: "514 Franklin Ave, New Orleans, LA 70117, USA",
 				Phone:   "+1 504-534-8277",
 				Website: "https://www.operationspark.org/",
-				Geometry: Geometry{
+				Geometry: greenlight.Geometry{
 					Lat: 29.96325999999999,
 					Lng: -90.052138,
 				},

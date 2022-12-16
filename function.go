@@ -42,19 +42,6 @@ func NewServer() *http.ServeMux {
 }
 
 func NewNotifyServer() *notify.Server {
-	twilioAcctSID := os.Getenv("TWILIO_ACCOUNT_SID")
-	twilioAuthToken := os.Getenv("TWILIO_AUTH_TOKEN")
-	twilioPhoneNum := os.Getenv("TWILIO_PHONE_NUMBER")
-	twilioConversationsSid := os.Getenv("TWILIO_CONVERSATIONS_SID")
-
-	// TODO: Should we just use the once instance of a Twilio service?
-	twilioSvc := NewTwilioService(twilioServiceOptions{
-		accountSID:       twilioAcctSID,
-		authToken:        twilioAuthToken,
-		fromPhoneNum:     twilioPhoneNum,
-		conversationsSid: twilioConversationsSid,
-	})
-
 	mongoURI := os.Getenv("MONGO_URI")
 	isCI := os.Getenv("CI") == "true"
 	parsed, err := url.Parse(mongoURI)
@@ -62,9 +49,9 @@ func NewNotifyServer() *notify.Server {
 		fmt.Printf("Invalid 'MONGO_URI' environmental variable: %q\n", mongoURI)
 		fmt.Printf("If you're running tests, you can ignore this message.\n\n")
 		// See StubStore comment above
+		// **  This server is never used ** //
 		return notify.NewServer(notify.ServerOpts{
-			Store:      &StubStore{},
-			SMSService: twilioSvc,
+			Store: &StubStore{},
 		})
 	}
 
@@ -75,9 +62,19 @@ func NewNotifyServer() *notify.Server {
 	}
 	mongoService := notify.NewMongoService(mongoClient, dbName)
 
+	// TODO: Should we just use the once instance of a Twilio service?
+	twilioSvc := NewTwilioService(twilioServiceOptions{
+		accountSID:       os.Getenv("TWILIO_ACCOUNT_SID"),
+		authToken:        os.Getenv("TWILIO_AUTH_TOKEN"),
+		fromPhoneNum:     os.Getenv("TWILIO_PHONE_NUMBER"),
+		conversationsSid: os.Getenv("TWILIO_CONVERSATIONS_SID"),
+	})
+
 	return notify.NewServer(notify.ServerOpts{
-		Store:      mongoService,
-		SMSService: twilioSvc,
+		OSMessagingService: &osMessenger{baseURL: os.Getenv("OS_MESSAGING_SERVICE_URL")},
+		Store:              mongoService,
+		SMSService:         twilioSvc,
+		ShortLinkService:   NewURLShortener(ShortenerOpts{apiKey: os.Getenv("URL_SHORTENER_API_KEY")}),
 	})
 }
 

@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/brianvoe/gofakeit/v6"
+	"github.com/operationspark/service-signup/greenlight"
 	"github.com/stretchr/testify/require"
 )
 
@@ -26,6 +27,9 @@ type (
 		called     bool
 		calledWith []string
 	}
+
+	MockOSMessenger struct{}
+	MockShortLinker struct{}
 )
 
 func (m *MockSMSService) Send(ctx context.Context, toNum string, msg string) error {
@@ -36,6 +40,14 @@ func (m *MockSMSService) Send(ctx context.Context, toNum string, msg string) err
 
 func (m *MockSMSService) FormatCell(cell string) string {
 	return "+1" + strings.ReplaceAll(cell, "-", "")
+}
+
+func (m MockOSMessenger) CreateMessageURL(Participant) (string, error) {
+	return "", nil
+}
+
+func (m MockShortLinker) ShortenURL(ctx context.Context, url string) (string, error) {
+	return "", nil
 }
 
 func TestGetUpcomingSessions(t *testing.T) {
@@ -100,13 +112,12 @@ func TestServer(t *testing.T) {
 		req := mustMakeReq(t, &body)
 		resp := httptest.NewRecorder()
 
-		mockTwilio := MockSMSService{}
 		mongoService := NewMongoService(dbClient, dbName)
 
 		sessionID := insertFutureSession(t, mongoService, time.Hour)
 		attendee := gofakeit.Person()
 		toPhone := gofakeit.Phone()
-		fakeSignup := Signup{
+		fakeSignup := greenlight.Signup{
 			CreatedAt:   time.Now(),
 			ID:          randID(),
 			SessionID:   sessionID,
@@ -121,9 +132,13 @@ func TestServer(t *testing.T) {
 		_, err := mongoService.client.Database(mongoService.dbName).Collection("signups").InsertOne(context.Background(), fakeSignup)
 		require.NoError(t, err)
 
+		mockTwilio := MockSMSService{}
+
 		srv := NewServer(ServerOpts{
-			Store:      mongoService,
-			SMSService: &mockTwilio,
+			OSMessagingService: MockOSMessenger{},
+			ShortLinkService:   MockShortLinker{},
+			Store:              mongoService,
+			SMSService:         &mockTwilio,
 		})
 
 		srv.ServeHTTP(resp, req)
@@ -165,7 +180,7 @@ func TestReminderMsg(t *testing.T) {
 
 // ** Test Helpers ** //
 func insertFutureSession(t *testing.T, m *MongoService, inFuture time.Duration) string {
-	s := Session{
+	s := greenlight.Session{
 		ID:        randID(),
 		ProgramID: INFO_SESSION_PROGRAM_ID,
 		CreatedAt: time.Now(),
@@ -188,7 +203,7 @@ func insertRandSignups(t *testing.T, m *MongoService, infoSessionID string, n in
 	signups := make([]interface{}, 0)
 	for i := 0; i < n; i++ {
 		attendee := gofakeit.Person()
-		signups = append(signups, Signup{
+		signups = append(signups, greenlight.Signup{
 			CreatedAt:   time.Now(),
 			ID:          randID(),
 			SessionID:   infoSessionID,

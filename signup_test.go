@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/operationspark/service-signup/greenlight"
 )
 
 type MockMailgunService struct {
@@ -469,7 +470,7 @@ func TestFromBase64(t *testing.T) {
 		}
 
 		assertEqual(t, params.Name, "FirstName")
-		assertEqual(t, params.Template, "InfoSession")
+		assertEqual(t, params.Template, INFO_SESSION_TEMPLATE)
 		assertEqual(t, params.Date.Format(time.RFC3339), "2022-10-05T17:00:00Z")
 		assertEqual(t, params.ZoomLink, "https://us06web.zoom.us/j/12345678910")
 	})
@@ -564,7 +565,7 @@ func TestShortMessagingURL(t *testing.T) {
 			Email:         "yasiin@blackstar.net",
 			SessionID:     "WpkB3jcw6gCw2uEMf",
 			LocationType:  "HYBRID",
-			GooglePlace: GooglePlace{
+			GooglePlace: greenlight.GooglePlace{
 				Name:    "Some Place",
 				Address: "2723 Guess Rd, Durham, NC 27705",
 			},
@@ -596,7 +597,7 @@ func TestShortMessagingURL(t *testing.T) {
 		assertEqual(t, gotParams.Name, s.NameFirst)
 		assertEqual(t, gotParams.Date.Equal(s.StartDateTime), true)
 		assertEqual(t, gotParams.ZoomLink, s.zoomMeetingURL)
-		assertEqual(t, gotParams.Template, "InfoSession")
+		assertEqual(t, gotParams.Template, INFO_SESSION_TEMPLATE)
 		assertEqual(t, gotParams.LocationType, "HYBRID")
 		assertEqual(t, gotParams.Location.Name, "Some Place")
 		assertEqual(t, gotParams.Location.Line1, "2723 Guess Rd")

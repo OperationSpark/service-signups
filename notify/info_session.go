@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/operationspark/service-signup/greenlight"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/sync/errgroup"
@@ -18,24 +19,54 @@ import (
 
 type (
 	Participant struct {
-		NameFirst   string `bson:"nameFirst"`
-		NameLast    string `bson:"nameLast"`
-		FullName    string `bson:"fullName"`
-		Cell        string `bson:"cell"`
-		Email       string `bson:"email"`
-		ZoomJoinURL string `bson:"zoomJoinUrl"`
+		NameFirst           string `bson:"nameFirst"`
+		NameLast            string `bson:"nameLast"`
+		FullName            string `bson:"fullName"`
+		Cell                string `bson:"cell"`
+		Email               string `bson:"email"`
+		ZoomJoinURL         string `bson:"zoomJoinUrl"`
+		SessionDate         time.Time
+		SessionLocationType string
+		// SessionLocation     Location
 	}
 
 	UpcomingSession struct {
-		ID           string `bson:"_id"`
-		ProgramID    string `bson:"programId"`
-		Times        Times  `bson:"times"`
+		ID           string           `bson:"_id"`
+		ProgramID    string           `bson:"programId"`
+		Times        greenlight.Times `bson:"times"`
 		Participants []Participant
+		LocationType string   `json:"locationType"`
+		Location     Location `json:"location"`
 	}
 
+	Location struct {
+		Name         string `json:"name"`
+		Line1        string `json:"line1"`
+		CityStateZip string `json:"cityStateZip"`
+		MapURL       string `json:"mapUrl"`
+	}
 	MongoService struct {
 		dbName string
 		client *mongo.Client
+	}
+
+	OSMessenger interface {
+		CreateMessageURL(Participant) (string, error)
+	}
+
+	Store interface {
+		GetUpcomingSessions(context.Context, time.Duration) ([]*UpcomingSession, error)
+	}
+
+	Shortener interface {
+		ShortenURL(ctx context.Context, url string) (string, error)
+	}
+
+	ServerOpts struct {
+		OSMessagingService OSMessenger
+		ShortLinkService   Shortener
+		SMSService         SMSSender
+		Store              Store
 	}
 
 	SMSSender interface {
@@ -44,46 +75,10 @@ type (
 	}
 
 	Server struct {
-		twilioService SMSSender
+		osMsSvc       OSMessenger
+		shortySrv     Shortener
 		store         Store
-	}
-
-	Times struct {
-		Start struct {
-			DateTime time.Time `bson:"dateTime"`
-		} `bson:"start"`
-	}
-
-	Session struct {
-		ID        string    `bson:"_id"`
-		ProgramID string    `bson:"programId"`
-		Times     Times     `bson:"times"` // TODO: Check out "inline" struct tag
-		Cohort    string    `bson:"cohort"`
-		Students  []string  `bson:"students"`
-		Name      string    `bson:"name"`
-		CreatedAt time.Time `bson:"createdAt"`
-	}
-
-	Signup struct {
-		// Legacy Meteor did not use Mongo's ObjectID() _id creation.
-		ID          string    `bson:"_id"`
-		SessionID   string    `bson:"sessionId"`
-		NameFirst   string    `bson:"nameFirst"`
-		NameLast    string    `bson:"nameLast"`
-		FullName    string    `bson:"fullName"`
-		Cell        string    `bson:"cell"`
-		Email       string    `bson:"email"`
-		CreatedAt   time.Time `bson:"createdAt"`
-		ZoomJoinURL string    `bson:"zoomJoinUrl"`
-	}
-
-	Store interface {
-		GetUpcomingSessions(context.Context, time.Duration) ([]*UpcomingSession, error)
-	}
-
-	ServerOpts struct {
-		Store      Store
-		SMSService SMSSender
+		twilioService SMSSender
 	}
 
 	Request struct {
@@ -111,6 +106,8 @@ const (
 
 func NewServer(o ServerOpts) *Server {
 	return &Server{
+		osMsSvc:       o.OSMessagingService,
+		shortySrv:     o.ShortLinkService,
 		store:         o.Store,
 		twilioService: o.SMSService,
 	}
@@ -198,6 +195,8 @@ func (m *MongoService) GetUpcomingSessions(ctx context.Context, inFuture time.Du
 	// Fetch the attendees
 	signups := m.client.Database(m.dbName).Collection("signups")
 	for _, session := range upcomingSessions {
+		// Get associated Location data
+
 		cur, err := signups.Find(ctx, bson.M{"sessionId": session.ID})
 		if err != nil {
 			return upcomingSessions, fmt.Errorf("signups.Find: %w", err)
@@ -206,7 +205,14 @@ func (m *MongoService) GetUpcomingSessions(ctx context.Context, inFuture time.Du
 		if err = cur.All(ctx, &attendees); err != nil {
 			return upcomingSessions, fmt.Errorf("signups.cursor.All(): %w", err)
 		}
+
 		session.Participants = append(session.Participants, attendees...)
+		for _, p := range session.Participants {
+			p.SessionDate = session.Times.Start.DateTime
+			// TODO: Populate Location information
+			// p.SessionLocationType = "??"
+			// p.SessionLocation = "??"
+		}
 	}
 	return upcomingSessions, nil
 }
@@ -222,6 +228,19 @@ func (s *Server) sendSMSReminders(ctx context.Context, sessions []*UpcomingSessi
 					if err != nil {
 						return fmt.Errorf("reminderMsg: %w", err)
 					}
+
+					infoURL, err := s.osMsSvc.CreateMessageURL(p)
+					if err != nil {
+						return err
+					}
+
+					// The link will be a long URL even if there is an error
+					link, err := s.shortySrv.ShortenURL(ctx, infoURL)
+					if err != nil {
+						fmt.Printf("Failed to shorten URL: %q\nError: %v\n", infoURL, err)
+					}
+
+					msg = fmt.Sprintf("%s\nMore details: %s", msg, link)
 					toNum := s.twilioService.FormatCell(p.Cell)
 					return s.twilioService.Send(ctx, toNum, msg)
 				}
@@ -242,8 +261,7 @@ func reminderMsg(ctx context.Context, session UpcomingSession) (string, error) {
 		day = "today"
 	}
 	time := session.Times.Start.DateTime.In(tz).Format("03:04PM MST")
-	// TODO: Include short link
-	return fmt.Sprintf("Hi from Operation Spark! A friendly reminder that you have an Info Session %s at %s", day, time), nil
+	return fmt.Sprintf("Hi from Operation Spark! A friendly reminder that you have an Info Session %s at %s.", day, time), nil
 }
 
 func isToday(date time.Time) bool {
