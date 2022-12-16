@@ -21,15 +21,6 @@ import (
 )
 
 type (
-	Request struct {
-		JobName string  `json:"jobName"`
-		JobArgs JobArgs `json:"jobArgs"`
-	}
-
-	JobArgs struct {
-		Period string `json:"period"`
-	}
-
 	MockSMSService struct {
 		called     bool
 		calledWith []string
@@ -53,7 +44,7 @@ func TestGetUpcomingSessions(t *testing.T) {
 
 		// Insert 10 sessions over the next 10 days.
 		for daysInFuture := 1; daysInFuture <= 10; daysInFuture++ {
-			insertFutureSession(t, mSrv, daysInFuture)
+			insertFutureSession(t, mSrv, time.Hour*24*time.Duration(daysInFuture))
 		}
 
 		daysOut := 7
@@ -79,7 +70,7 @@ func TestGetUpcomingSessions(t *testing.T) {
 
 		dropDatabase(context.Background(), mSrv)
 
-		infoSessID := insertFutureSession(t, mSrv, 1)
+		infoSessID := insertFutureSession(t, mSrv, time.Hour*24)
 		insertRandSignups(t, mSrv, infoSessID, 10)
 
 		daysOut := time.Hour * 24 * 10
@@ -99,13 +90,31 @@ func TestServer(t *testing.T) {
 		e := json.NewEncoder(&body)
 		e.Encode(Request{
 			JobName: "info-session-reminder",
-			JobArgs: JobArgs{Period: "1 day"},
+			JobArgs: JobArgs{Period: "1 hour"},
 		})
 		req := mustMakeReq(t, &body)
 		resp := httptest.NewRecorder()
 
 		mockTwilio := MockSMSService{}
 		mongoService := NewMongoService(dbClient, dbName)
+
+		sessionID := insertFutureSession(t, mongoService, time.Hour)
+		attendee := gofakeit.Person()
+		toPhone := gofakeit.Phone()
+		fakeSignup := Signup{
+			CreatedAt:   time.Now(),
+			ID:          randID(),
+			SessionID:   sessionID,
+			Email:       attendee.Contact.Email,
+			NameFirst:   attendee.FirstName,
+			NameLast:    attendee.LastName,
+			FullName:    fmt.Sprintf("%s %s", attendee.FirstName, attendee.LastName),
+			Cell:        toPhone,
+			ZoomJoinURL: mustFakeZoomURL(t),
+		}
+
+		_, err := mongoService.client.Database(mongoService.dbName).Collection("signups").InsertOne(context.Background(), fakeSignup)
+		require.NoError(t, err)
 
 		srv := NewServer(ServerOpts{
 			Store:      mongoService,
@@ -116,17 +125,19 @@ func TestServer(t *testing.T) {
 
 		require.Equal(t, resp.Result().StatusCode, http.StatusOK)
 		require.True(t, mockTwilio.called)
-		// require.Contains(t, mockTwilio.calledWith, )
+		require.Contains(t, mockTwilio.calledWith, toPhone)
+		// TODO:
+		// require.Contains(t, mockTwilio.calledWith, "Hi from Op Spark. We're sending a friendly reminder that you signed up for an Info Session today.")
 	})
 }
 
-func insertFutureSession(t *testing.T, m *MongoService, daysInFuture int) string {
+func insertFutureSession(t *testing.T, m *MongoService, inFuture time.Duration) string {
 	s := Session{
 		ID:        randID(),
 		ProgramID: INFO_SESSION_PROGRAM_ID,
 		CreatedAt: time.Now(),
 	}
-	s.Times.Start.DateTime = time.Now().AddDate(0, 0, daysInFuture)
+	s.Times.Start.DateTime = time.Now().Add(inFuture)
 
 	res, err := m.client.
 		Database(m.dbName).Collection("sessions").

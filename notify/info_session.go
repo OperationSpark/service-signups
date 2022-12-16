@@ -2,8 +2,12 @@ package notify
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -79,6 +83,17 @@ type (
 		Store      Store
 		SMSService SMSSender
 	}
+
+	Request struct {
+		JobName string  `json:"jobName"`
+		JobArgs JobArgs `json:"jobArgs"`
+	}
+
+	JobArgs struct {
+		Period Period `json:"period"`
+	}
+
+	Period string
 )
 
 const INFO_SESSION_PROGRAM_ID = "5sTmB97DzcqCwEZFR"
@@ -97,10 +112,20 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 	}
 
-	// Remind attendees for today's info session(s)
-	// Get from request body/params?
-	hoursInFuture := time.Hour * 24 * 1
-	sessions, err := s.store.GetUpcomingSessions(r.Context(), hoursInFuture)
+	var reqBody Request
+	reqBody.fromJSON(r.Body)
+	fmt.Printf("%+v", reqBody)
+
+	// Remind attendees for some period in the future.
+	// (1 hour, 2 days, etc)
+	inFuture, err := reqBody.JobArgs.Period.Parse()
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	sessions, err := s.store.GetUpcomingSessions(r.Context(), inFuture)
 	if err != nil {
 		fmt.Println(err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -183,4 +208,28 @@ func (s *Server) sendSMSReminders(ctx context.Context, sessions []*UpcomingSessi
 		}
 	}
 	return errs.Wait()
+}
+
+func (r *Request) fromJSON(body io.Reader) error {
+	d := json.NewDecoder(body)
+	return d.Decode(r)
+}
+
+func (p Period) Parse() (time.Duration, error) {
+	parts := strings.Fields(string(p))
+	rawVal := parts[0]
+	val, err := strconv.Atoi(rawVal)
+	if err != nil {
+		return time.Duration(0), err
+	}
+	if strings.Contains(string(p), "day") {
+		return time.Hour * 24 * time.Duration(val), nil
+	}
+	if strings.Contains(string(p), "hour") {
+		return time.Hour * time.Duration(val), nil
+	}
+	if strings.Contains(string(p), "minute") {
+		return time.Minute * time.Duration(val), nil
+	}
+	return time.Duration(0), fmt.Errorf(`invalid period type: %s\nacceptable types are "day(s)", "hour(s)", "minute(s)"`, parts[1])
 }
