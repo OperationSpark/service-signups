@@ -1,6 +1,6 @@
 # Session Sign Up Service
 
-![Coverage](https://img.shields.io/badge/Coverage-63.1%25-yellow)
+![Coverage](https://img.shields.io/badge/Coverage-64.2%25-yellow)
 
 When someone signs up for an Info Session on [operationspark.org](https://operationspark.org),
 this service runs a series of tasks:
