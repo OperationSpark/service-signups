@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -31,6 +32,10 @@ func (m *MockSMSService) Send(ctx context.Context, toNum string, msg string) err
 	m.called = true
 	m.calledWith = []string{toNum, msg}
 	return nil
+}
+
+func (m *MockSMSService) FormatCell(cell string) string {
+	return "+1" + strings.ReplaceAll(cell, "-", "")
 }
 
 func TestGetUpcomingSessions(t *testing.T) {
@@ -125,12 +130,40 @@ func TestServer(t *testing.T) {
 
 		require.Equal(t, resp.Result().StatusCode, http.StatusOK)
 		require.True(t, mockTwilio.called)
-		require.Contains(t, mockTwilio.calledWith, toPhone)
-		// TODO:
-		// require.Contains(t, mockTwilio.calledWith, "Hi from Op Spark. We're sending a friendly reminder that you signed up for an Info Session today.")
+		require.Contains(t, mockTwilio.calledWith, mockTwilio.FormatCell(toPhone))
+		require.Contains(t, mockTwilio.calledWith[1], "Hi from Operation Spark! A friendly reminder that you have an Info Session")
 	})
 }
 
+func TestReminderMsg(t *testing.T) {
+	t.Run(`Reminder message includes "today" if the session is today`, func(t *testing.T) {
+		ctx := context.WithValue(context.Background(), RECIPIENT_TZ, time.UTC)
+		session := UpcomingSession{}
+		session.Times.Start.DateTime = time.Now().Add(time.Hour * 5)
+		got, err := reminderMsg(ctx, session)
+		require.NoError(t, err)
+		want := "Hi from Operation Spark! A friendly reminder that you have an Info Session today"
+		require.Contains(t, got, want)
+	})
+
+	t.Run("Reminder message includes the day of the week if the session is not today", func(t *testing.T) {
+		ctx := context.WithValue(context.Background(), RECIPIENT_TZ, time.UTC)
+		session := UpcomingSession{}
+		mardiGras, err := time.Parse("Jan 02, 2006", "Feb 21, 2023") // Mardi Gras
+		require.NoError(t, err)
+
+		session.Times.Start.DateTime = mardiGras
+
+		got, err := reminderMsg(ctx, session)
+		require.NoError(t, err)
+
+		want := "Tuesday"
+		require.Contains(t, got, want)
+
+	})
+}
+
+// ** Test Helpers ** //
 func insertFutureSession(t *testing.T, m *MongoService, inFuture time.Duration) string {
 	s := Session{
 		ID:        randID(),

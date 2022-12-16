@@ -3,6 +3,7 @@ package notify
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -95,9 +96,18 @@ type (
 	}
 
 	Period string
+
+	contextKey int
 )
 
-const INFO_SESSION_PROGRAM_ID = "5sTmB97DzcqCwEZFR"
+const (
+	RECIPIENT_TZ contextKey = iota
+)
+
+const (
+	INFO_SESSION_PROGRAM_ID = "5sTmB97DzcqCwEZFR"
+	CENTRAL_TZ_NAME         = "America/Chicago"
+)
 
 func NewServer(o ServerOpts) *Server {
 	return &Server{
@@ -111,6 +121,15 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 	}
 
+	// Add timezone to the request context.
+	// TODO: Base the TZ on some location information somewhere
+	tz, err := time.LoadLocation(CENTRAL_TZ_NAME)
+	if err != nil {
+		fmt.Printf("loadLocation: %v, ", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	ctx := context.WithValue(r.Context(), RECIPIENT_TZ, tz)
 	var reqBody Request
 	reqBody.fromJSON(r.Body)
 
@@ -123,7 +142,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sessions, err := s.store.GetUpcomingSessions(r.Context(), inFuture)
+	sessions, err := s.store.GetUpcomingSessions(ctx, inFuture)
 	if err != nil {
 		fmt.Printf("getUpcomingSessions: %v", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -136,7 +155,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			sess.Times.Start.DateTime.Format(time.RubyDate))
 	}
 
-	err = s.sendSMSReminders(r.Context(), sessions)
+	err = s.sendSMSReminders(ctx, sessions)
 	if err != nil {
 		fmt.Println("One or more message failed to send", err)
 		http.Error(w, "One or more message failed to send", http.StatusInternalServerError)
@@ -199,8 +218,10 @@ func (s *Server) sendSMSReminders(ctx context.Context, sessions []*UpcomingSessi
 			// https://stackoverflow.com/questions/40326723/go-vet-range-variable-captured-by-func-literal-when-using-go-routine-inside-of-f
 			errs.Go(func(p Participant) func() error {
 				return func() error {
-					// TODO: Update this message
-					msg := "go to the info session"
+					msg, err := reminderMsg(ctx, *session)
+					if err != nil {
+						return fmt.Errorf("reminderMsg: %w", err)
+					}
 					toNum := s.twilioService.FormatCell(p.Cell)
 					return s.twilioService.Send(ctx, toNum, msg)
 				}
@@ -208,6 +229,25 @@ func (s *Server) sendSMSReminders(ctx context.Context, sessions []*UpcomingSessi
 		}
 	}
 	return errs.Wait()
+}
+
+func reminderMsg(ctx context.Context, session UpcomingSession) (string, error) {
+	tz, ok := ctx.Value(RECIPIENT_TZ).(*time.Location)
+	if !ok {
+		return "", errors.New("could not retrieve local timezone from context")
+	}
+
+	day := session.Times.Start.DateTime.In(tz).Format("Monday")
+	if isToday(session.Times.Start.DateTime) {
+		day = "today"
+	}
+	time := session.Times.Start.DateTime.In(tz).Format("03:04PM MST")
+	// TODO: Include short link
+	return fmt.Sprintf("Hi from Operation Spark! A friendly reminder that you have an Info Session %s at %s", day, time), nil
+}
+
+func isToday(date time.Time) bool {
+	return time.Now().Before(date) && date.Before(time.Now().Add(time.Hour*13))
 }
 
 func (r *Request) fromJSON(body io.Reader) error {
