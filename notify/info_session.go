@@ -27,7 +27,7 @@ type (
 		ZoomJoinURL         string `bson:"zoomJoinUrl"`
 		SessionDate         time.Time
 		SessionLocationType string
-		// SessionLocation     Location
+		SessionLocation     Location
 	}
 
 	UpcomingSession struct {
@@ -35,8 +35,9 @@ type (
 		ProgramID    string           `bson:"programId"`
 		Times        greenlight.Times `bson:"times"`
 		Participants []Participant
-		LocationType string   `json:"locationType"`
-		Location     Location `json:"location"`
+		LocationID   string `bson:"locationId"`
+		LocationType string `bson:"locationType"`
+		Location     Location
 	}
 
 	Location struct {
@@ -194,15 +195,23 @@ func (m *MongoService) GetUpcomingSessions(ctx context.Context, inFuture time.Du
 
 	// Fetch the attendees
 	signups := m.client.Database(m.dbName).Collection("signups")
+	locations := m.client.Database(m.dbName).Collection("locations")
 	for _, session := range upcomingSessions {
-		// Get associated Location data
-
-		cur, err := signups.Find(ctx, bson.M{"sessionId": session.ID})
+		suCur, err := signups.Find(ctx, bson.M{"sessionId": session.ID})
 		if err != nil {
 			return upcomingSessions, fmt.Errorf("signups.Find: %w", err)
 		}
+
+		// Get associated Location data
+		var loc greenlight.Location
+		res := locations.FindOne(ctx, bson.M{"_id": session.LocationID})
+		err = res.Decode(&loc)
+		if err != nil {
+			return upcomingSessions, fmt.Errorf("decode location: %w", err)
+		}
+
 		var attendees []Participant
-		if err = cur.All(ctx, &attendees); err != nil {
+		if err = suCur.All(ctx, &attendees); err != nil {
 			return upcomingSessions, fmt.Errorf("signups.cursor.All(): %w", err)
 		}
 
@@ -210,8 +219,8 @@ func (m *MongoService) GetUpcomingSessions(ctx context.Context, inFuture time.Du
 		for _, p := range session.Participants {
 			p.SessionDate = session.Times.Start.DateTime
 			// TODO: Populate Location information
-			// p.SessionLocationType = "??"
-			// p.SessionLocation = "??"
+			p.SessionLocationType = session.LocationType
+			p.SessionLocation = transformLocation(loc)
 		}
 	}
 	return upcomingSessions, nil
@@ -290,4 +299,15 @@ func (p Period) Parse() (time.Duration, error) {
 		return time.Minute * time.Duration(val), nil
 	}
 	return time.Duration(0), fmt.Errorf(`invalid period type: %s\nacceptable types are "day(s)", "hour(s)", "minute(s)"`, parts[1])
+}
+
+func transformLocation(loc greenlight.Location) Location {
+	line1, cityStateZip := greenlight.ParseAddress(loc.GooglePlace.Address)
+	mapURL := greenlight.GoogleLocationLink(loc.GooglePlace.Address)
+	return Location{
+		Name:         loc.GooglePlace.Name,
+		Line1:        line1,
+		CityStateZip: cityStateZip,
+		MapURL:       mapURL,
+	}
 }

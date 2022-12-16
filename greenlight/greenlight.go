@@ -1,7 +1,11 @@
 // Package greenlight contains DTOs from Greenlight's Mongo database.
 package greenlight
 
-import "time"
+import (
+	"net/url"
+	"strings"
+	"time"
+)
 
 type (
 	Geometry struct {
@@ -18,17 +22,20 @@ type (
 	}
 
 	Location struct {
+		ID          string      `bson:"_id"`
 		GooglePlace GooglePlace `bson:"googlePlace"`
 	}
 
 	Session struct {
-		ID        string    `bson:"_id"`
-		ProgramID string    `bson:"programId"`
-		Times     Times     `bson:"times"` // TODO: Check out "inline" struct tag
-		Cohort    string    `bson:"cohort"`
-		Students  []string  `bson:"students"`
-		Name      string    `bson:"name"`
-		CreatedAt time.Time `bson:"createdAt"`
+		ID           string    `bson:"_id"`
+		CreatedAt    time.Time `bson:"createdAt"`
+		Cohort       string    `bson:"cohort"`
+		LocationID   string    `bson:"locationId"`
+		LocationType string    `bson:"locationType"` // TODO: Use enum?
+		ProgramID    string    `bson:"programId"`
+		Name         string    `bson:"name"`
+		Students     []string  `bson:"students"`
+		Times        Times     `bson:"times"` // TODO: Check out "inline" struct tag
 	}
 
 	Signup struct {
@@ -50,3 +57,31 @@ type (
 		} `bson:"start"`
 	}
 )
+
+// ParseAddress returns two strings, location line1 and cityStateZip
+// It takes a full address and splits the string into the street address string and a cityStateZip string
+func ParseAddress(address string) (line1, cityStateZip string) {
+	location := strings.SplitN(address, ",", 2)
+	if address == "" {
+		return "", ""
+	}
+	if len(location) == 1 {
+		return strings.TrimSpace(location[0]), ""
+	}
+
+	return strings.TrimSpace(location[0]), strings.TrimSpace(strings.TrimSuffix(location[1], ", USA"))
+}
+
+// GoogleLocationLink returns a google maps link of the input address
+// It uses the parseAddress function to split the address up and then url encode the strings to make the url
+func GoogleLocationLink(address string) string {
+	if address == "" {
+		return ""
+	}
+	line1, cityStateZip := ParseAddress(address)
+	if line1 == "" || cityStateZip == "" {
+		return ""
+	}
+	addressPath := url.QueryEscape(line1 + "," + cityStateZip)
+	return "https://www.google.com/maps/place/" + addressPath
+}

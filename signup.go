@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -143,34 +142,6 @@ func (s Signup) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// ParseAddress returns two strings, location line1 and cityStateZip
-// It takes a full address and splits the string into the street address string and a cityStateZip string
-func parseAddress(address string) (line1, cityStateZip string) {
-	location := strings.SplitN(address, ",", 2)
-	if address == "" {
-		return "", ""
-	}
-	if len(location) == 1 {
-		return strings.TrimSpace(location[0]), ""
-	}
-
-	return strings.TrimSpace(location[0]), strings.TrimSpace(strings.TrimSuffix(location[1], ", USA"))
-}
-
-// GoogleLocationLink returns a google maps link of the input address
-// It uses the parseAddress function to split the address up and then url encode the strings to make the url
-func googleLocationLink(address string) string {
-	if address == "" {
-		return ""
-	}
-	line1, cityStateZip := parseAddress(address)
-	if line1 == "" || cityStateZip == "" {
-		return ""
-	}
-	addressPath := url.QueryEscape(line1 + "," + cityStateZip)
-	return "https://www.google.com/maps/place/" + addressPath
-}
-
 // WelcomeData takes a Signup and prepares template variables for use in the Welcome email template.
 func (s *Signup) welcomeData() (welcomeVariables, error) {
 	if s.StartDateTime.IsZero() {
@@ -184,7 +155,7 @@ func (s *Signup) welcomeData() (welcomeVariables, error) {
 		return welcomeVariables{}, err
 	}
 
-	line1, cityStateZip := parseAddress(s.GooglePlace.Address)
+	line1, cityStateZip := greenlight.ParseAddress(s.GooglePlace.Address)
 	return welcomeVariables{
 		FirstName:            s.NameFirst,
 		LastName:             s.NameLast,
@@ -193,7 +164,7 @@ func (s *Signup) welcomeData() (welcomeVariables, error) {
 		ZoomURL:              s.ZoomMeetingURL(),
 		LocationLine1:        line1,
 		LocationCityStateZip: cityStateZip,
-		LocationMapURL:       googleLocationLink(s.GooglePlace.Address),
+		LocationMapURL:       greenlight.GoogleLocationLink(s.GooglePlace.Address),
 	}, nil
 }
 
@@ -261,7 +232,7 @@ func (su Signup) shortMessage(infoURL string) (string, error) {
 // ShortMessagingURL produces a custom URL for use on Operation Spark's SMS Messaging Preview service.
 // https://github.com/OperationSpark/sms.opspark.org
 func (su Signup) shortMessagingURL(baseURL string) (string, error) {
-	line1, cityStateZip := parseAddress(su.GooglePlace.Address)
+	line1, cityStateZip := greenlight.ParseAddress(su.GooglePlace.Address)
 
 	p := messagingReqParams{
 		Template:     INFO_SESSION_TEMPLATE,
@@ -273,7 +244,7 @@ func (su Signup) shortMessagingURL(baseURL string) (string, error) {
 			Name:         su.GooglePlace.Name,
 			Line1:        line1,
 			CityStateZip: cityStateZip,
-			MapURL:       googleLocationLink(su.GooglePlace.Address),
+			MapURL:       greenlight.GoogleLocationLink(su.GooglePlace.Address),
 		},
 	}
 	encoded, err := p.toBase64()

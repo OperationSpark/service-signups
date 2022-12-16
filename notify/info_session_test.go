@@ -180,10 +180,34 @@ func TestReminderMsg(t *testing.T) {
 
 // ** Test Helpers ** //
 func insertFutureSession(t *testing.T, m *MongoService, inFuture time.Duration) string {
+	location := greenlight.Location{
+		ID: randID(),
+	}
+	location.GooglePlace = greenlight.GooglePlace{
+		PlaceID: "ChIJ7YchCHSmIIYRYsAEPZN_E0o",
+		Name:    "Operation Spark",
+		Address: "514 Franklin Ave, New Orleans, LA 70117, USA",
+		Phone:   "+1 504-534-8277",
+		Website: "https://www.operationspark.org/",
+		Geometry: greenlight.Geometry{
+			Lat: 29.96325999999999,
+			Lng: -90.052138,
+		},
+	}
+
+	locRes, err := m.client.
+		Database(m.dbName).Collection("locations").
+		InsertOne(context.Background(), location)
+	require.NoError(t, err)
+
+	locationID, ok := locRes.InsertedID.(string)
+	require.True(t, ok)
 	s := greenlight.Session{
-		ID:        randID(),
-		ProgramID: INFO_SESSION_PROGRAM_ID,
-		CreatedAt: time.Now(),
+		ID:           randID(),
+		ProgramID:    INFO_SESSION_PROGRAM_ID,
+		CreatedAt:    time.Now(),
+		LocationType: "HYBRID",
+		LocationID:   locationID,
 	}
 	s.Times.Start.DateTime = time.Now().Add(inFuture)
 
