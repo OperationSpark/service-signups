@@ -10,30 +10,19 @@ import (
 	"strings"
 	"time"
 
+	"github.com/operationspark/service-signup/greenlight"
+	"github.com/operationspark/service-signup/notify"
 	"golang.org/x/sync/errgroup"
 )
 
 type (
-	Geometry struct {
-		Lat float64 `json:"lat"`
-		Lng float64 `json:"lng"`
-	}
-	GooglePlace struct {
-		PlaceID  string   `json:"placeId"`
-		Name     string   `json:"name"`
-		Address  string   `json:"address"`
-		Phone    string   `json:"phone"`
-		Website  string   `json:"website"`
-		Geometry Geometry `json:"geometry"`
-	}
-
 	Signup struct {
 		// Wether the person is attending "IN_PERSON" | "VIRTUAL"ly.
-		AttendingLocation string      `json:"attendingLocation" schema:"attendingLocation"`
-		Cell              string      `json:"cell" schema:"cell"`
-		Cohort            string      `json:"cohort" schema:"cohort"`
-		Email             string      `json:"email" schema:"email"`
-		GooglePlace       GooglePlace `json:"googlePlace" schema:"googlePlace"`
+		AttendingLocation string                 `json:"attendingLocation" schema:"attendingLocation"`
+		Cell              string                 `json:"cell" schema:"cell"`
+		Cohort            string                 `json:"cohort" schema:"cohort"`
+		Email             string                 `json:"email" schema:"email"`
+		GooglePlace       greenlight.GooglePlace `json:"googlePlace" schema:"googlePlace"`
 		// TODO: make LocationType an enum
 		LocationType     string    `json:"locationType" schema:"locationType"`
 		NameFirst        string    `json:"nameFirst" schema:"nameFirst"`
@@ -107,13 +96,24 @@ type (
 
 	// Request params for the Operation Spark messaging service.
 	messagingReqParams struct {
-		Template     string    `json:"template"`
-		ZoomLink     string    `json:"zoomLink"`
-		Date         time.Time `json:"date"`
-		Name         string    `json:"name"`
-		LocationType string    `json:"locationType"`
-		Location     Location  `json:"location"`
+		Template     osMessengerTemplate `json:"template"`
+		ZoomLink     string              `json:"zoomLink"`
+		Date         time.Time           `json:"date"`
+		Name         string              `json:"name"`
+		LocationType string              `json:"locationType"`
+		Location     Location            `json:"location"`
 	}
+
+	osMessenger struct {
+		// OpSpark Messaging Service base URL.
+		baseURL string
+	}
+
+	osMessengerTemplate string
+)
+
+const (
+	INFO_SESSION_TEMPLATE osMessengerTemplate = "InfoSession"
 )
 
 // StructToBase64 marshals a struct to JSON then encodes the string to base64.
@@ -264,7 +264,7 @@ func (su Signup) shortMessagingURL(baseURL string) (string, error) {
 	line1, cityStateZip := parseAddress(su.GooglePlace.Address)
 
 	p := messagingReqParams{
-		Template:     "InfoSession",
+		Template:     INFO_SESSION_TEMPLATE,
 		ZoomLink:     su.zoomMeetingURL,
 		Date:         su.StartDateTime,
 		Name:         su.NameFirst,
@@ -281,7 +281,6 @@ func (su Signup) shortMessagingURL(baseURL string) (string, error) {
 		return "", fmt.Errorf("structToBase64: %w", err)
 	}
 	return fmt.Sprintf("%s/m/%s", baseURL, encoded), nil
-
 }
 
 // String creates a human-readable Signup for debugging purposes.
@@ -358,4 +357,21 @@ func (sc *SignupService) attachZoomMeetingID(su *Signup) error {
 	}
 	su.SetZoomMeetingID(int64(id))
 	return nil
+}
+
+func (osm *osMessenger) CreateMessageURL(p notify.Participant) (string, error) {
+	params := messagingReqParams{
+		Template: INFO_SESSION_TEMPLATE,
+		ZoomLink: p.ZoomJoinURL,
+		Name:     p.NameFirst,
+		Date:     p.SessionDate,
+		// TODO: Session location information
+		// LocationType: p.SessionLocationType,
+		// Location: p.SessionLocation,
+	}
+	encoded, err := params.toBase64()
+	if err != nil {
+		return "", fmt.Errorf("structToBase64: %w", err)
+	}
+	return fmt.Sprintf("%s/m/%s", osm.baseURL, encoded), nil
 }

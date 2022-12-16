@@ -76,7 +76,7 @@ func NewTwilioService(o twilioServiceOptions) *smsService {
 //
 // Note: Twilio has a free Link Shortening service, but it is only available with the Messaging API, not Conversations.
 func (t *smsService) run(ctx context.Context, su Signup) error {
-	toNum := t.formatCell(su.Cell)
+	toNum := t.FormatCell(su.Cell)
 	convoName := fmt.Sprintf("%s %s", su.NameFirst, su.NameLast[0:1])
 	convoId := ""
 	existing, err := t.findConversationsByNumber(toNum)
@@ -195,7 +195,7 @@ func (t *smsService) addNumberToConversation(phNum, friendlyName string) (string
 }
 
 // FormatCell prepends the US country code, "+1", and removes any dashes from a phone number string.
-func (t *smsService) formatCell(cell string) string {
+func (t *smsService) FormatCell(cell string) string {
 	return "+1" + strings.ReplaceAll(cell, "-", "")
 }
 
@@ -215,6 +215,39 @@ func (t *smsService) sendConvoWebhook(ctx context.Context, convoID string) error
 
 	if resp.StatusCode >= 300 {
 		return handleHTTPError(resp)
+	}
+	return nil
+}
+
+// Send sends an SMS message to the given toNum and returns an error.
+func (t *smsService) Send(ctx context.Context, toNum string, msg string) error {
+	// TODO: Delete this log
+	fmt.Println(toNum, msg)
+
+	// TODO: Maybe consolidate this code with some of the run() code
+	convoId := ""
+	existing, err := t.findConversationsByNumber(toNum)
+	if err != nil {
+		return fmt.Errorf("findConversationsByNumber: %w", err)
+	}
+
+	// Create a new conversation if none exists
+	// I think we should always already have an existing conversation
+	if len(existing) == 0 {
+		convoId, err = t.addNumberToConversation(toNum, toNum)
+		if err != nil {
+			return fmt.Errorf("addNumberToConversation: %w", err)
+		}
+	} else {
+		if len(existing) > 1 {
+			return fmt.Errorf("found more than one existing conversation for cell: %q. %+v", toNum, existing)
+		}
+		// There can only be one..
+		convoId = *existing[0].ConversationSid
+	}
+	err = t.sendSMSInConversation(msg, convoId)
+	if err != nil {
+		return fmt.Errorf("sendSMS: %w", err)
 	}
 	return nil
 }
