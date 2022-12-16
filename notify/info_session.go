@@ -39,6 +39,7 @@ type (
 
 	SMSSender interface {
 		Send(ctx context.Context, toNum, msg string) error
+		FormatCell(string) string
 	}
 
 	Server struct {
@@ -106,28 +107,25 @@ func NewServer(o ServerOpts) *Server {
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("->%s %s\n", r.Method, r.URL.Path)
-
 	if r.Method != http.MethodPost {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 	}
 
 	var reqBody Request
 	reqBody.fromJSON(r.Body)
-	fmt.Printf("%+v", reqBody)
 
 	// Remind attendees for some period in the future.
 	// (1 hour, 2 days, etc)
 	inFuture, err := reqBody.JobArgs.Period.Parse()
 	if err != nil {
-		fmt.Println(err)
+		fmt.Printf("parse: %v, bodyL%+v\n", err, reqBody)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	sessions, err := s.store.GetUpcomingSessions(r.Context(), inFuture)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Printf("getUpcomingSessions: %v", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -201,8 +199,10 @@ func (s *Server) sendSMSReminders(ctx context.Context, sessions []*UpcomingSessi
 			// https://stackoverflow.com/questions/40326723/go-vet-range-variable-captured-by-func-literal-when-using-go-routine-inside-of-f
 			errs.Go(func(p Participant) func() error {
 				return func() error {
+					// TODO: Update this message
 					msg := "go to the info session"
-					return s.twilioService.Send(ctx, p.Cell, msg)
+					toNum := s.twilioService.FormatCell(p.Cell)
+					return s.twilioService.Send(ctx, toNum, msg)
 				}
 			}(p))
 		}
