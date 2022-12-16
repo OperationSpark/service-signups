@@ -5,35 +5,23 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/operationspark/service-signup/greenlight"
+	"github.com/operationspark/service-signup/notify"
 	"golang.org/x/sync/errgroup"
 )
 
 type (
-	Geometry struct {
-		Lat float64 `json:"lat"`
-		Lng float64 `json:"lng"`
-	}
-	GooglePlace struct {
-		PlaceID  string   `json:"placeId"`
-		Name     string   `json:"name"`
-		Address  string   `json:"address"`
-		Phone    string   `json:"phone"`
-		Website  string   `json:"website"`
-		Geometry Geometry `json:"geometry"`
-	}
-
 	Signup struct {
 		// Wether the person is attending "IN_PERSON" | "VIRTUAL"ly.
-		AttendingLocation string      `json:"attendingLocation" schema:"attendingLocation"`
-		Cell              string      `json:"cell" schema:"cell"`
-		Cohort            string      `json:"cohort" schema:"cohort"`
-		Email             string      `json:"email" schema:"email"`
-		GooglePlace       GooglePlace `json:"googlePlace" schema:"googlePlace"`
+		AttendingLocation string                 `json:"attendingLocation" schema:"attendingLocation"`
+		Cell              string                 `json:"cell" schema:"cell"`
+		Cohort            string                 `json:"cohort" schema:"cohort"`
+		Email             string                 `json:"email" schema:"email"`
+		GooglePlace       greenlight.GooglePlace `json:"googlePlace" schema:"googlePlace"`
 		// TODO: make LocationType an enum
 		LocationType     string    `json:"locationType" schema:"locationType"`
 		NameFirst        string    `json:"nameFirst" schema:"nameFirst"`
@@ -107,13 +95,24 @@ type (
 
 	// Request params for the Operation Spark messaging service.
 	messagingReqParams struct {
-		Template     string    `json:"template"`
-		ZoomLink     string    `json:"zoomLink"`
-		Date         time.Time `json:"date"`
-		Name         string    `json:"name"`
-		LocationType string    `json:"locationType"`
-		Location     Location  `json:"location"`
+		Template     osMessengerTemplate `json:"template"`
+		ZoomLink     string              `json:"zoomLink"`
+		Date         time.Time           `json:"date"`
+		Name         string              `json:"name"`
+		LocationType string              `json:"locationType"`
+		Location     Location            `json:"location"`
 	}
+
+	osMessenger struct {
+		// OpSpark Messaging Service base URL.
+		baseURL string
+	}
+
+	osMessengerTemplate string
+)
+
+const (
+	INFO_SESSION_TEMPLATE osMessengerTemplate = "InfoSession"
 )
 
 // StructToBase64 marshals a struct to JSON then encodes the string to base64.
@@ -143,34 +142,6 @@ func (s Signup) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// ParseAddress returns two strings, location line1 and cityStateZip
-// It takes a full address and splits the string into the street address string and a cityStateZip string
-func parseAddress(address string) (line1, cityStateZip string) {
-	location := strings.SplitN(address, ",", 2)
-	if address == "" {
-		return "", ""
-	}
-	if len(location) == 1 {
-		return strings.TrimSpace(location[0]), ""
-	}
-
-	return strings.TrimSpace(location[0]), strings.TrimSpace(strings.TrimSuffix(location[1], ", USA"))
-}
-
-// GoogleLocationLink returns a google maps link of the input address
-// It uses the parseAddress function to split the address up and then url encode the strings to make the url
-func googleLocationLink(address string) string {
-	if address == "" {
-		return ""
-	}
-	line1, cityStateZip := parseAddress(address)
-	if line1 == "" || cityStateZip == "" {
-		return ""
-	}
-	addressPath := url.QueryEscape(line1 + "," + cityStateZip)
-	return "https://www.google.com/maps/place/" + addressPath
-}
-
 // WelcomeData takes a Signup and prepares template variables for use in the Welcome email template.
 func (s *Signup) welcomeData() (welcomeVariables, error) {
 	if s.StartDateTime.IsZero() {
@@ -184,7 +155,7 @@ func (s *Signup) welcomeData() (welcomeVariables, error) {
 		return welcomeVariables{}, err
 	}
 
-	line1, cityStateZip := parseAddress(s.GooglePlace.Address)
+	line1, cityStateZip := greenlight.ParseAddress(s.GooglePlace.Address)
 	return welcomeVariables{
 		FirstName:            s.NameFirst,
 		LastName:             s.NameLast,
@@ -193,7 +164,7 @@ func (s *Signup) welcomeData() (welcomeVariables, error) {
 		ZoomURL:              s.ZoomMeetingURL(),
 		LocationLine1:        line1,
 		LocationCityStateZip: cityStateZip,
-		LocationMapURL:       googleLocationLink(s.GooglePlace.Address),
+		LocationMapURL:       greenlight.GoogleLocationLink(s.GooglePlace.Address),
 	}, nil
 }
 
@@ -261,10 +232,10 @@ func (su Signup) shortMessage(infoURL string) (string, error) {
 // ShortMessagingURL produces a custom URL for use on Operation Spark's SMS Messaging Preview service.
 // https://github.com/OperationSpark/sms.opspark.org
 func (su Signup) shortMessagingURL(baseURL string) (string, error) {
-	line1, cityStateZip := parseAddress(su.GooglePlace.Address)
+	line1, cityStateZip := greenlight.ParseAddress(su.GooglePlace.Address)
 
 	p := messagingReqParams{
-		Template:     "InfoSession",
+		Template:     INFO_SESSION_TEMPLATE,
 		ZoomLink:     su.zoomMeetingURL,
 		Date:         su.StartDateTime,
 		Name:         su.NameFirst,
@@ -273,7 +244,7 @@ func (su Signup) shortMessagingURL(baseURL string) (string, error) {
 			Name:         su.GooglePlace.Name,
 			Line1:        line1,
 			CityStateZip: cityStateZip,
-			MapURL:       googleLocationLink(su.GooglePlace.Address),
+			MapURL:       greenlight.GoogleLocationLink(su.GooglePlace.Address),
 		},
 	}
 	encoded, err := p.toBase64()
@@ -281,7 +252,6 @@ func (su Signup) shortMessagingURL(baseURL string) (string, error) {
 		return "", fmt.Errorf("structToBase64: %w", err)
 	}
 	return fmt.Sprintf("%s/m/%s", baseURL, encoded), nil
-
 }
 
 // String creates a human-readable Signup for debugging purposes.
@@ -358,4 +328,21 @@ func (sc *SignupService) attachZoomMeetingID(su *Signup) error {
 	}
 	su.SetZoomMeetingID(int64(id))
 	return nil
+}
+
+func (osm *osMessenger) CreateMessageURL(p notify.Participant) (string, error) {
+	params := messagingReqParams{
+		Template: INFO_SESSION_TEMPLATE,
+		ZoomLink: p.ZoomJoinURL,
+		Name:     p.NameFirst,
+		Date:     p.SessionDate,
+		// TODO: Session location information
+		// LocationType: p.SessionLocationType,
+		// Location: p.SessionLocation,
+	}
+	encoded, err := params.toBase64()
+	if err != nil {
+		return "", fmt.Errorf("structToBase64: %w", err)
+	}
+	return fmt.Sprintf("%s/m/%s", osm.baseURL, encoded), nil
 }

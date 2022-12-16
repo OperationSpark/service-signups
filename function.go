@@ -1,19 +1,84 @@
 package signup
 
 import (
+	"context"
+	"fmt"
+	"log"
+	"net/http"
+	"net/url"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
+	"github.com/operationspark/service-signup/notify"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+type (
+	// GCP Cloud Function requires the dreaded init() call to register the handler with the functions-framework. Init() is also unnecessarily called in test mode. Init() in turns calls NewServer() which needs to connect to MongoDB. To avoid that, I have this StubStore that implements the Store interface, but does nothing. It is only used in test mode to prevent the MongoDB connection error.
+	StubStore struct{}
+)
+
+// Implement the Store interface
+func (s *StubStore) GetUpcomingSessions(context.Context, time.Duration) ([]*notify.UpcomingSession, error) {
+	return []*notify.UpcomingSession{}, nil
+}
 
 func init() {
 	// Register an HTTP function with the Functions Framework
 	// This handler name maps to the entry point name in the Google Cloud Function platform.
 	// https://cloud.google.com/functions/docs/writing/write-http-functions
-	functions.HTTP("HandleSignUp", NewServer().HandleSignUp)
+	functions.HTTP("HandleSignUp", NewServer().ServeHTTP)
 }
 
-func NewServer() *signupServer {
+func NewServer() *http.ServeMux {
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/", NewSignupServer().HandleSignUp)
+	mux.HandleFunc("/notify", NewNotifyServer().ServeHTTP)
+	return mux
+}
+
+func NewNotifyServer() *notify.Server {
+	mongoURI := os.Getenv("MONGO_URI")
+	isCI := os.Getenv("CI") == "true"
+	parsed, err := url.Parse(mongoURI)
+	if isCI || (mongoURI == "" || err != nil) {
+		fmt.Printf("Invalid 'MONGO_URI' environmental variable: %q\n", mongoURI)
+		fmt.Printf("If you're running tests, you can ignore this message.\n\n")
+		// See StubStore comment above
+		// **  This server is never used ** //
+		return notify.NewServer(notify.ServerOpts{
+			Store: &StubStore{},
+		})
+	}
+
+	dbName := strings.TrimPrefix(parsed.Path, "/")
+	mongoClient, err := mongo.Connect(context.Background(), options.Client().ApplyURI(mongoURI))
+	if err != nil {
+		log.Fatalf("Could not connect to MongoDB: %q", mongoURI)
+	}
+	mongoService := notify.NewMongoService(mongoClient, dbName)
+
+	// TODO: Should we just use the once instance of a Twilio service?
+	twilioSvc := NewTwilioService(twilioServiceOptions{
+		accountSID:       os.Getenv("TWILIO_ACCOUNT_SID"),
+		authToken:        os.Getenv("TWILIO_AUTH_TOKEN"),
+		fromPhoneNum:     os.Getenv("TWILIO_PHONE_NUMBER"),
+		conversationsSid: os.Getenv("TWILIO_CONVERSATIONS_SID"),
+	})
+
+	return notify.NewServer(notify.ServerOpts{
+		OSMessagingService: &osMessenger{baseURL: os.Getenv("OS_MESSAGING_SERVICE_URL")},
+		Store:              mongoService,
+		SMSService:         twilioSvc,
+		ShortLinkService:   NewURLShortener(ShortenerOpts{apiKey: os.Getenv("URL_SHORTENER_API_KEY")}),
+	})
+}
+
+func NewSignupServer() *signupServer {
 	// Set up services/tasks to run when someone signs up for an Info Session.
 	mgDomain := os.Getenv("MAIL_DOMAIN")
 	mgAPIKey := os.Getenv("MAILGUN_API_KEY")
@@ -76,6 +141,5 @@ func NewServer() *signupServer {
 		},
 	)
 
-	server := newSignupServer(registrationService)
-	return server
+	return &signupServer{registrationService}
 }
