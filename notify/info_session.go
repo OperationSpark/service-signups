@@ -215,12 +215,11 @@ func (m *MongoService) GetUpcomingSessions(ctx context.Context, inFuture time.Du
 			return upcomingSessions, fmt.Errorf("signups.cursor.All(): %w", err)
 		}
 
-		session.Participants = append(session.Participants, attendees...)
-		for _, p := range session.Participants {
+		for _, p := range attendees {
 			p.SessionDate = session.Times.Start.DateTime
-			// TODO: Populate Location information
 			p.SessionLocationType = session.LocationType
 			p.SessionLocation = transformLocation(loc)
+			session.Participants = append(session.Participants, p)
 		}
 	}
 	return upcomingSessions, nil

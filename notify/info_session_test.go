@@ -97,6 +97,8 @@ func TestGetUpcomingSessions(t *testing.T) {
 		require.Len(t, got[0].Participants, 10)
 		for _, p := range got[0].Participants {
 			require.Regexp(t, regexp.MustCompile(`\w+@\w`), p.Email, "contains a valid email address")
+			require.Equal(t, "HYBRID", p.SessionLocationType)
+			require.Equal(t, "Operation Spark", p.SessionLocation.Name)
 		}
 	})
 }
