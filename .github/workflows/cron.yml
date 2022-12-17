@@ -30,11 +30,12 @@ jobs:
       - name: "Set up Cloud SDK"
         uses: "google-github-actions/setup-gcloud@v0"
 
-      - id: "Cloud Function Trigger"
+      # Using curl over "gcloud functions call" to specify the /notify endpoint
+      - id: "Cloud Function Trigger (curl)"
         run: >
-          gcloud
-          functions
-          call
-          session-signups
-          --data='{"jobName":"info-session-reminder","jobArgs": {"period":"1 hour"}}'
-          --region=us-central1
+          curl
+          -X POST
+          -H "Authorization: bearer $(gcloud auth print-identity-token)"
+          -H 'Content-Type: application/json'
+          -d '{"jobName":"info-session-reminder","jobArgs": {"period":"1 hour"}}'
+          https://us-central1-operationspark-org.cloudfunctions.net/session-signups-testing/notify
