@@ -1,0 +1,41 @@
+name: Cron Reminders
+on:
+  schedule:
+    #         ┌───────────── minute (0 - 59)
+    #         │  ┌───────────── hour (0 - 23) CST is -5 UTC #TODO: Daylight Savings Time
+    #         │  │ ┌───────────── day of the month (1 - 31)
+    #         │  │ │ ┌───────────── month (1 - 12 or JAN-DEC)
+    #         │  │ │ │ ┌───────────── day of the week (0 - 6 or SUN-SAT)
+    #         │  │ │ │ │
+    #         │  │ │ │ │
+    #         │  │ │ │ │
+    #         *  * * * *
+    - cron: "55 16 * * 1" # Every Monday at 10:55 AM CT https://crontab.guru/
+    - cron: "25 22 * * 1" # Every Monday at 16:25 CT https://crontab.guru/
+jobs:
+  info-session-reminder-hour-out:
+    permissions:
+      contents: "read"
+      id-token: "write"
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - id: "auth"
+        uses: "google-github-actions/auth@v0"
+        with:
+          credentials_json: "${{ secrets.GCP_SA_CREDS_JSON }}"
+
+      - name: "Set up Cloud SDK"
+        uses: "google-github-actions/setup-gcloud@v0"
+
+      # Using curl over "gcloud functions call" to specify the /notify endpoint
+      - id: "Cloud Function Trigger (curl)"
+        run: >
+          curl
+          -X POST
+          -H "Authorization: bearer $(gcloud auth print-identity-token)"
+          -H 'Content-Type: application/json'
+          -d '{"jobName":"info-session-reminder","jobArgs": {"period":"1 hour","dryRun":true}}'
+          https://us-central1-operationspark-org.cloudfunctions.net/session-signups-testing/notify
