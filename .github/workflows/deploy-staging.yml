@@ -45,6 +45,7 @@ jobs:
             TWILIO_PHONE_NUMBER=${{secrets.TWILIO_PHONE_NUMBER}},
             TWILIO_CONVERSATIONS_SID=${{secrets.TWILIO_CONVERSATIONS_SID}},
             URL_SHORTENER_API_KEY=${{secrets.URL_SHORTENER_API_KEY}},
+            MONGO_URI=${{secrets.MONGO_URI}},
             APP_ENV=staging
       - id: "trigger-url"
         run: 'echo "${{ steps.deploy.outputs.url }}"'
