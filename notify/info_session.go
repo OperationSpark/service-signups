@@ -154,7 +154,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, sess := range sessions {
-		fmt.Printf("upcoming info session:\nID: %s, Time: %s\n",
+		fmt.Printf("upcoming info session:\nSessionID: %s, Time: %s\n",
 			sess.ID,
 			sess.Times.Start.DateTime.Format(time.RubyDate))
 	}
@@ -257,7 +257,7 @@ func (s *Server) sendSMSReminders(ctx context.Context, sessions []*UpcomingSessi
 					msg = fmt.Sprintf("%s\nMore details: %s", msg, link)
 					toNum := s.twilioService.FormatCell(p.Cell)
 					if dryRun {
-						fmt.Printf("Dry Run Mode: (not sending SMS)\ntoNum: %s\n,msg: %s", toNum, msg)
+						fmt.Printf("Dry Run Mode: (not sending SMS)\ntoNum: %s\n,msg: %s\n", toNum, msg)
 						return nil
 					}
 					return s.twilioService.Send(ctx, toNum, msg)
