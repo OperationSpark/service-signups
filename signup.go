@@ -332,13 +332,12 @@ func (sc *SignupService) attachZoomMeetingID(su *Signup) error {
 
 func (osm *osMessenger) CreateMessageURL(p notify.Participant) (string, error) {
 	params := messagingReqParams{
-		Template: INFO_SESSION_TEMPLATE,
-		ZoomLink: p.ZoomJoinURL,
-		Name:     p.NameFirst,
-		Date:     p.SessionDate,
-		// TODO: Session location information
-		// LocationType: p.SessionLocationType,
-		// Location: p.SessionLocation,
+		Template:     INFO_SESSION_TEMPLATE,
+		ZoomLink:     p.ZoomJoinURL,
+		Name:         p.NameFirst,
+		Date:         p.SessionDate,
+		LocationType: p.SessionLocationType,
+		Location:     Location(p.SessionLocation),
 	}
 	encoded, err := params.toBase64()
 	if err != nil {
