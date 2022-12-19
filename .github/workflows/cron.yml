@@ -37,5 +37,5 @@ jobs:
           -X POST
           -H "Authorization: bearer $(gcloud auth print-identity-token)"
           -H 'Content-Type: application/json'
-          -d '{"jobName":"info-session-reminder","jobArgs": {"period":"1 hour"}}'
+          -d '{"jobName":"info-session-reminder","jobArgs": {"period":"1 hour","dryRun":true}}'
           https://us-central1-operationspark-org.cloudfunctions.net/session-signups-testing/notify

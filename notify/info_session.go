@@ -89,6 +89,7 @@ type (
 
 	JobArgs struct {
 		Period Period `json:"period"`
+		DryRun bool   `json:"dryRun"`
 	}
 
 	Period string
@@ -147,13 +148,18 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(sessions) == 0 {
+		fmt.Printf("No upcoming sessions in the next %s\n", reqBody.JobArgs.Period)
+		return
+	}
+
 	for _, sess := range sessions {
 		fmt.Printf("upcoming info session:\nID: %s, Time: %s\n",
 			sess.ID,
 			sess.Times.Start.DateTime.Format(time.RubyDate))
 	}
 
-	err = s.sendSMSReminders(ctx, sessions)
+	err = s.sendSMSReminders(ctx, sessions, reqBody.JobArgs.DryRun)
 	if err != nil {
 		fmt.Println("One or more message failed to send", err)
 		http.Error(w, "One or more message failed to send", http.StatusInternalServerError)
@@ -225,7 +231,7 @@ func (m *MongoService) GetUpcomingSessions(ctx context.Context, inFuture time.Du
 	return upcomingSessions, nil
 }
 
-func (s *Server) sendSMSReminders(ctx context.Context, sessions []*UpcomingSession) error {
+func (s *Server) sendSMSReminders(ctx context.Context, sessions []*UpcomingSession, dryRun bool) error {
 	errs, ctx := errgroup.WithContext(ctx)
 	for _, session := range sessions {
 		for _, p := range session.Participants {
@@ -250,6 +256,10 @@ func (s *Server) sendSMSReminders(ctx context.Context, sessions []*UpcomingSessi
 
 					msg = fmt.Sprintf("%s\nMore details: %s", msg, link)
 					toNum := s.twilioService.FormatCell(p.Cell)
+					if dryRun {
+						fmt.Printf("Dry Run Mode: (not sending SMS)\ntoNum: %s\n,msg: %s", toNum, msg)
+						return nil
+					}
 					return s.twilioService.Send(ctx, toNum, msg)
 				}
 			}(p))
@@ -294,10 +304,10 @@ func (p Period) Parse() (time.Duration, error) {
 	if strings.Contains(string(p), "hour") {
 		return time.Hour * time.Duration(val), nil
 	}
-	if strings.Contains(string(p), "minute") {
+	if strings.Contains(string(p), "min") {
 		return time.Minute * time.Duration(val), nil
 	}
-	return time.Duration(0), fmt.Errorf(`invalid period type: %s\nacceptable types are "day(s)", "hour(s)", "minute(s)"`, parts[1])
+	return time.Duration(0), fmt.Errorf(`invalid period type: %s\nacceptable types are "day(s)", "hour(s)", "minute(s)", "min(s)"`, parts[1])
 }
 
 func transformLocation(loc greenlight.Location) Location {

@@ -221,9 +221,6 @@ func (t *smsService) sendConvoWebhook(ctx context.Context, convoID string) error
 
 // Send sends an SMS message to the given toNum and returns an error.
 func (t *smsService) Send(ctx context.Context, toNum string, msg string) error {
-	// TODO: Delete this log
-	fmt.Println(toNum, msg)
-
 	// TODO: Maybe consolidate this code with some of the run() code
 	convoId := ""
 	existing, err := t.findConversationsByNumber(toNum)
