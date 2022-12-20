@@ -276,11 +276,14 @@ func reminderMsg(ctx context.Context, session UpcomingSession) (string, error) {
 	}
 
 	day := session.Times.Start.DateTime.In(tz).Format("Monday")
+	time := session.Times.Start.DateTime.In(tz).Format("03:04PM MST")
+	date := session.Times.Start.DateTime.In(tz).Format(" 1/2")
 	if isToday(session.Times.Start.DateTime) {
 		day = "today"
+		date = ""
 	}
-	time := session.Times.Start.DateTime.In(tz).Format("03:04PM MST")
-	return fmt.Sprintf("Hi from Operation Spark! A friendly reminder that you have an Info Session %s at %s.", day, time), nil
+
+	return fmt.Sprintf("Hi from Operation Spark! A friendly reminder that you have an Info Session %s%s at %s.", day, date, time), nil
 }
 
 // IsToday is checks if the given time is today.
