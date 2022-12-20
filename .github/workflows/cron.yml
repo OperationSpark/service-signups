@@ -12,7 +12,7 @@ on:
     #         *  * * * *
     - cron: "55 16 * * 1" # Every Monday at 10:55 AM CT https://crontab.guru/
     - cron: "25 22 * * 1" # Every Monday at 16:25 CT https://crontab.guru/
-    - cron: "40 16 * * 2" # Test job. Delete me
+    - cron: "56 16 * * 2" # Test job. Delete me
 jobs:
   info-session-reminder-hour-out:
     permissions:
