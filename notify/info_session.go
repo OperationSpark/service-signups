@@ -276,7 +276,7 @@ func reminderMsg(ctx context.Context, session UpcomingSession) (string, error) {
 	}
 
 	day := session.Times.Start.DateTime.In(tz).Format("Monday")
-	time := session.Times.Start.DateTime.In(tz).Format("03:04PM MST")
+	time := session.Times.Start.DateTime.In(tz).Format("3:04PM MST")
 	date := session.Times.Start.DateTime.In(tz).Format(" 1/2")
 	if isToday(session.Times.Start.DateTime) {
 		day = "today"
