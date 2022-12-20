@@ -14,7 +14,6 @@ on:
     - cron: "25 22 * * 1" # Every Monday at 16:25 CT https://crontab.guru/
     # TODO: Set up a single job that runs every hour between 9am and 9pm
     # since the service will do nothing if there are no sessions in the given period
-    - cron: "37 19 * * 2" # Test job. Delete me
 jobs:
   info-session-reminder-hour-out:
     permissions:
@@ -40,5 +39,5 @@ jobs:
           -X POST
           -H "Authorization: bearer $(gcloud auth print-identity-token)"
           -H 'Content-Type: application/json'
-          -d '{"jobName":"info-session-reminder","jobArgs": {"period":"240 min"}}'
-          https://us-central1-operationspark-org.cloudfunctions.net/session-signups-testing/notify
+          -d '{"jobName":"info-session-reminder","jobArgs": {"period":"90 min"}}'
+          https://us-central1-operationspark-org.cloudfunctions.net/session-signups/notify
