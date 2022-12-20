@@ -3,14 +3,20 @@ package signup
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/brianvoe/gofakeit"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/operationspark/service-signup/greenlight"
+	"github.com/operationspark/service-signup/notify"
+	"github.com/stretchr/testify/require"
 )
 
 type MockMailgunService struct {
@@ -469,7 +475,7 @@ func TestFromBase64(t *testing.T) {
 		}
 
 		assertEqual(t, params.Name, "FirstName")
-		assertEqual(t, params.Template, "InfoSession")
+		assertEqual(t, params.Template, INFO_SESSION_TEMPLATE)
 		assertEqual(t, params.Date.Format(time.RFC3339), "2022-10-05T17:00:00Z")
 		assertEqual(t, params.ZoomLink, "https://us06web.zoom.us/j/12345678910")
 	})
@@ -506,7 +512,7 @@ func TestParseAddress(t *testing.T) {
 	t.Run("parses an address string into street address string and cityStateZip string", func(t *testing.T) {
 		address := "514 Franklin Ave, New Orleans, LA 70117, USA"
 
-		line1, cityStateZip := parseAddress(address)
+		line1, cityStateZip := greenlight.ParseAddress(address)
 		assertEqual(t, line1, "514 Franklin Ave")
 		assertEqual(t, cityStateZip, "New Orleans, LA 70117")
 
@@ -515,7 +521,7 @@ func TestParseAddress(t *testing.T) {
 	t.Run("handles empty string", func(t *testing.T) {
 		address := ""
 
-		line1, cityStateZip := parseAddress(address)
+		line1, cityStateZip := greenlight.ParseAddress(address)
 		assertEqual(t, line1, "")
 		assertEqual(t, cityStateZip, "")
 
@@ -524,7 +530,7 @@ func TestParseAddress(t *testing.T) {
 	t.Run("handles addresses with a street address only", func(t *testing.T) {
 		address := "514 Franklin Ave"
 
-		line1, cityStateZip := parseAddress(address)
+		line1, cityStateZip := greenlight.ParseAddress(address)
 		assertEqual(t, line1, "514 Franklin Ave")
 		assertEqual(t, cityStateZip, "")
 
@@ -535,20 +541,20 @@ func TestGoogleLocationLink(t *testing.T) {
 	t.Run("returns the google maps link to address", func(t *testing.T) {
 		address := "514 Franklin Ave, New Orleans, LA 70117, USA"
 
-		assertEqual(t, googleLocationLink(address), "https://www.google.com/maps/place/514+Franklin+Ave%2CNew+Orleans%2C+LA+70117")
+		assertEqual(t, greenlight.GoogleLocationLink(address), "https://www.google.com/maps/place/514+Franklin+Ave%2CNew+Orleans%2C+LA+70117")
 	})
 
 	t.Run("handles empty string", func(t *testing.T) {
 		address := ""
 
-		assertEqual(t, googleLocationLink((address)), "")
+		assertEqual(t, greenlight.GoogleLocationLink((address)), "")
 
 	})
 
 	t.Run("handles addresses with a street address only", func(t *testing.T) {
 		address := "514 Franklin Ave"
 
-		assertEqual(t, googleLocationLink(address), "")
+		assertEqual(t, greenlight.GoogleLocationLink(address), "")
 
 	})
 }
@@ -564,7 +570,7 @@ func TestShortMessagingURL(t *testing.T) {
 			Email:         "yasiin@blackstar.net",
 			SessionID:     "WpkB3jcw6gCw2uEMf",
 			LocationType:  "HYBRID",
-			GooglePlace: GooglePlace{
+			GooglePlace: greenlight.GooglePlace{
 				Name:    "Some Place",
 				Address: "2723 Guess Rd, Durham, NC 27705",
 			},
@@ -596,12 +602,60 @@ func TestShortMessagingURL(t *testing.T) {
 		assertEqual(t, gotParams.Name, s.NameFirst)
 		assertEqual(t, gotParams.Date.Equal(s.StartDateTime), true)
 		assertEqual(t, gotParams.ZoomLink, s.zoomMeetingURL)
-		assertEqual(t, gotParams.Template, "InfoSession")
+		assertEqual(t, gotParams.Template, INFO_SESSION_TEMPLATE)
 		assertEqual(t, gotParams.LocationType, "HYBRID")
 		assertEqual(t, gotParams.Location.Name, "Some Place")
 		assertEqual(t, gotParams.Location.Line1, "2723 Guess Rd")
 		assertEqual(t, gotParams.Location.CityStateZip, "Durham, NC 27705")
 		assertEqual(t, gotParams.Location.MapURL, "https://www.google.com/maps/place/2723+Guess+Rd%2CDurham%2C+NC+27705")
 	})
+}
 
+func TestCreateMessageURL(t *testing.T) {
+	mardiGras, err := time.Parse("Jan 02, 2006", "Feb 21, 2023") // Mardi Gras
+	require.NoError(t, err)
+
+	osLoc := Location{
+		Name:         "Operation Spark",
+		Line1:        "514 Franklin Av",
+		CityStateZip: "New Orleans, LA 70117",
+		MapURL:       "https://testmapurl.google.com",
+	}
+
+	m := osMessenger{}
+	person := gofakeit.Person()
+	p := notify.Participant{
+		NameFirst:           person.FirstName,
+		NameLast:            person.LastName,
+		FullName:            person.FirstName + " " + person.LastName,
+		Cell:                person.Contact.Phone,
+		Email:               person.Contact.Email,
+		ZoomJoinURL:         notify.MustFakeZoomURL(t),
+		SessionDate:         mardiGras,
+		SessionLocationType: "HYBRID",
+		SessionLocation:     notify.Location(osLoc),
+	}
+	msgURL, err := m.CreateMessageURL(p)
+	require.NoError(t, err)
+	// Make sure location data is encoded in the URL
+	u, err := url.Parse(msgURL)
+	require.NoError(t, err)
+
+	// Decode the base64 encoded data from the generated URL
+	encoded := strings.TrimPrefix(u.Path, "/m/")
+	d := base64.NewDecoder(base64.StdEncoding, strings.NewReader(encoded))
+	decodedJson := make([]byte, 420)
+	n, err := d.Read(decodedJson)
+	require.Greater(t, n, 0)
+	require.NoError(t, err)
+
+	// Unmarshal the decoded JSON into a messaging request params struct
+	var params messagingReqParams
+	jd := json.NewDecoder(bytes.NewReader(decodedJson))
+	err = jd.Decode(&params)
+	require.NoError(t, err)
+
+	// Verify the location data matches the input from the Participant
+	require.Equal(t, "HYBRID", params.LocationType)
+	require.Equal(t, osLoc, params.Location)
 }
