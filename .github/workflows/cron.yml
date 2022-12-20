@@ -32,7 +32,7 @@ jobs:
         uses: "google-github-actions/setup-gcloud@v0"
 
       # Using curl over "gcloud functions call" to specify the /notify endpoint
-      - id: "Cloud Function Trigger (curl)"
+      - id: "cloud-function-trigger-curl"
         run: >
           curl
           -X POST
