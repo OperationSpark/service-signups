@@ -231,6 +231,7 @@ func (m *MongoService) GetUpcomingSessions(ctx context.Context, inFuture time.Du
 	return upcomingSessions, nil
 }
 
+// SendSMSReminders sends an SMS message to each of the attendees in each of the given sessions. Each SMS is sent in it's own goroutine.
 func (s *Server) sendSMSReminders(ctx context.Context, sessions []*UpcomingSession, dryRun bool) error {
 	errs, ctx := errgroup.WithContext(ctx)
 	for _, session := range sessions {
@@ -282,6 +283,7 @@ func reminderMsg(ctx context.Context, session UpcomingSession) (string, error) {
 	return fmt.Sprintf("Hi from Operation Spark! A friendly reminder that you have an Info Session %s at %s.", day, time), nil
 }
 
+// IsToday is checks if the given time is today.
 func isToday(date time.Time) bool {
 	return time.Now().Before(date) && date.Before(time.Now().Add(time.Hour*13))
 }
@@ -291,6 +293,8 @@ func (r *Request) fromJSON(body io.Reader) error {
 	return d.Decode(r)
 }
 
+// Parse parses the Period string ("3 hours") into a time.Duration.
+// Acceptable periods are "day(s)", "hour(s)", "minute(s)", "min(s)".
 func (p Period) Parse() (time.Duration, error) {
 	parts := strings.Fields(string(p))
 	rawVal := parts[0]
