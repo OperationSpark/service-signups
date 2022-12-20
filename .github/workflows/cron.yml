@@ -12,7 +12,7 @@ on:
     #         *  * * * *
     - cron: "55 16 * * 1" # Every Monday at 10:55 AM CT https://crontab.guru/
     - cron: "25 22 * * 1" # Every Monday at 16:25 CT https://crontab.guru/
-    - cron: "37 17 * * 2" # Test job. Delete me
+    - cron: "47 17 * * 2" # Test job. Delete me
 jobs:
   info-session-reminder-hour-out:
     permissions:
@@ -38,5 +38,5 @@ jobs:
           -X POST
           -H "Authorization: bearer $(gcloud auth print-identity-token)"
           -H 'Content-Type: application/json'
-          -d '{"jobName":"info-session-reminder","jobArgs": {"period":"14 days","dryRun":true}}'
+          -d '{"jobName":"info-session-reminder","jobArgs": {"period":"14 days"}}'
           https://us-central1-operationspark-org.cloudfunctions.net/session-signups-testing/notify
