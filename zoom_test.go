@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/operationspark/service-signup/zoom/meeting"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRun(t *testing.T) {
@@ -80,7 +81,8 @@ func TestAuthenticate(t *testing.T) {
 				TokenType:   "bearer",
 				Scope:       "meeting:master meeting:read:admin meeting:write:admin",
 			}
-			e.Encode(&body)
+			err := e.Encode(&body)
+			require.NoError(t, err)
 		}))
 
 		zsvc := NewZoomService(ZoomOptions{
@@ -157,7 +159,8 @@ func TestRegisterForMeeting(t *testing.T) {
 		var reqBody meeting.RegistrantRequest
 
 		d := json.NewDecoder(r.Body)
-		d.Decode(&reqBody)
+		err := d.Decode(&reqBody)
+		require.NoError(t, err)
 
 		assertEqual(t, reqBody.Email, su.Email)
 		assertEqual(t, reqBody.FirstName, su.NameFirst)
@@ -166,9 +169,10 @@ func TestRegisterForMeeting(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 		e := json.NewEncoder(w)
 		// Respond with the Join URL
-		e.Encode(meeting.RegistrationResponse{
+		err = e.Encode(meeting.RegistrationResponse{
 			JoinURL: mockJoinURL,
 		})
+		require.NoError(t, err)
 	}))
 
 	zsvc := NewZoomService(ZoomOptions{

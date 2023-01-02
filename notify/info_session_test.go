@@ -53,7 +53,8 @@ func TestGetUpcomingSessions(t *testing.T) {
 			client: dbClient,
 		}
 
-		dropDatabase(context.Background(), mSrv)
+		err := dropDatabase(context.Background(), mSrv)
+		require.NoError(t, err)
 
 		// Insert 10 sessions over the next 10 days.
 		for daysInFuture := 1; daysInFuture <= 10; daysInFuture++ {
@@ -81,10 +82,12 @@ func TestGetUpcomingSessions(t *testing.T) {
 			client: dbClient,
 		}
 
-		dropDatabase(context.Background(), mSrv)
+		err := dropDatabase(context.Background(), mSrv)
+		require.NoError(t, err)
 
 		infoSessID := insertFutureSession(t, mSrv, time.Hour*24)
-		insertRandSignups(t, mSrv, infoSessID, 10)
+		err = insertRandSignups(t, mSrv, infoSessID, 10)
+		require.NoError(t, err)
 
 		daysOut := time.Hour * 24 * 10
 		got, err := mSrv.GetUpcomingSessions(context.Background(), daysOut)
@@ -103,10 +106,12 @@ func TestServer(t *testing.T) {
 	t.Run("Sends SMS messages to attendees of any upcoming sessions", func(t *testing.T) {
 		var body bytes.Buffer
 		e := json.NewEncoder(&body)
-		e.Encode(Request{
+		err := e.Encode(Request{
 			JobName: "info-session-reminder",
 			JobArgs: JobArgs{Period: "1 hour"},
 		})
+		require.NoError(t, err)
+
 		req := mustMakeReq(t, &body)
 		resp := httptest.NewRecorder()
 
@@ -127,7 +132,7 @@ func TestServer(t *testing.T) {
 			ZoomJoinURL: MustFakeZoomURL(t),
 		}
 
-		_, err := mongoService.client.Database(mongoService.dbName).Collection("signups").InsertOne(context.Background(), fakeSignup)
+		_, err = mongoService.client.Database(mongoService.dbName).Collection("signups").InsertOne(context.Background(), fakeSignup)
 		require.NoError(t, err)
 
 		mockTwilio := MockSMSService{}

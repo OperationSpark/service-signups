@@ -35,13 +35,15 @@ func TestPostWebhook(t *testing.T) {
 			// POSTs correct JSON body
 			var glReq Signup
 			d := json.NewDecoder(r.Body)
-			d.Decode(&glReq)
+			err := d.Decode(&glReq)
+			assertNilError(t, err)
 
 			assertDeepEqual(t, glReq, su)
 		}))
 
 		glSvc := NewGreenlightService(mockGreenlightSvr.URL, apiKey)
 
-		glSvc.postWebhook(context.Background(), su)
+		err := glSvc.postWebhook(context.Background(), su)
+		assertNilError(t, err)
 	})
 }
