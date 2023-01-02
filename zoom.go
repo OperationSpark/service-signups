@@ -133,7 +133,10 @@ func (z *zoomService) registerUser(ctx context.Context, su *Signup) error {
 
 	var respBody meeting.RegistrationResponse
 	d := json.NewDecoder(resp.Body)
-	d.Decode(&respBody)
+	err = d.Decode(&respBody)
+	if err != nil {
+		return fmt.Errorf("decode: %w", err)
+	}
 	su.SetZoomJoinURL(respBody.JoinURL)
 	return nil
 }
@@ -165,7 +168,10 @@ func (z *zoomService) authenticate(ctx context.Context) error {
 
 	var body tokenResponse
 	d := json.NewDecoder(resp.Body)
-	d.Decode(&body)
+	err = d.Decode(&body)
+	if err != nil {
+		return fmt.Errorf("decode: %w", err)
+	}
 
 	z.accessToken = body.AccessToken
 	z.tokenExpiresAt = time.Now().Add(time.Second * time.Duration(body.ExpiresIn))

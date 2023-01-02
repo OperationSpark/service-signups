@@ -31,7 +31,8 @@ func TestSendSMSInConversation(t *testing.T) {
 		conversationSid := os.Getenv("TWILIO_CONVERSATIONS_SID")
 
 		mockApi := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			r.ParseMultipartForm(128)
+			err := r.ParseMultipartForm(128)
+			assertNilError(t, err)
 
 			assertEqual(t, r.Form.Get("ShortenUrls"), "true")
 

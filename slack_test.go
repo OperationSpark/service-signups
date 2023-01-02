@@ -17,8 +17,8 @@ func TestSendWebhook(t *testing.T) {
 		slackAPI := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var payload body
 			d := json.NewDecoder(r.Body)
-			d.Decode(&payload)
-
+			err := d.Decode(&payload)
+			assertNilError(t, err)
 			assertEqual(t, payload["text"], msg.Text)
 		}))
 

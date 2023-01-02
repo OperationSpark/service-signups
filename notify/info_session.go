@@ -130,7 +130,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx := context.WithValue(r.Context(), RECIPIENT_TZ, tz)
 	var reqBody Request
-	reqBody.fromJSON(r.Body)
+	err = reqBody.fromJSON(r.Body)
+	if err != nil {
+		fmt.Printf("fromJSON: %v, bodyL%+v\n", err, reqBody)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	// Remind attendees for some period in the future.
 	// (1 hour, 2 days, etc)
