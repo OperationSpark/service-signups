@@ -36,6 +36,7 @@ jobs:
       - id: "cloud-function-trigger-curl"
         run: >
           curl
+          --fail
           -X POST
           -H "Authorization: bearer $(gcloud auth print-identity-token)"
           -H 'Content-Type: application/json'

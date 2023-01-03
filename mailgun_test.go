@@ -39,8 +39,8 @@ func TestSendWelcome(t *testing.T) {
 		}
 
 		mockMailgunAPI := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			r.ParseMultipartForm(128)
-
+			err := r.ParseMultipartForm(128)
+			assertNilError(t, err)
 			// Check template version is not set
 			assertEqual(t, r.FormValue("t:version"), "")
 
@@ -56,7 +56,8 @@ func TestSendWelcome(t *testing.T) {
 			// Check the template variables are correct
 			jsonVars := r.Form.Get("h:X-Mailgun-Variables")
 			var gotVars welcomeVariables
-			json.Unmarshal([]byte(jsonVars), &gotVars)
+			err = json.Unmarshal([]byte(jsonVars), &gotVars)
+			assertNilError(t, err)
 
 			assertEqual(t, gotVars.FirstName, form.NameFirst)
 			assertEqual(t, gotVars.LastName, form.NameLast)
@@ -65,7 +66,8 @@ func TestSendWelcome(t *testing.T) {
 			// TODO: ZoomURL
 			// assertEqual(t, gotVars.ZoomURL, "TODO")
 
-			w.Write([]byte("{}"))
+			_, err = w.Write([]byte("{}"))
+			assertNilError(t, err)
 		}))
 		defer mockMailgunAPI.Close()
 
@@ -82,11 +84,14 @@ func TestSendWelcome(t *testing.T) {
 		os.Setenv("APP_ENV", "staging")
 
 		mockMailgunAPI := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			r.ParseMultipartForm(128)
+			err := r.ParseMultipartForm(128)
+			assertNilError(t, err)
 
 			assertEqual(t, r.FormValue("t:version"), "dev")
 
-			w.Write([]byte("{}"))
+			_, err = w.Write([]byte("{}"))
+			assertNilError(t, err)
+
 		}))
 
 		mgSvc := NewMailgunService(
@@ -96,10 +101,7 @@ func TestSendWelcome(t *testing.T) {
 		)
 
 		err := mgSvc.sendWelcome(context.Background(), Signup{})
-		if err != nil {
-			t.Fatal(err)
-		}
-
+		assertNilError(t, err)
 	})
 
 	t.Run("uses the 'info-session-signup-hybrid' template when 'hybrid' is true", func(t *testing.T) {
@@ -122,20 +124,24 @@ func TestSendWelcome(t *testing.T) {
 		}
 
 		mockMailgunAPI := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			r.ParseMultipartForm(128)
+			err := r.ParseMultipartForm(128)
+			assertNilError(t, err)
 
 			assertEqual(t, r.FormValue("template"), "info-session-signup-hybrid")
 
 			// Check the template variables are correct
 			jsonVars := r.Form.Get("h:X-Mailgun-Variables")
 			var gotVars welcomeVariables
-			json.Unmarshal([]byte(jsonVars), &gotVars)
+			err = json.Unmarshal([]byte(jsonVars), &gotVars)
+			assertNilError(t, err)
 
 			assertEqual(t, gotVars.LocationLine1, "514 Franklin Ave")
 			assertEqual(t, gotVars.LocationCityStateZip, "New Orleans, LA 70117")
 			assertEqual(t, gotVars.LocationMapURL, "https://www.google.com/maps/place/514+Franklin+Ave%2CNew+Orleans%2C+LA+70117")
 
-			w.Write([]byte("{}"))
+			_, err = w.Write([]byte("{}"))
+			assertNilError(t, err)
+
 		}))
 
 		mgSvc := NewMailgunService(

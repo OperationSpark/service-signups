@@ -33,7 +33,8 @@ func TestShortenURL(t *testing.T) {
 
 			resp := ShortLink{ShortURL: wantURL, Code: shortCode, OriginalUrl: reqBody.OriginalUrl}
 			e := json.NewEncoder(w)
-			e.Encode(resp)
+			err = e.Encode(resp)
+			assertNilError(t, err)
 		}))
 
 		shorty := NewURLShortener(ShortenerOpts{mockSrv.URL, apiKey})

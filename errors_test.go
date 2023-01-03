@@ -94,5 +94,7 @@ Response:
 func JSONError(w http.ResponseWriter, err interface{}, code int) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(code)
-	json.NewEncoder(w).Encode(err)
+	if err := json.NewEncoder(w).Encode(err); err != nil {
+		panic(err)
+	}
 }
