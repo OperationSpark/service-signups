@@ -1,3 +1,5 @@
 .env
 .env*
 cmd/__debug_bin
+cover.out
+.secrets
