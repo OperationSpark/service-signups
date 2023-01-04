@@ -128,7 +128,7 @@ func TestIsAuthenticated(t *testing.T) {
 
 		assertEqual(t, zsvc.isAuthenticated(tokenResponse{
 			AccessToken: "an-access-token",
-			ExpiresAt:   time.Now().Add(time.Minute * 1),
+			ExpiresAt:   time.Now().Add(time.Minute * 10),
 		}), true)
 	})
 }

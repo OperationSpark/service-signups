@@ -189,8 +189,10 @@ func (z *zoomService) authenticate(ctx context.Context) (tokenResponse, error) {
 }
 
 func (z *zoomService) isAuthenticated(creds tokenResponse) bool {
+	// Shave 5 min off expiration date as a buffer to request a new token
+	expirationDate := creds.ExpiresAt.Add(time.Minute * -5)
 	return len(creds.AccessToken) > 0 &&
-		time.Now().Before(creds.ExpiresAt)
+		time.Now().Before(expirationDate)
 }
 
 // EncodeCredentials base64 encodes the client ID and secret, separated by a colon.
