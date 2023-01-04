@@ -25,7 +25,7 @@ type (
 	RegistrationResponse struct {
 		Id           int          `json:"id"`
 		JoinURL      string       `json:"join_url"`
-		RegistrantID int          `json:"registrant_id"`
+		RegistrantID string       `json:"registrant_id"`
 		StartTime    string       `json:"start_time"`
 		Topic        string       `json:"topic"`
 		Occurrences  []Occurrence `json:"occurrences"`
