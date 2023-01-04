@@ -3,7 +3,7 @@ on:
   push:
     branches:
       - "testing"
-      - "feat/info-session-notifications"
+      - "feat/global-zoom-token"
 
 jobs:
   build-deploy-cloud-function:
