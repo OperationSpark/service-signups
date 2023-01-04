@@ -52,7 +52,7 @@ func (ss *signupServer) HandleSignUp(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// TODO: handle different kinds of errors differently
 		fmt.Fprintf(os.Stderr, "\nproblem signing user up: %v\n\n", err)
-		fmt.Printf("Signup:\n%s\n", su)
+		fmt.Printf("Signup:\n%s\n", prettyPrint(su))
 		http.Error(w, "problem signing user up\n", http.StatusInternalServerError)
 		return
 	}

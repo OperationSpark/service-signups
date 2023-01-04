@@ -2,6 +2,7 @@ package signup
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -23,7 +24,10 @@ func assertDeepEqual(t *testing.T, got, want interface{}) {
 }
 
 func prettyPrint(i interface{}) string {
-	s, _ := json.MarshalIndent(i, "", "\t")
+	s, err := json.MarshalIndent(i, "", "\t")
+	if err != nil {
+		return fmt.Sprintf("%+v", i)
+	}
 	return string(s)
 }
 
