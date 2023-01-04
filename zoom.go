@@ -12,6 +12,10 @@ import (
 	"github.com/operationspark/service-signup/zoom/meeting"
 )
 
+// Using global variable to share token across invocations.
+// https://cloud.google.com/functions/docs/bestpractices/tips#use_global_variables_to_reuse_objects_in_future_invocations
+var zoomCreds tokenResponse
+
 type (
 	zoomService struct {
 		// Base API endpoint. Default: "https://api.zoom.us/v2"
@@ -20,12 +24,10 @@ type (
 		oauthURL string
 		// HTTP client for making Zoom API requests.
 		// https://marketplace.zoom.us/docs/api-reference/zoom-api/methods/#overview
-		client         http.Client
-		accessToken    string
-		tokenExpiresAt time.Time
-		accountID      string
-		clientID       string
-		clientSecret   string
+		client       http.Client
+		accountID    string
+		clientID     string
+		clientSecret string
 	}
 
 	tokenResponse struct {
@@ -33,6 +35,8 @@ type (
 		ExpiresIn   int    `json:"expires_in"`
 		Scope       string `json:"scope"`
 		TokenType   string `json:"token_type"`
+		// Calculated from ExpiresIn
+		ExpiresAt time.Time
 	}
 
 	ZoomOptions struct {
@@ -83,10 +87,12 @@ func (z *zoomService) name() string {
 // RegisterUser creates and submits a user's registration to a meeting. The specific meeting is decided from the Signup's startDateTime.
 func (z *zoomService) registerUser(ctx context.Context, su *Signup) error {
 	// Authenticate client
-	if !z.isAuthenticated() {
-		if err := z.authenticate(ctx); err != nil {
+	if !z.isAuthenticated(zoomCreds) {
+		token, err := z.authenticate(ctx)
+		if err != nil {
 			return fmt.Errorf("authenticate: %w", err)
 		}
+		zoomCreds = token
 	}
 
 	// Send Zoom API req to register user to meeting
@@ -118,7 +124,7 @@ func (z *zoomService) registerUser(ctx context.Context, su *Signup) error {
 		return fmt.Errorf("newRequestWithContext: %w", err)
 	}
 
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", z.accessToken))
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", zoomCreds.AccessToken))
 	req.Header.Add("Content-Type", "application/json")
 
 	resp, err := z.client.Do(req)
@@ -142,7 +148,7 @@ func (z *zoomService) registerUser(ctx context.Context, su *Signup) error {
 }
 
 // Authenticate requests an access token and sets it along with the expiration date on the service.
-func (z *zoomService) authenticate(ctx context.Context) error {
+func (z *zoomService) authenticate(ctx context.Context) (tokenResponse, error) {
 	url := fmt.Sprintf("%s/token?grant_type=account_credentials&account_id=%s", z.oauthURL, z.accountID)
 	// Make a HTTP req to authenticate the client
 	req, err := http.NewRequestWithContext(
@@ -152,35 +158,39 @@ func (z *zoomService) authenticate(ctx context.Context) error {
 		nil,
 	)
 	if err != nil {
-		return fmt.Errorf("NewRequestWithContext: %w", err)
+		return tokenResponse{}, fmt.Errorf("NewRequestWithContext: %w", err)
 	}
 
 	req.Header.Add("Authorization", "Basic "+z.encodeCredentials())
 
 	resp, err := z.client.Do(req)
 	if err != nil {
-		return fmt.Errorf("client.do: %w", err)
+		return tokenResponse{}, fmt.Errorf("client.do: %w", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 300 {
-		return handleHTTPError(resp)
+		return tokenResponse{}, handleHTTPError(resp)
 	}
 
 	var body tokenResponse
 	d := json.NewDecoder(resp.Body)
 	err = d.Decode(&body)
 	if err != nil {
-		return fmt.Errorf("decode: %w", err)
+		return tokenResponse{}, fmt.Errorf("decode: %w", err)
 	}
 
-	z.accessToken = body.AccessToken
-	z.tokenExpiresAt = time.Now().Add(time.Second * time.Duration(body.ExpiresIn))
-	return nil
+	creds := tokenResponse{
+		AccessToken: body.AccessToken,
+		ExpiresIn:   body.ExpiresIn,
+		ExpiresAt:   time.Now().Add(time.Second * time.Duration(body.ExpiresIn)),
+	}
+
+	return creds, nil
 }
 
-func (z *zoomService) isAuthenticated() bool {
-	return len(z.accessToken) > 0 &&
-		time.Now().Before(z.tokenExpiresAt.Truncate(time.Minute))
+func (z *zoomService) isAuthenticated(creds tokenResponse) bool {
+	return len(creds.AccessToken) > 0 &&
+		time.Now().Before(creds.ExpiresAt)
 }
 
 // EncodeCredentials base64 encodes the client ID and secret, separated by a colon.

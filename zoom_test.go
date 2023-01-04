@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -91,19 +92,20 @@ func TestAuthenticate(t *testing.T) {
 			clientSecret:      fakeClientSecret,
 			accountID:         fakeAccountID,
 		})
-		err := zsvc.authenticate(context.Background())
+
+		token, err := zsvc.authenticate(context.Background())
 		if err != nil {
 			t.Fatalf("authenticate: %v", err)
 		}
 
-		assertEqual(t, zsvc.accessToken, fakeAccessToken)
+		assertEqual(t, token.AccessToken, fakeAccessToken)
 		// token expiration date should be now() + expiresIn
 		wantExpiry := time.Now().
 			Add(time.Second * time.Duration(expiresIn)).
 			// Round down to the nearest minute
 			Truncate(time.Minute)
 
-		gotExpiry := zsvc.tokenExpiresAt.Truncate(time.Minute)
+		gotExpiry := token.ExpiresAt.Truncate(time.Minute)
 		assertEqual(t, gotExpiry, wantExpiry)
 	})
 }
@@ -111,22 +113,23 @@ func TestAuthenticate(t *testing.T) {
 func TestIsAuthenticated(t *testing.T) {
 	t.Run("returns false if the client has no token", func(t *testing.T) {
 		zsvc := NewZoomService(ZoomOptions{})
-		assertEqual(t, zsvc.isAuthenticated(), false)
+		assertEqual(t, zsvc.isAuthenticated(tokenResponse{}), false)
 	})
 
 	t.Run("returns false if the client's token is expired", func(t *testing.T) {
 		zsvc := NewZoomService(ZoomOptions{})
-		zsvc.tokenExpiresAt = time.Now().Add(-time.Minute)
+		tokenExpiresAt := time.Now().Add(-time.Minute)
 
-		assertEqual(t, zsvc.isAuthenticated(), false)
+		assertEqual(t, zsvc.isAuthenticated(tokenResponse{ExpiresAt: tokenExpiresAt}), false)
 	})
 
 	t.Run("returns true if the client has an unexpired token", func(t *testing.T) {
 		zsvc := NewZoomService(ZoomOptions{})
-		zsvc.accessToken = "an-access-token"
-		zsvc.tokenExpiresAt = time.Now().Add(time.Minute * 1)
 
-		assertEqual(t, zsvc.isAuthenticated(), true)
+		assertEqual(t, zsvc.isAuthenticated(tokenResponse{
+			AccessToken: "an-access-token",
+			ExpiresAt:   time.Now().Add(time.Minute * 1),
+		}), true)
 	})
 }
 
@@ -144,44 +147,55 @@ func TestRegisterForMeeting(t *testing.T) {
 	// Simulate the registrant-specific Join URL
 	// Regular Zoom links, (Ex: https://us06web.zoom.us/j/87582741258), will redirect an unauthorized user to the registration page, defeating the purpose of auto-registration.
 	mockJoinURL := fmt.Sprintf("https://us06web.zoom.us/w/%d?tk=6ySWiEckpHMI15UYaou_2dkNdDxTHbx7LM8l73iT7rM.DQMAAAAUeoDxnxZ5HSAGdi4newfHJJB#NBDETFhraE1BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", mockMeetingID)
+	accessToken := "fake_access_token"
 
 	mockZoomServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/token") {
+			e := json.NewEncoder(w)
+			e.Encode(tokenResponse{
+				AccessToken: accessToken,
+				ExpiresIn:   3600, // one hour in secs
+			})
+			return
+		}
 
-		assertEqual(t, r.Method, http.MethodPost)
-		// Check auth token
-		authHeader := r.Header.Get("Authorization")
-		assertEqual(t, authHeader, "Bearer fake_access_token")
+		if strings.Contains(r.URL.Path, "/meetings") {
+			assertEqual(t, r.Method, http.MethodPost)
+			// Check auth token
+			authHeader := r.Header.Get("Authorization")
+			assertEqual(t, authHeader, "Bearer fake_access_token")
 
-		assertEqual(t, r.URL.Path, fmt.Sprintf("/meetings/%d/registrants", mockMeetingID))
-		// Meeting Occurrence ID. Provide this field to view meeting details of a particular occurrence of the recurring meeting.
-		assertEqual(t, r.URL.Query().Get("occurrence_id"), "1666045800000")
+			assertEqual(t, r.URL.Path, fmt.Sprintf("/meetings/%d/registrants", mockMeetingID))
+			// Meeting Occurrence ID. Provide this field to view meeting details of a particular occurrence of the recurring meeting.
+			assertEqual(t, r.URL.Query().Get("occurrence_id"), "1666045800000")
 
-		var reqBody meeting.RegistrantRequest
+			var reqBody meeting.RegistrantRequest
 
-		d := json.NewDecoder(r.Body)
-		err := d.Decode(&reqBody)
-		require.NoError(t, err)
+			d := json.NewDecoder(r.Body)
+			err := d.Decode(&reqBody)
+			require.NoError(t, err)
 
-		assertEqual(t, reqBody.Email, su.Email)
-		assertEqual(t, reqBody.FirstName, su.NameFirst)
-		assertEqual(t, reqBody.LastName, su.NameLast)
+			assertEqual(t, reqBody.Email, su.Email)
+			assertEqual(t, reqBody.FirstName, su.NameFirst)
+			assertEqual(t, reqBody.LastName, su.NameLast)
 
-		w.WriteHeader(http.StatusOK)
-		e := json.NewEncoder(w)
-		// Respond with the Join URL
-		err = e.Encode(meeting.RegistrationResponse{
-			JoinURL: mockJoinURL,
-		})
-		require.NoError(t, err)
+			w.WriteHeader(http.StatusOK)
+			e := json.NewEncoder(w)
+			// Respond with the Join URL
+			err = e.Encode(meeting.RegistrationResponse{
+				JoinURL: mockJoinURL,
+			})
+			require.NoError(t, err)
+			return
+		}
+
+		http.Error(w, fmt.Sprintf("invalid URL:\n%q", r.URL.Path), http.StatusMethodNotAllowed)
 	}))
 
 	zsvc := NewZoomService(ZoomOptions{
-		baseAPIOverride: mockZoomServer.URL,
+		baseAPIOverride:   mockZoomServer.URL,
+		baseOAuthOverride: mockZoomServer.URL,
 	})
-
-	// Fake authentication
-	zsvc.accessToken = "fake_access_token"
-	zsvc.tokenExpiresAt = time.Now().Add(time.Minute * 10)
 
 	// Method under test
 	err := zsvc.registerUser(context.Background(), &su)
