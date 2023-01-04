@@ -152,10 +152,11 @@ func TestRegisterForMeeting(t *testing.T) {
 	mockZoomServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains(r.URL.Path, "/token") {
 			e := json.NewEncoder(w)
-			e.Encode(tokenResponse{
+			err := e.Encode(tokenResponse{
 				AccessToken: accessToken,
 				ExpiresIn:   3600, // one hour in secs
 			})
+			assertNilError(t, err)
 			return
 		}
 
