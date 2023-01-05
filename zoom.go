@@ -12,10 +12,6 @@ import (
 	"github.com/operationspark/service-signup/zoom/meeting"
 )
 
-// Using global variable to share token across invocations.
-// https://cloud.google.com/functions/docs/bestpractices/tips#use_global_variables_to_reuse_objects_in_future_invocations
-var zoomCreds tokenResponse
-
 type (
 	zoomService struct {
 		// Base API endpoint. Default: "https://api.zoom.us/v2"
@@ -87,12 +83,9 @@ func (z *zoomService) name() string {
 // RegisterUser creates and submits a user's registration to a meeting. The specific meeting is decided from the Signup's startDateTime.
 func (z *zoomService) registerUser(ctx context.Context, su *Signup) error {
 	// Authenticate client
-	if !z.isAuthenticated(zoomCreds) {
-		token, err := z.authenticate(ctx)
-		if err != nil {
-			return fmt.Errorf("authenticate: %w", err)
-		}
-		zoomCreds = token
+	token, err := z.authenticate(ctx)
+	if err != nil {
+		return fmt.Errorf("authenticate: %w", err)
 	}
 
 	// Send Zoom API req to register user to meeting
@@ -124,7 +117,7 @@ func (z *zoomService) registerUser(ctx context.Context, su *Signup) error {
 		return fmt.Errorf("newRequestWithContext: %w", err)
 	}
 
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", zoomCreds.AccessToken))
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token.AccessToken))
 	req.Header.Add("Content-Type", "application/json")
 
 	resp, err := z.client.Do(req)
@@ -147,7 +140,7 @@ func (z *zoomService) registerUser(ctx context.Context, su *Signup) error {
 	return nil
 }
 
-// Authenticate requests an access token and sets it along with the expiration date on the service.
+// Authenticate requests an access token.
 func (z *zoomService) authenticate(ctx context.Context) (tokenResponse, error) {
 	url := fmt.Sprintf("%s/token?grant_type=account_credentials&account_id=%s", z.oauthURL, z.accountID)
 	// Make a HTTP req to authenticate the client
