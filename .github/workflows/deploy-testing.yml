@@ -3,7 +3,7 @@ on:
   push:
     branches:
       - "testing"
-      - "feat/global-zoom-token"
+      - "fix/zoom-auth"
 
 jobs:
   build-deploy-cloud-function:
