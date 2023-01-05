@@ -46,7 +46,7 @@ func TestAuthHeader(t *testing.T) {
 		})
 		got := zsvc.encodeCredentials()
 
-		assertEqual(t, got, want)
+		require.Equal(t, want, got)
 	})
 }
 
@@ -66,13 +66,13 @@ func TestAuthenticate(t *testing.T) {
 
 	t.Run("authenticates the client", func(t *testing.T) {
 		authServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			assertEqual(t, r.URL.Path, "/oauth/token")
+			require.Equal(t, "/oauth/token", r.URL.Path)
 			// Check the account ID is in the URL params
 			id := r.URL.Query().Get("account_id")
-			assertEqual(t, id, fakeAccountID)
+			require.Equal(t, fakeAccountID, id)
 			// Check the Authorization Header contains the client ID and secret
 			authHeader := r.Header.Get("Authorization")
-			assertEqual(t, authHeader, "Basic "+encodedCreds)
+			require.Equal(t, "Basic "+encodedCreds, authHeader)
 
 			w.WriteHeader(http.StatusOK)
 			e := json.NewEncoder(w)
@@ -98,7 +98,7 @@ func TestAuthenticate(t *testing.T) {
 			t.Fatalf("authenticate: %v", err)
 		}
 
-		assertEqual(t, token.AccessToken, fakeAccessToken)
+		require.Equal(t, fakeAccessToken, token.AccessToken)
 		// token expiration date should be now() + expiresIn
 		wantExpiry := time.Now().
 			Add(time.Second * time.Duration(expiresIn)).
@@ -106,30 +106,30 @@ func TestAuthenticate(t *testing.T) {
 			Truncate(time.Minute)
 
 		gotExpiry := token.ExpiresAt.Truncate(time.Minute)
-		assertEqual(t, gotExpiry, wantExpiry)
+		require.Equal(t, wantExpiry, gotExpiry)
 	})
 }
 
 func TestIsAuthenticated(t *testing.T) {
 	t.Run("returns false if the client has no token", func(t *testing.T) {
 		zsvc := NewZoomService(ZoomOptions{})
-		assertEqual(t, zsvc.isAuthenticated(tokenResponse{}), false)
+		require.Equal(t, false, zsvc.isAuthenticated(tokenResponse{}))
 	})
 
 	t.Run("returns false if the client's token is expired", func(t *testing.T) {
 		zsvc := NewZoomService(ZoomOptions{})
 		tokenExpiresAt := time.Now().Add(-time.Minute)
 
-		assertEqual(t, zsvc.isAuthenticated(tokenResponse{ExpiresAt: tokenExpiresAt}), false)
+		require.Equal(t, false, zsvc.isAuthenticated(tokenResponse{ExpiresAt: tokenExpiresAt}))
 	})
 
 	t.Run("returns true if the client has an unexpired token", func(t *testing.T) {
 		zsvc := NewZoomService(ZoomOptions{})
 
-		assertEqual(t, zsvc.isAuthenticated(tokenResponse{
+		require.Equal(t, true, zsvc.isAuthenticated(tokenResponse{
 			AccessToken: "an-access-token",
 			ExpiresAt:   time.Now().Add(time.Minute * 10),
-		}), true)
+		}))
 	})
 }
 
@@ -161,14 +161,14 @@ func TestRegisterForMeeting(t *testing.T) {
 		}
 
 		if strings.Contains(r.URL.Path, "/meetings") {
-			assertEqual(t, r.Method, http.MethodPost)
+			require.Equal(t, http.MethodPost, r.Method)
 			// Check auth token
 			authHeader := r.Header.Get("Authorization")
-			assertEqual(t, authHeader, "Bearer fake_access_token")
+			require.Equal(t, "Bearer fake_access_token", authHeader)
 
-			assertEqual(t, r.URL.Path, fmt.Sprintf("/meetings/%d/registrants", mockMeetingID))
+			require.Equal(t, fmt.Sprintf("/meetings/%d/registrants", mockMeetingID), r.URL.Path)
 			// Meeting Occurrence ID. Provide this field to view meeting details of a particular occurrence of the recurring meeting.
-			assertEqual(t, r.URL.Query().Get("occurrence_id"), "1666045800000")
+			require.Equal(t, "1666045800000", r.URL.Query().Get("occurrence_id"))
 
 			var reqBody meeting.RegistrantRequest
 
@@ -176,9 +176,9 @@ func TestRegisterForMeeting(t *testing.T) {
 			err := d.Decode(&reqBody)
 			require.NoError(t, err)
 
-			assertEqual(t, reqBody.Email, su.Email)
-			assertEqual(t, reqBody.FirstName, su.NameFirst)
-			assertEqual(t, reqBody.LastName, su.NameLast)
+			require.Equal(t, su.Email, reqBody.Email)
+			require.Equal(t, su.NameFirst, reqBody.FirstName)
+			require.Equal(t, su.NameLast, reqBody.LastName)
 
 			w.WriteHeader(http.StatusOK)
 			e := json.NewEncoder(w)
@@ -205,5 +205,5 @@ func TestRegisterForMeeting(t *testing.T) {
 	}
 
 	// Check for custom Join URL from Zoom
-	assertEqual(t, su.ZoomMeetingURL(), mockJoinURL)
+	require.Equal(t, mockJoinURL, su.ZoomMeetingURL())
 }
