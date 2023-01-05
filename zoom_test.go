@@ -239,10 +239,11 @@ func TestAuthRefresh(t *testing.T) {
 				}
 				w.WriteHeader(http.StatusUnauthorized)
 				e := json.NewEncoder(w)
-				e.Encode(zoomErrorResp{
+				err := e.Encode(zoomErrorResp{
 					Code:    124,
 					Message: "Invalid access token.",
 				})
+				require.NoError(t, err)
 				return
 			}
 
@@ -258,13 +259,14 @@ func TestAuthRefresh(t *testing.T) {
 			e := json.NewEncoder(w)
 			// First call -> respond with original token
 			if authEndpointCalls == 1 {
-				e.Encode(ogToken)
+				err := e.Encode(ogToken)
+				require.NoError(t, err)
 				return
 			}
 			// Respond with refreshed token on subsequent calls
-			e.Encode(refreshedToken)
+			err := e.Encode(refreshedToken)
+			require.NoError(t, err)
 			return
-
 		}
 	}))
 
