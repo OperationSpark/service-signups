@@ -207,3 +207,73 @@ func TestRegisterForMeeting(t *testing.T) {
 	// Check for custom Join URL from Zoom
 	require.Equal(t, mockJoinURL, su.ZoomMeetingURL())
 }
+
+func TestAuthRefresh(t *testing.T) {
+	t.Skip("This test is for the auto refresh token implementation. Currently we're just fetching a new token on every Zoom request.")
+
+	ogToken := tokenResponse{
+		AccessToken: "original-invalid-token",
+		ExpiresIn:   3600,
+	}
+	refreshedToken := tokenResponse{
+		AccessToken: "this-is-a-new-token",
+		ExpiresIn:   3600,
+		TokenType:   "bearer",
+	}
+
+	meetingEndpointCalls := 0
+	authEndpointCalls := 0
+
+	mockZoomServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Meeting Registration handler
+		if strings.Contains(r.URL.Path, "/meetings") {
+			meetingEndpointCalls++
+			// First /meeting call
+			if meetingEndpointCalls == 1 {
+				gotToken := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+				require.Equal(t, ogToken.AccessToken, gotToken)
+				// Send Invalid access token error
+				type zoomErrorResp struct {
+					Code    int    `json:"code"`
+					Message string `json:"message"`
+				}
+				w.WriteHeader(http.StatusUnauthorized)
+				e := json.NewEncoder(w)
+				e.Encode(zoomErrorResp{
+					Code:    124,
+					Message: "Invalid access token.",
+				})
+				return
+			}
+
+			// Subsequent /meeting call(s) should have a new token
+			gotToken := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+			require.Equal(t, refreshedToken, gotToken)
+			return
+		}
+
+		// Auth Handler
+		if strings.Contains(r.URL.Path, "/token") {
+			authEndpointCalls++
+			e := json.NewEncoder(w)
+			// First call -> respond with original token
+			if authEndpointCalls == 1 {
+				e.Encode(ogToken)
+				return
+			}
+			// Respond with refreshed token on subsequent calls
+			e.Encode(refreshedToken)
+			return
+
+		}
+	}))
+
+	zsvc := NewZoomService(ZoomOptions{
+		baseAPIOverride:   mockZoomServer.URL,
+		baseOAuthOverride: mockZoomServer.URL,
+	})
+
+	err := zsvc.registerUser(context.Background(), &Signup{})
+	require.NoError(t, err)
+
+}
