@@ -21,9 +21,14 @@ type (
 		// Phone number SMS messages are sent from.
 		fromPhoneNum string
 		// Base URL for OpSpark Messaging Service.
-		// Default: https://sms.operationspark.org
+		// Default: https://messenger.operationspark.org
 		opSparkMessagingSvcBaseURL string
-		conversationsSid           string
+
+		// Base URL for OpSpark Rendering Service.
+		// Default: https://sms.operationspark.org
+		opSparkRenderingSvcBaseUrl string
+
+		conversationsSid string
 		// Twilio Conversations Service User identity name.
 		conversationsIdentity string
 	}
@@ -34,6 +39,7 @@ type (
 		client                     client.BaseClient
 		fromPhoneNum               string
 		opSparkMessagingSvcBaseURL string
+		opSparkRenderingSvcBaseUrl string
 		apiBase                    string
 		conversationsSid           string
 		conversationsIdentity      string
@@ -96,7 +102,7 @@ func (t *smsService) run(ctx context.Context, su Signup) error {
 	}
 
 	// create user-specific info session details URL
-	mgsngURL, err := su.shortMessagingURL(t.opSparkMessagingSvcBaseURL)
+	mgsngURL, err := su.shortMessagingURL(t.opSparkRenderingSvcBaseUrl)
 	if err != nil {
 		return fmt.Errorf("shortMessagingURL: %w", err)
 	}
