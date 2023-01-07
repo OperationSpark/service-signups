@@ -251,6 +251,9 @@ func (su Signup) shortMessagingURL(baseURL string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("structToBase64: %w", err)
 	}
+	if baseURL == "" {
+		baseURL = "https://sms.operationspark.org"
+	}
 	return fmt.Sprintf("%s/m/%s", baseURL, encoded), nil
 }
 
