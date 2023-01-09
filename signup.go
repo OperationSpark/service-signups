@@ -231,7 +231,7 @@ func (su Signup) shortMessage(infoURL string) (string, error) {
 
 // ShortMessagingURL produces a custom URL for use on Operation Spark's SMS Messaging Preview service.
 // https://github.com/OperationSpark/sms.opspark.org
-func (su Signup) shortMessagingURL(baseURL string) (string, error) {
+func (su Signup) shortMessagingURL() (string, error) {
 	line1, cityStateZip := greenlight.ParseAddress(su.GooglePlace.Address)
 
 	p := messagingReqParams{
@@ -251,9 +251,8 @@ func (su Signup) shortMessagingURL(baseURL string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("structToBase64: %w", err)
 	}
-	if baseURL == "" {
-		baseURL = "https://sms.operationspark.org"
-	}
+
+	baseURL := "https://sms.operationspark.org"
 	return fmt.Sprintf("%s/m/%s", baseURL, encoded), nil
 }
 

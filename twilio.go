@@ -20,36 +20,42 @@ type (
 		client *twilio.RestClient
 		// Phone number SMS messages are sent from.
 		fromPhoneNum string
-		// Base URL for OpSpark Messaging Service.
+		// API base for Operation Spark's SMS Messaging interface.
+		// This URL is used for sending webhooks on SMS events from this service.
 		// Default: https://messenger.operationspark.org
 		opSparkMessagingSvcBaseURL string
-
-		// Base URL for OpSpark Rendering Service.
-		// Default: https://sms.operationspark.org
-		opSparkRenderingSvcBaseUrl string
-
+		// Twilio Conversation (Chat) Service ID.
+		// Ex: "IS00000000000000000000000000000000"
 		conversationsSid string
 		// Twilio Conversations Service User identity name.
+		// Ex: "services@operationspark.org"
 		conversationsIdentity string
 	}
 
 	twilioServiceOptions struct {
-		accountSID                 string
-		authToken                  string
-		client                     client.BaseClient
-		fromPhoneNum               string
+		accountSID string
+		authToken  string
+		// Client for making requests to Twilio's API.
+		client client.BaseClient
+		// Phone number SMS messages are sent from.
+		fromPhoneNum string
+		// API base for Operation Spark's SMS Messaging interface.
+		// This URL is used for sending webhooks on SMS events from this service.
+		// Default: https://messenger.operationspark.org
 		opSparkMessagingSvcBaseURL string
-		opSparkRenderingSvcBaseUrl string
-		apiBase                    string
-		conversationsSid           string
-		conversationsIdentity      string
+		// Twilio API base.
+		apiBase          string
+		conversationsSid string
+		// Twilio Conversations Service User identity name.
+		// Ex: "services@operationspark.org"
+		conversationsIdentity string
 	}
 )
 
 func NewTwilioService(o twilioServiceOptions) *smsService {
-	smsBaseURL := "https://sms.operationspark.org"
+	messengerBaseURL := "https://messenger.operationspark.org"
 	if len(o.opSparkMessagingSvcBaseURL) > 0 {
-		smsBaseURL = o.opSparkMessagingSvcBaseURL
+		messengerBaseURL = o.opSparkMessagingSvcBaseURL
 	}
 
 	// Override for testing
@@ -71,7 +77,7 @@ func NewTwilioService(o twilioServiceOptions) *smsService {
 			Client:   o.client,
 		}),
 		fromPhoneNum:               o.fromPhoneNum,
-		opSparkMessagingSvcBaseURL: smsBaseURL,
+		opSparkMessagingSvcBaseURL: messengerBaseURL,
 		conversationsSid:           o.conversationsSid,
 		conversationsIdentity:      conversationsIdentity,
 	}
@@ -102,14 +108,14 @@ func (t *smsService) run(ctx context.Context, su Signup) error {
 	}
 
 	// create user-specific info session details URL
-	mgsngURL, err := su.shortMessagingURL(t.opSparkRenderingSvcBaseUrl)
+	msgngURL, err := su.shortMessagingURL()
 	if err != nil {
 		return fmt.Errorf("shortMessagingURL: %w", err)
 	}
 
 	shorty := NewURLShortener(ShortenerOpts{apiKey: os.Getenv("URL_SHORTENER_API_KEY")})
 
-	shortLink, err := shorty.ShortenURL(ctx, mgsngURL)
+	shortLink, err := shorty.ShortenURL(ctx, msgngURL)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "shortenURL ERROR: %v", err)
 		// Don't early return. ShortenURL returns the original URL if there is a failure

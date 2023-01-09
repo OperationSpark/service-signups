@@ -578,10 +578,10 @@ func TestShortMessagingURL(t *testing.T) {
 			},
 		}
 
-		wantURLPrefix := "https://sms.opspark.org/m/"
+		wantURLPrefix := "https://sms.operationspark.org/m/"
 
 		// method under test
-		gotURL, err := s.shortMessagingURL("https://sms.opspark.org")
+		gotURL, err := s.shortMessagingURL()
 		if err != nil {
 			t.Fatal(err)
 		}
