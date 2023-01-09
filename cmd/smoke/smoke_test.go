@@ -14,17 +14,15 @@ func TestSmokeSignup(t *testing.T) {
 		t.Skip("Smoke Test disable for workflow: %w", workflowName)
 	}
 
-	s := smoke{
-		glAPIurl:     "https://greenlight.operationspark.org/api",
-		signupAPIurl: "https://us-central1-operationspark-org.cloudfunctions.net/session-signups",
-		toNum:        os.Getenv("TEST_TO_NUM"),
-	}
+	s := newSmokeTest()
 
 	//  Fetch Info Session ID from Greenlight endpoint
 	err := s.fetchInfoSessions()
 	require.NoError(t, err, "fetching open sessions")
 
-	// TODO: POST Signup to production endpoint
+	// POST Signup to production endpoint
+	err = s.postSignup()
+	require.NoError(t, err, "POST Signup to Cloud Function")
 	// TODO: Get expected SMS message from Twilio API
 	// TODO: Parse info link in SMS and visit it
 	// TODO: Ensure rendered page has expected content
