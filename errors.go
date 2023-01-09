@@ -16,7 +16,7 @@ func (e *InvalidFieldError) Error() string {
 }
 
 // HandleHTTPError parses and prints the response body.
-func handleHTTPError(resp *http.Response) error {
+func HandleHTTPError(resp *http.Response) error {
 	reqLabel := fmt.Sprintf(
 		"%s: %s://%s\n%s\n",
 		resp.Request.Method,

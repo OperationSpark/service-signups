@@ -54,7 +54,7 @@ func sendWebhook(ctx context.Context, url string, msg message) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 300 {
-		return handleHTTPError(resp)
+		return HandleHTTPError(resp)
 	}
 
 	return nil

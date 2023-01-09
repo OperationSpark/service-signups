@@ -23,7 +23,8 @@ jobs:
         uses: actions/checkout@v3
       - name: "Run Signup Smoke Test"
         run: |
-          go run ./cmd/smoke/main.go
+          cd cmd/smoke
+          go test
       # - name: "Fetch SMS from Twilio"
       #   run: |
       #     ./scripts/smoke-test.go
