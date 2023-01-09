@@ -64,10 +64,11 @@ func NewNotifyServer() *notify.Server {
 
 	// TODO: Should we just use the once instance of a Twilio service?
 	twilioSvc := NewTwilioService(twilioServiceOptions{
-		accountSID:       os.Getenv("TWILIO_ACCOUNT_SID"),
-		authToken:        os.Getenv("TWILIO_AUTH_TOKEN"),
-		fromPhoneNum:     os.Getenv("TWILIO_PHONE_NUMBER"),
-		conversationsSid: os.Getenv("TWILIO_CONVERSATIONS_SID"),
+		accountSID:                 os.Getenv("TWILIO_ACCOUNT_SID"),
+		authToken:                  os.Getenv("TWILIO_AUTH_TOKEN"),
+		fromPhoneNum:               os.Getenv("TWILIO_PHONE_NUMBER"),
+		conversationsSid:           os.Getenv("TWILIO_CONVERSATIONS_SID"),
+		opSparkMessagingSvcBaseURL: os.Getenv("OS_MESSAGING_SERVICE_URL"),
 	})
 
 	return notify.NewServer(notify.ServerOpts{
@@ -109,14 +110,12 @@ func NewSignupServer() *signupServer {
 	twilioConversationsSid := os.Getenv("TWILIO_CONVERSATIONS_SID")
 
 	osMessagingSvcURL := os.Getenv("OS_MESSAGING_SERVICE_URL")
-	osRenderingSvcURL := os.Getenv("OS_RENDERING_SERVICE_URL")
 
 	twilioSvc := NewTwilioService(twilioServiceOptions{
 		accountSID:                 twilioAcctSID,
 		authToken:                  twilioAuthToken,
 		fromPhoneNum:               twilioPhoneNum,
 		opSparkMessagingSvcBaseURL: osMessagingSvcURL,
-		opSparkRenderingSvcBaseUrl: osRenderingSvcURL,
 		conversationsSid:           twilioConversationsSid,
 	})
 
