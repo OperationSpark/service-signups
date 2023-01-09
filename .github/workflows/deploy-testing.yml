@@ -3,7 +3,7 @@ on:
   push:
     branches:
       - "testing"
-      - "fix/notification-reminder-link "
+      - "fix/notification-reminder-link"
 
 jobs:
   build-deploy-cloud-function:
