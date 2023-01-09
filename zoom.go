@@ -127,7 +127,7 @@ func (z *zoomService) registerUser(ctx context.Context, su *Signup) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 300 {
-		return handleHTTPError(resp)
+		return HandleHTTPError(resp)
 	}
 
 	var respBody meeting.RegistrationResponse
@@ -162,7 +162,7 @@ func (z *zoomService) authenticate(ctx context.Context) (tokenResponse, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode >= 300 {
-		return tokenResponse{}, handleHTTPError(resp)
+		return tokenResponse{}, HandleHTTPError(resp)
 	}
 
 	var body tokenResponse

@@ -226,7 +226,7 @@ func (t *smsService) sendConvoWebhook(ctx context.Context, convoID string) error
 	}
 
 	if resp.StatusCode >= 300 {
-		return handleHTTPError(resp)
+		return HandleHTTPError(resp)
 	}
 	return nil
 }
