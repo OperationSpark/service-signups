@@ -25,9 +25,3 @@ jobs:
         run: |
           cd cmd/smoke
           go test
-      # - name: "Fetch SMS from Twilio"
-      #   run: |
-      #     ./scripts/smoke-test.go
-      # - name: "Check Info Page Content"
-      #   run: |
-      #     ./scripts/smoke-test.go
