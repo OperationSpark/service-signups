@@ -135,8 +135,9 @@ func (t *smsService) run(ctx context.Context, su Signup) error {
 
 	err = t.sendConvoWebhook(ctx, convoId)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "sendSMS: %v", err)
+		fmt.Fprintf(os.Stderr, "sendConvoWebhook (messenger API): %v", err)
 	}
+	// Carry on even if the Messenger API webhook fails
 	return nil
 }
 
