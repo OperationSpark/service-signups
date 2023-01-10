@@ -17,12 +17,13 @@ import (
 type (
 	Signup struct {
 		// Wether the person is attending "IN_PERSON" | "VIRTUAL"ly.
+		// This field is selected by the user on the website Sign Up form.
 		AttendingLocation string                 `json:"attendingLocation" schema:"attendingLocation"`
 		Cell              string                 `json:"cell" schema:"cell"`
 		Cohort            string                 `json:"cohort" schema:"cohort"`
 		Email             string                 `json:"email" schema:"email"`
 		GooglePlace       greenlight.GooglePlace `json:"googlePlace" schema:"googlePlace"`
-		// TODO: make LocationType an enum
+		// Session's set location type. One of "IN_PERSON" | "VIRTUAL" | "IN_PERSON". If the session's location type is "HYBRID", a student can attend "IN_PERSON" or "VIRTUAL"ly.
 		LocationType     string    `json:"locationType" schema:"locationType"`
 		NameFirst        string    `json:"nameFirst" schema:"nameFirst"`
 		NameLast         string    `json:"nameLast" schema:"nameLast"`
