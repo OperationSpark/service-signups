@@ -19,7 +19,7 @@ func TestSmokeSignup(t *testing.T) {
 
 	s := newSmokeTest()
 
-	//  Fetch Info Session ID from Greenlight endpoint
+	// Fetch Info Session ID from Greenlight endpoint
 	err := s.fetchInfoSessions()
 	require.NoError(t, err, "fetching open sessions")
 
@@ -69,21 +69,33 @@ func TestSmokeSignup(t *testing.T) {
 	body, err := fetchLinkBody(link)
 	require.NoError(t, err)
 
-	// TODO: Ensure rendered page has expected content
+	// Ensure rendered page has expected content
 	ct, err := time.LoadLocation("america/chicago")
 	require.NoError(t, err)
 
-	err = checkInfoPageContent(body,
+	infoHTMLtargets := []string{
 		// Session Date
 		s.selectedSession.Times.Start.DateTime.In(ct).Format("Monday, January 2, 2006"),
 		// Session Time
 		s.selectedSession.Times.Start.DateTime.In(ct).Format("3:00pm (MST)"),
-		// TODO:
-		// Hello Name
+		// Name
+		su.NameFirst,
+		// TODO: HTML only contains the next props, so "Hello Halle," not rendered yet.
 		// Zoom link
-		// conditionally check for location (HYBRID || VIRTUAL)
+		"https://us06web.zoom.us/w/8", //...
+	}
+	// conditionally check for location infomation
+	if s.selectedSession.LocationType == "HYBRID" || s.selectedSession.LocationType == "IN_PERSON" {
+		// Google Map link
+		infoHTMLtargets = append(infoHTMLtargets,
+			"https://www.google.com/maps/place/514+Franklin+Ave%2CNew+Orleans%2C+LA+70117",
+		)
+	}
+
+	err = checkInfoPageContent(body,
+		infoHTMLtargets...,
 	)
-	require.NoError(t, err)
+	require.NoErrorf(t, err, "Info URL: %s", link)
 }
 
 func TestLinkExtractors(t *testing.T) {
