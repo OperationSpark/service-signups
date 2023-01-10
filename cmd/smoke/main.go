@@ -58,9 +58,10 @@ func newSmokeTest() *smoke {
 	return &smoke{
 		glAPIurl:     "https://greenlight.operationspark.org/api",
 		signupAPIurl: "https://us-central1-operationspark-org.cloudfunctions.net/session-signups",
-		toEmail:      os.Getenv("TEST_TO_EMAIL"),
-		toNum:        strings.TrimPrefix(os.Getenv("TEST_TO_NUM"), "+1"),
-		fromNum:      os.Getenv("TWILIO_PHONE_NUMBER"),
+		// TODO: Add "+randomString" suffix to avoid Zoom 3 registrants rate-limit
+		toEmail: os.Getenv("TEST_TO_EMAIL"),
+		toNum:   strings.TrimPrefix(os.Getenv("TEST_TO_NUM"), "+1"),
+		fromNum: os.Getenv("TWILIO_PHONE_NUMBER"),
 	}
 }
 
