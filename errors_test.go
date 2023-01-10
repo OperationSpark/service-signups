@@ -24,7 +24,7 @@ func TestHandleHTTPError(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = HandleHTTPError(resp)
+		err = handleHTTPError(resp)
 		assertEqual(t, err.Error(), fmt.Sprintf(`HTTP Error:
 GET: %s
 /
@@ -48,7 +48,7 @@ Invalid API key`+"\n", mockServer.URL))
 			t.Fatal(err)
 		}
 
-		err = HandleHTTPError(resp)
+		err = handleHTTPError(resp)
 		assertEqual(t, err.Error(), fmt.Sprintf(`HTTP Error:
 GET: %s
 /
@@ -71,7 +71,7 @@ Response:
 		if err != nil {
 			t.Fatal(err)
 		}
-		gotErr := HandleHTTPError(resp)
+		gotErr := handleHTTPError(resp)
 		if gotErr == nil {
 			t.Fatal("unexpected nil err")
 		}
