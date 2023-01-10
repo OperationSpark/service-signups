@@ -3,3 +3,4 @@
 cmd/__debug_bin
 cover.out
 .secrets
+creds.json

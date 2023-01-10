@@ -3,7 +3,7 @@ on:
   push:
     branches:
       - "testing"
-      - "fix/notification-reminder-link"
+      - "45-add-action-to-post-signup-on-successful-deployment"
 
 jobs:
   build-deploy-cloud-function:
