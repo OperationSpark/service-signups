@@ -79,7 +79,7 @@ func (s Shortener) ShortenURL(ctx context.Context, url string) (string, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 300 {
-		return url, fmt.Errorf("post: %w", HandleHTTPError(resp))
+		return url, fmt.Errorf("post: %w", handleHTTPError(resp))
 	}
 
 	d := json.NewDecoder(resp.Body)
