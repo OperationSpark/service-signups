@@ -59,7 +59,7 @@ func newSmokeTest() *smoke {
 		glAPIurl:     "https://greenlight.operationspark.org/api",
 		signupAPIurl: "https://us-central1-operationspark-org.cloudfunctions.net/session-signups",
 		toEmail:      os.Getenv("TEST_TO_EMAIL"),
-		toNum:        os.Getenv("TEST_TO_NUM"),
+		toNum:        strings.TrimPrefix(os.Getenv("TEST_TO_NUM"), "+1"),
 		fromNum:      os.Getenv("TWILIO_PHONE_NUMBER"),
 	}
 }
