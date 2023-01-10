@@ -2,6 +2,8 @@
 package greenlight
 
 import (
+	"bytes"
+	"encoding/json"
 	"net/url"
 	"strings"
 	"time"
@@ -12,6 +14,9 @@ type (
 		Lat float64 `json:"lat"`
 		Lng float64 `json:"lng"`
 	}
+
+	GooglePlaceAlias GooglePlace
+
 	GooglePlace struct {
 		PlaceID  string   `json:"placeId"`
 		Name     string   `json:"name"`
@@ -57,6 +62,22 @@ type (
 		} `bson:"start"`
 	}
 )
+
+// UnmarshalJSON handles GooglePlace can be a string or an object
+func (g *GooglePlace) UnmarshalJSON(b []byte) error {
+	var gp GooglePlaceAlias
+	err := json.Unmarshal(b, &gp)
+	if err != nil {
+		// Suppress the error if an empty string
+		if bytes.Equal(b, []byte(`""`)) {
+			return nil
+		}
+		return err
+	}
+	r := GooglePlace(gp)
+	*g = r
+	return nil
+}
 
 // ParseAddress returns two strings, location line1 and cityStateZip
 // It takes a full address and splits the string into the street address string and a cityStateZip string
