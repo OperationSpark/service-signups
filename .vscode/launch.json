@@ -10,7 +10,7 @@
       "request": "launch",
       "mode": "debug",
       "envFile": "${workspaceFolder}/.env",
-      "program": "${workspaceFolder}/cmd/main.go",
+      "program": "${workspaceFolder}/cmd/server/main.go",
       "cwd": "${workspaceFolder}"
     }
   ]

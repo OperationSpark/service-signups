@@ -1,5 +1,6 @@
 name: GCP Cloud Functions Deploy
 on:
+  workflow_call:
   push:
     branches:
       - "main"

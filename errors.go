@@ -15,7 +15,7 @@ func (e *InvalidFieldError) Error() string {
 	return fmt.Sprintf("invalid value for field: '%s'", e.Field)
 }
 
-// HandleHTTPError parses and prints the response body.
+// handleHTTPError parses and prints the response body. It expects the response body to contain JSON and returns an error if the body in HTML.
 func handleHTTPError(resp *http.Response) error {
 	reqLabel := fmt.Sprintf(
 		"%s: %s://%s\n%s\n",

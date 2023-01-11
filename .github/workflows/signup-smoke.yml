@@ -1,0 +1,26 @@
+name: "Signup Service Smoke Test"
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["GCP Cloud Functions Deploy"]
+    branches: [main]
+    types: [completed]
+  push:
+    branches:
+      - "main"
+jobs:
+  smoke-test:
+    name: "Smoke Test"
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v3
+        with:
+          go-version: 1.19
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: "Run Signup Smoke Test"
+        run: |
+          cd cmd/smoke
+          go test
