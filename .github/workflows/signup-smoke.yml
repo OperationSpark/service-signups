@@ -14,6 +14,7 @@ jobs:
     name: "Smoke Test"
     environment: production
     env:
+      GCP_SA_CREDS_JSON: ${{secrets.GCP_SA_CREDS_JSON}}
       TEST_TO_EMAIL: ${{secrets.TEST_TO_EMAIL}}
       TEST_TO_NUM: ${{secrets.TEST_TO_NUM}}
       TWILIO_ACCOUNT_SID: ${{secrets.TWILIO_ACCOUNT_SID}}
