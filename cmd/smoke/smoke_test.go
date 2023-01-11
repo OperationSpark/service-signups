@@ -70,7 +70,7 @@ func TestSmokeSignup(t *testing.T) {
 	require.NoError(t, err)
 
 	// Ensure rendered page has expected content
-	ct, err := time.LoadLocation("america/chicago")
+	ct, err := time.LoadLocation("America/Chicago")
 	require.NoError(t, err)
 
 	infoHTMLtargets := []string{
