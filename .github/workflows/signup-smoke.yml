@@ -20,7 +20,7 @@ jobs:
       TWILIO_ACCOUNT_SID: ${{secrets.TWILIO_ACCOUNT_SID}}
       TWILIO_AUTH_TOKEN: ${{secrets.TWILIO_AUTH_TOKEN}}
       TWILIO_PHONE_NUMBER: ${{secrets.TWILIO_PHONE_NUMBER}}
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/setup-go@v3
