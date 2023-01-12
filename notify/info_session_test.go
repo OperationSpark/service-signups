@@ -143,21 +143,43 @@ func TestGetUpcomingSessions(t *testing.T) {
 			ID:           randID(),
 			ProgramID:    INFO_SESSION_PROGRAM_ID,
 			CreatedAt:    time.Now(),
-			LocationType: "HYBRID",
+			LocationType: "VIRTUAL",
 			LocationID:   locationID,
 		}
 		s.Times.Start.DateTime = time.Now().Add(time.Hour)
 
-		res, err := mSrv.client.
+		// Insert Session into DB
+		sessRes, err := mSrv.client.
 			Database(mSrv.dbName).Collection("sessions").
 			InsertOne(context.Background(), s)
 		require.NoError(t, err)
-		require.NotEmpty(t, res.InsertedID)
+		sessionID, ok := sessRes.InsertedID.(string)
+		require.True(t, ok, "sessionID should be a string")
+		require.NotEmpty(t, sessionID)
 
-		got, err := mSrv.GetUpcomingSessions(context.Background(), time.Hour*2)
+		// Insert Signup into DB
+		suRes, err := mSrv.client.
+			Database(mSrv.dbName).Collection("signups").
+			InsertOne(context.Background(), greenlight.Signup{
+				NameFirst: "Halle",
+				NameLast:  "Bot",
+				SessionID: sessionID,
+			})
 		require.NoError(t, err)
+		require.NotEmpty(t, suRes)
 
-		require.Len(t, got, 1)
+		require.NoError(t, err)
+		require.NotEmpty(t, sessRes.InsertedID)
+
+		// ** End of DB Setup ** //
+
+		// ** Behavior under test ** //
+		gotSessions, err := mSrv.GetUpcomingSessions(context.Background(), time.Hour*2)
+		require.NoError(t, err)
+		require.Len(t, gotSessions, 1, "should be 1 upcoming session")
+		require.Len(t, gotSessions[0].Participants, 1, "info session should have one registered participant")
+		participant := gotSessions[0].Participants[0]
+		require.Equal(t, "VIRTUAL", participant.SessionLocationType)
 	})
 }
 
@@ -175,6 +197,9 @@ func TestServer(t *testing.T) {
 		resp := httptest.NewRecorder()
 
 		mongoService := NewMongoService(dbClient, dbName)
+
+		err = dropDatabase(context.Background(), mongoService)
+		require.NoError(t, err)
 
 		sessionID := insertFutureSession(t, mongoService, time.Hour)
 		attendee := gofakeit.Person()
