@@ -7,6 +7,9 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/bsontype"
 )
 
 type (
@@ -63,7 +66,7 @@ type (
 	}
 )
 
-// UnmarshalJSON handles GooglePlace can be a string or an object
+// UnmarshalJSON safely handles a GooglePlaces with an empty string value.
 func (g *GooglePlace) UnmarshalJSON(b []byte) error {
 	var gp GooglePlaceAlias
 	err := json.Unmarshal(b, &gp)
@@ -74,8 +77,29 @@ func (g *GooglePlace) UnmarshalJSON(b []byte) error {
 		}
 		return err
 	}
-	r := GooglePlace(gp)
-	*g = r
+
+	*g = GooglePlace(gp)
+	return nil
+}
+
+// UnmarshalBSONValue safely handles a GooglePlaces with an empty string value.
+func (g *GooglePlace) UnmarshalBSONValue(t bsontype.Type, data []byte) error {
+	rv := bson.RawValue{Type: t, Value: data}
+	var gp GooglePlaceAlias
+	err := rv.Unmarshal(&gp)
+	if err != nil {
+		// GooglePlace is probably an empty string. Attempt to unmarshal it.
+		var str string
+		err := rv.Unmarshal(&str)
+		// If unable to unmarshal to string, we have a real problem.
+		if err != nil {
+			return err
+		}
+		// Suppress the error if an empty string
+		return nil
+	}
+
+	*g = GooglePlace(gp)
 	return nil
 }
 
