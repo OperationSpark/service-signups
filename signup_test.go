@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/url"
 	"strings"
 	"testing"
@@ -661,5 +662,39 @@ func TestCreateMessageURL(t *testing.T) {
 		// Verify the location data matches the input from the Participant
 		require.Equal(t, "HYBRID", params.LocationType)
 		require.Equal(t, osLoc, params.Location)
+	})
+
+	t.Run("ok even without a Location", func(t *testing.T) {
+		mardiGras, err := time.Parse("Jan 02, 2006", "Feb 21, 2023") // Mardi Gras
+		require.NoError(t, err)
+
+		person := gofakeit.Person()
+		p := notify.Participant{
+			NameFirst:           person.FirstName,
+			NameLast:            person.LastName,
+			FullName:            person.FirstName + " " + person.LastName,
+			Cell:                person.Contact.Phone,
+			Email:               person.Contact.Email,
+			ZoomJoinURL:         notify.MustFakeZoomURL(t),
+			SessionDate:         mardiGras,
+			SessionLocationType: "VIRTUAL",
+			// Empty location for VIRTUAL types
+			SessionLocation: notify.Location{},
+		}
+
+		m := osMessenger{}
+		msgURL, err := m.CreateMessageURL(p)
+		require.NoError(t, err)
+		// Make sure location data is encoded in the URL
+		u, err := url.Parse(msgURL)
+		require.NoError(t, err)
+
+		// Decode the base64 encoded data from the generated URL
+		encoded := strings.TrimPrefix(u.Path, "/m/")
+		d := base64.NewDecoder(base64.StdEncoding, strings.NewReader(encoded))
+		jsonBytes, err := io.ReadAll(d)
+		require.NoError(t, err)
+
+		require.True(t, bytes.Contains(jsonBytes, []byte(`"locationType":"VIRTUAL"`)), "decoded JSON should contain the VIRTUAL location type")
 	})
 }
