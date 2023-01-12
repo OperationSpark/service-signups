@@ -16,6 +16,7 @@ import (
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/operationspark/service-signup/greenlight"
 	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 type (
@@ -100,6 +101,86 @@ func TestGetUpcomingSessions(t *testing.T) {
 			require.Equal(t, "Operation Spark", p.SessionLocation.Name)
 		}
 	})
+
+	t.Run("handles session locations with string values for 'googlePlace' field. (Schemaless legacy data)", func(t *testing.T) {
+		mSrv := &MongoService{
+			dbName: dbName,
+			client: dbClient,
+		}
+
+		err := dropDatabase(context.Background(), mSrv)
+		require.NoError(t, err)
+
+		// Some "location.googlePlace" fields are empty strings in the database
+		badLocationJSON := fmt.Sprintf(`{
+			"_id":%q,
+			"type": "LEARNING_CENTER",
+			"googlePlace": "",
+			"name": "Operation Spark-Virtual",
+			"address": "",
+			"city": "New Orleans",
+			"state": "LA",
+			"zip": "70119",
+			"contact": "Admissions"
+			}`, randID())
+
+		// JSON Doc to BSON doc
+		d := json.NewDecoder(strings.NewReader(badLocationJSON))
+		var locationDoc bson.M
+		err = d.Decode(&locationDoc)
+		require.NoError(t, err)
+
+		locRes, err := mSrv.client.
+			Database(mSrv.dbName).Collection("locations").
+			InsertOne(context.Background(), locationDoc)
+		require.NoError(t, err)
+
+		locationID, ok := locRes.InsertedID.(string)
+		require.True(t, ok)
+
+		// Insert Session with associated with bad Location
+		s := greenlight.Session{
+			ID:           randID(),
+			ProgramID:    INFO_SESSION_PROGRAM_ID,
+			CreatedAt:    time.Now(),
+			LocationType: "VIRTUAL",
+			LocationID:   locationID,
+		}
+		s.Times.Start.DateTime = time.Now().Add(time.Hour)
+
+		// Insert Session into DB
+		sessRes, err := mSrv.client.
+			Database(mSrv.dbName).Collection("sessions").
+			InsertOne(context.Background(), s)
+		require.NoError(t, err)
+		sessionID, ok := sessRes.InsertedID.(string)
+		require.True(t, ok, "sessionID should be a string")
+		require.NotEmpty(t, sessionID)
+
+		// Insert Signup into DB
+		suRes, err := mSrv.client.
+			Database(mSrv.dbName).Collection("signups").
+			InsertOne(context.Background(), greenlight.Signup{
+				NameFirst: "Halle",
+				NameLast:  "Bot",
+				SessionID: sessionID,
+			})
+		require.NoError(t, err)
+		require.NotEmpty(t, suRes)
+
+		require.NoError(t, err)
+		require.NotEmpty(t, sessRes.InsertedID)
+
+		// ** End of DB Setup ** //
+
+		// ** Behavior under test ** //
+		gotSessions, err := mSrv.GetUpcomingSessions(context.Background(), time.Hour*2)
+		require.NoError(t, err)
+		require.Len(t, gotSessions, 1, "should be 1 upcoming session")
+		require.Len(t, gotSessions[0].Participants, 1, "info session should have one registered participant")
+		participant := gotSessions[0].Participants[0]
+		require.Equal(t, "VIRTUAL", participant.SessionLocationType)
+	})
 }
 
 func TestServer(t *testing.T) {
@@ -116,6 +197,9 @@ func TestServer(t *testing.T) {
 		resp := httptest.NewRecorder()
 
 		mongoService := NewMongoService(dbClient, dbName)
+
+		err = dropDatabase(context.Background(), mongoService)
+		require.NoError(t, err)
 
 		sessionID := insertFutureSession(t, mongoService, time.Hour)
 		attendee := gofakeit.Person()

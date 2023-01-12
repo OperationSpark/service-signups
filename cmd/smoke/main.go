@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"regexp"
@@ -200,7 +199,7 @@ func fetchLinkBody(link string) (io.ReadCloser, error) {
 }
 
 func checkInfoPageContent(body io.Reader, wantStrings ...string) error {
-	b, err := ioutil.ReadAll(body)
+	b, err := io.ReadAll(body)
 	if err != nil {
 		return fmt.Errorf("readAll: %w", err)
 	}

@@ -216,6 +216,9 @@ func (m *MongoService) GetUpcomingSessions(ctx context.Context, inFuture time.Du
 		// Get associated Location data
 		var loc greenlight.Location
 		res := locations.FindOne(ctx, bson.M{"_id": session.LocationID})
+		if res.Err() != nil {
+			return upcomingSessions, fmt.Errorf("locations.findOne: %w\nlocationId: %q", err, session.LocationID)
+		}
 		err = res.Decode(&loc)
 		if err != nil {
 			return upcomingSessions, fmt.Errorf("decode location: %w", err)
