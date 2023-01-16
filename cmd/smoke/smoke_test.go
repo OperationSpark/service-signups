@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -134,8 +136,12 @@ func TestCheckInfoPageContent(t *testing.T) {
 	})
 }
 
-// CheckTestsEnabled checks we're on the "CI" workflow. If so, returns false, otherwise returns true. We only want these tests to run after a successful deployment.
+// CheckTestsEnabled checks if the 'SMOKE_LIVE' env var is explicitly set to "true". If so, returns true, otherwise returns false. We only want these tests to run after a successful deployment.
 func checkTestsEnabled() bool {
-	workflowName := os.Getenv("GITHUB_WORKFLOW")
-	return strings.ToUpper(workflowName) != "CI"
+	isSmokeLive, err := strconv.ParseBool(os.Getenv("SMOKE_LIVE"))
+	if err != nil {
+		fmt.Println("could not parse 'SMOKE_LIVE' env var")
+		return false
+	}
+	return isSmokeLive
 }
