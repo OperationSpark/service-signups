@@ -94,30 +94,31 @@ type (
 		MapURL       string `json:"mapUrl"`
 	}
 
-	// Request params for the Operation Spark messaging service.
-	messagingReqParams struct {
-		Template     osMessengerTemplate `json:"template"`
-		ZoomLink     string              `json:"zoomLink"`
-		Date         time.Time           `json:"date"`
-		Name         string              `json:"name"`
-		LocationType string              `json:"locationType"`
-		Location     Location            `json:"location"`
+	// Request params for the Operation Spark Message Template Renderer service.
+	rendererReqParams struct {
+		Template     osRendererTemplate `json:"template"`
+		ZoomLink     string             `json:"zoomLink"`
+		Date         time.Time          `json:"date"`
+		Name         string             `json:"name"`
+		LocationType string             `json:"locationType"`
+		Location     Location           `json:"location"`
 	}
 
-	osMessenger struct {
-		// OpSpark Messaging Service base URL.
+	osRenderer struct {
+		// OpSpark Message Template Renderer Service base URL.
+		// Defaults to https://sms.operationspark.org
 		baseURL string
 	}
 
-	osMessengerTemplate string
+	osRendererTemplate string
 )
 
 const (
-	INFO_SESSION_TEMPLATE osMessengerTemplate = "InfoSession"
+	INFO_SESSION_TEMPLATE osRendererTemplate = "InfoSession"
 )
 
 // StructToBase64 marshals a struct to JSON then encodes the string to base64.
-func (m *messagingReqParams) toBase64() (string, error) {
+func (m *rendererReqParams) toBase64() (string, error) {
 	j, err := json.Marshal(m)
 	if err != nil {
 		return "", fmt.Errorf("marshall: %w", err)
@@ -127,7 +128,7 @@ func (m *messagingReqParams) toBase64() (string, error) {
 }
 
 // FromBase64 decodes a base64 string into a messagingReqParams struct.
-func (m *messagingReqParams) fromBase64(encoded string) error {
+func (m *rendererReqParams) fromBase64(encoded string) error {
 	jsonBytes, err := base64.URLEncoding.DecodeString(encoded)
 	if err != nil {
 		return err
@@ -235,7 +236,7 @@ func (su Signup) shortMessage(infoURL string) (string, error) {
 func (su Signup) shortMessagingURL() (string, error) {
 	line1, cityStateZip := greenlight.ParseAddress(su.GooglePlace.Address)
 
-	p := messagingReqParams{
+	p := rendererReqParams{
 		Template:     INFO_SESSION_TEMPLATE,
 		ZoomLink:     su.zoomMeetingURL,
 		Date:         su.StartDateTime,
@@ -333,8 +334,8 @@ func (sc *SignupService) attachZoomMeetingID(su *Signup) error {
 	return nil
 }
 
-func (osm *osMessenger) CreateMessageURL(p notify.Participant) (string, error) {
-	params := messagingReqParams{
+func (osm *osRenderer) CreateMessageURL(p notify.Participant) (string, error) {
+	params := rendererReqParams{
 		Template:     INFO_SESSION_TEMPLATE,
 		ZoomLink:     p.ZoomJoinURL,
 		Name:         p.NameFirst,

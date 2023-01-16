@@ -25,7 +25,7 @@ type (
 		calledWith []string
 	}
 
-	MockOSMessenger struct{}
+	MockOSRenderer  struct{}
 	MockShortLinker struct{}
 )
 
@@ -39,7 +39,7 @@ func (m *MockSMSService) FormatCell(cell string) string {
 	return "+1" + strings.ReplaceAll(cell, "-", "")
 }
 
-func (m MockOSMessenger) CreateMessageURL(Participant) (string, error) {
+func (m MockOSRenderer) CreateMessageURL(Participant) (string, error) {
 	return "", nil
 }
 
@@ -222,10 +222,10 @@ func TestServer(t *testing.T) {
 		mockTwilio := MockSMSService{}
 
 		srv := NewServer(ServerOpts{
-			OSMessagingService: MockOSMessenger{},
-			ShortLinkService:   MockShortLinker{},
-			Store:              mongoService,
-			SMSService:         &mockTwilio,
+			OSRendererService: MockOSRenderer{},
+			ShortLinkService:  MockShortLinker{},
+			Store:             mongoService,
+			SMSService:        &mockTwilio,
 		})
 
 		srv.ServeHTTP(resp, req)

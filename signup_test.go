@@ -403,7 +403,7 @@ https://oprk.org/kRds5MKvKI`
 
 func TestStructToBase64(t *testing.T) {
 	t.Run("serializes a struct to base 64 encoding", func(t *testing.T) {
-		params := messagingReqParams{
+		params := rendererReqParams{
 			Template:     "InfoSession",
 			ZoomLink:     "https://us06web.zoom.us/j/12345678910",
 			Date:         mustMakeTime(t, time.RFC3339, "2022-10-05T17:00:00.000Z"),
@@ -430,7 +430,7 @@ func TestStructToBase64(t *testing.T) {
 
 func TestFromBase64(t *testing.T) {
 	t.Run("decodes", func(t *testing.T) {
-		wantParams := messagingReqParams{
+		wantParams := rendererReqParams{
 			Template:     "InfoSession",
 			ZoomLink:     "https://us06web.zoom.us/j/12345678910",
 			Date:         mustMakeTime(t, "January 02, 2006 3pm MST", "December 25, 2022 1pm CST"),
@@ -449,7 +449,7 @@ func TestFromBase64(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		var gotParams messagingReqParams
+		var gotParams rendererReqParams
 
 		err = gotParams.fromBase64(encoded)
 		if err != nil {
@@ -469,7 +469,7 @@ func TestFromBase64(t *testing.T) {
 	})
 
 	t.Run("decodes pre-encoded info session details link", func(t *testing.T) {
-		var params messagingReqParams
+		var params rendererReqParams
 
 		err := params.fromBase64("eyJ0ZW1wbGF0ZSI6IkluZm9TZXNzaW9uIiwiem9vbUxpbmsiOiJodHRwczovL3VzMDZ3ZWIuem9vbS51cy9qLzEyMzQ1Njc4OTEwIiwiZGF0ZSI6IjIwMjItMTAtMDVUMTc6MDA6MDAuMDAwWiIsIm5hbWUiOiJGaXJzdE5hbWUiLCJsb2NhdGlvblR5cGUiOiJIWUJSSUQiLCJsb2NhdGlvbiI6eyJuYW1lIjoiU29tZSBQbGFjZSIsImxpbmUxIjoiMTIzIE1haW4gU3QiLCJjaXR5U3RhdGVaaXAiOiJDaXR5LCBTdGF0ZSAxMjM0NSIsIm1hcFVybCI6Imh0dHBzOi8vd3d3Lmdvb2dsZS5jb20vbWFwcy9wbGFjZS8xMjMrTWFpbitTdCwrQ2l0eSwrU3RhdGUrMTIzNDUifX0=")
 
@@ -596,7 +596,7 @@ func TestShortMessagingURL(t *testing.T) {
 		encoded := strings.TrimPrefix(gotURL, wantURLPrefix)
 
 		// decode the params
-		var gotParams messagingReqParams
+		var gotParams rendererReqParams
 		err = gotParams.fromBase64(encoded)
 		if err != nil {
 			t.Fatal(err)
@@ -626,7 +626,7 @@ func TestCreateMessageURL(t *testing.T) {
 			MapURL:       "https://testmapurl.google.com",
 		}
 
-		m := osMessenger{}
+		r := osRenderer{}
 		person := gofakeit.Person()
 		p := notify.Participant{
 			NameFirst:           person.FirstName,
@@ -639,7 +639,7 @@ func TestCreateMessageURL(t *testing.T) {
 			SessionLocationType: "HYBRID",
 			SessionLocation:     notify.Location(osLoc),
 		}
-		msgURL, err := m.CreateMessageURL(p)
+		msgURL, err := r.CreateMessageURL(p)
 		require.NoError(t, err)
 		// Make sure location data is encoded in the URL
 		u, err := url.Parse(msgURL)
@@ -654,7 +654,7 @@ func TestCreateMessageURL(t *testing.T) {
 		require.NoError(t, err)
 
 		// Unmarshal the decoded JSON into a messaging request params struct
-		var params messagingReqParams
+		var params rendererReqParams
 		jd := json.NewDecoder(bytes.NewReader(decodedJson))
 		err = jd.Decode(&params)
 		require.NoError(t, err)
@@ -682,8 +682,8 @@ func TestCreateMessageURL(t *testing.T) {
 			SessionLocation: notify.Location{},
 		}
 
-		m := osMessenger{}
-		msgURL, err := m.CreateMessageURL(p)
+		r := osRenderer{}
+		msgURL, err := r.CreateMessageURL(p)
 		require.NoError(t, err)
 		// Make sure location data is encoded in the URL
 		u, err := url.Parse(msgURL)

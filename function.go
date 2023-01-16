@@ -72,10 +72,10 @@ func NewNotifyServer() *notify.Server {
 	})
 
 	return notify.NewServer(notify.ServerOpts{
-		OSMessagingService: &osMessenger{baseURL: os.Getenv("OS_MESSAGING_SERVICE_URL")},
-		Store:              mongoService,
-		SMSService:         twilioSvc,
-		ShortLinkService:   NewURLShortener(ShortenerOpts{apiKey: os.Getenv("URL_SHORTENER_API_KEY")}),
+		OSRendererService: &osRenderer{baseURL: os.Getenv("OS_RENDERING_SERVICE_URL")},
+		Store:             mongoService,
+		SMSService:        twilioSvc,
+		ShortLinkService:  NewURLShortener(ShortenerOpts{apiKey: os.Getenv("URL_SHORTENER_API_KEY")}),
 	})
 }
 
