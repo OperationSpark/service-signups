@@ -47,6 +47,7 @@ jobs:
             TWILIO_CONVERSATIONS_SID=${{secrets.TWILIO_CONVERSATIONS_SID}},
             URL_SHORTENER_API_KEY=${{secrets.URL_SHORTENER_API_KEY}},
             OS_MESSAGING_SERVICE_URL=${{secrets.OS_MESSAGING_SERVICE_URL}},
+            OS_RENDERING_SERVICE_URL=${{secrets.OS_RENDERING_SERVICE_URL}},
             MONGO_URI=${{secrets.MONGO_URI}},
             APP_ENV=testing
       - id: "trigger-url"
