@@ -51,7 +51,8 @@ type (
 		client *mongo.Client
 	}
 
-	OSMessenger interface {
+	OSRenderer interface {
+		// CreateMessageURL creates a URL to the Operation Spark Message Template Renderer with URL encoded data.
 		CreateMessageURL(Participant) (string, error)
 	}
 
@@ -64,10 +65,10 @@ type (
 	}
 
 	ServerOpts struct {
-		OSMessagingService OSMessenger
-		ShortLinkService   Shortener
-		SMSService         SMSSender
-		Store              Store
+		OSRendererService OSRenderer
+		ShortLinkService  Shortener
+		SMSService        SMSSender
+		Store             Store
 	}
 
 	SMSSender interface {
@@ -76,7 +77,7 @@ type (
 	}
 
 	Server struct {
-		osMsSvc       OSMessenger
+		osMsSvc       OSRenderer
 		shortySrv     Shortener
 		store         Store
 		twilioService SMSSender
@@ -108,7 +109,7 @@ const (
 
 func NewServer(o ServerOpts) *Server {
 	return &Server{
-		osMsSvc:       o.OSMessagingService,
+		osMsSvc:       o.OSRendererService,
 		shortySrv:     o.ShortLinkService,
 		store:         o.Store,
 		twilioService: o.SMSService,
