@@ -34,11 +34,52 @@ func init() {
 }
 
 func NewServer() *http.ServeMux {
+	// Check env vars only in GCP context
+	// K_REVISION is set in GCP environment, so if it's not set, we're not running in GCP and we can skip the check
+	// https://cloud.google.com/functions/docs/configuring/env-var#newer_runtimes
+	skipEnvVarCheck := os.Getenv("K_REVISION") == ""
+	err := checkEnvVars(skipEnvVarCheck)
+	if err != nil {
+		log.Fatal(err)
+	}
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", NewSignupServer().HandleSignUp)
 	mux.HandleFunc("/notify", NewNotifyServer().ServeHTTP)
 	return mux
+}
+
+func checkEnvVars(skip bool) error {
+	if skip {
+		return nil
+	}
+	requiredEnvVars := []string{
+		"GREENLIGHT_API_KEY",
+		"GREENLIGHT_WEBHOOK_URL",
+		"MAIL_DOMAIN",
+		"MAILGUN_API_KEY",
+		"MONGO_URI",
+		"OS_MESSAGING_SERVICE_URL",
+		"OS_RENDERING_SERVICE_URL",
+		"SLACK_WEBHOOK_URL",
+		"TWILIO_ACCOUNT_SID",
+		"TWILIO_AUTH_TOKEN",
+		"TWILIO_CONVERSATIONS_SID",
+		"TWILIO_PHONE_NUMBER",
+		"URL_SHORTENER_API_KEY",
+		"ZOOM_ACCOUNT_ID",
+		"ZOOM_CLIENT_ID",
+		"ZOOM_CLIENT_SECRET",
+		"ZOOM_MEETING_12",
+		"ZOOM_MEETING_17",
+	}
+
+	for _, ev := range requiredEnvVars {
+		if os.Getenv(ev) == "" {
+			return fmt.Errorf("env var %q is required", ev)
+		}
+	}
+	return nil
 }
 
 func NewNotifyServer() *notify.Server {
