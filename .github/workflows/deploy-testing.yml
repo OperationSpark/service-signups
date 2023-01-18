@@ -3,7 +3,6 @@ on:
   push:
     branches:
       - "testing"
-      - "45-add-action-to-post-signup-on-successful-deployment"
 
 jobs:
   build-deploy-cloud-function:
@@ -29,7 +28,7 @@ jobs:
           https_trigger_security_level: "secure-always"
           project_id: "operationspark-org"
           region: "us-central1"
-          runtime: "go116"
+          runtime: "go119"
           env_vars: >-
             SLACK_WEBHOOK_URL=${{secrets.SLACK_WEBHOOK_URL}},
             MAIL_DOMAIN=${{secrets.MAIL_DOMAIN}},
