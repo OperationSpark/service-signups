@@ -25,6 +25,7 @@ type (
 		GooglePlace       greenlight.GooglePlace `json:"googlePlace" schema:"googlePlace"`
 		// Session's set location type. One of "IN_PERSON" | "VIRTUAL" | "IN_PERSON". If the session's location type is "HYBRID", a student can attend "IN_PERSON" or "VIRTUAL"ly.
 		LocationType     string    `json:"locationType" schema:"locationType"`
+		JoinCode         string    `json:"joinCode"`
 		NameFirst        string    `json:"nameFirst" schema:"nameFirst"`
 		NameLast         string    `json:"nameLast" schema:"nameLast"`
 		ProgramID        string    `json:"programId" schema:"programId"`
@@ -161,8 +162,8 @@ func (s *Signup) welcomeData() (welcomeVariables, error) {
 	return welcomeVariables{
 		FirstName:            s.NameFirst,
 		LastName:             s.NameLast,
-		SessionDate:          s.StartDateTime.In(ctz).Format("Monday, Jan 02"),
 		SessionTime:          s.StartDateTime.In(ctz).Format("3:04 PM MST"),
+		SessionDate:          s.StartDateTime.In(ctz).Format("Monday, Jan 02"),
 		ZoomURL:              s.ZoomMeetingURL(),
 		LocationLine1:        line1,
 		LocationCityStateZip: cityStateZip,

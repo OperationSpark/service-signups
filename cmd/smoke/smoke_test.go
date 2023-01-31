@@ -33,6 +33,7 @@ func TestSmokeSignup(t *testing.T) {
 		Email:             s.toEmail,
 		GooglePlace:       s.selectedSession.GooglePlace,
 		LocationType:      s.selectedSession.LocationType,
+		JoinCode:          s.selectedSession.Code,
 		NameFirst:         "Halle",
 		NameLast:          "Bot",
 		ProgramID:         s.selectedSession.ProgramID,
@@ -82,6 +83,8 @@ func TestSmokeSignup(t *testing.T) {
 		s.selectedSession.Times.Start.DateTime.In(ct).Format("3:00pm (MST)"),
 		// Name
 		su.NameFirst,
+		//xJoin Code
+		s.selectedSession.Code,
 		// TODO: HTML only contains the next props, so "Hello Halle," not rendered yet.
 		// Zoom link
 		"https://us06web.zoom.us/w/8", //...
@@ -139,8 +142,11 @@ func TestCheckInfoPageContent(t *testing.T) {
 // CheckTestsEnabled checks if the 'SMOKE_LIVE' env var is explicitly set to "true". If so, returns true, otherwise returns false. We only want these tests to run after a successful deployment.
 func checkTestsEnabled() bool {
 	isSmokeLive, err := strconv.ParseBool(os.Getenv("SMOKE_LIVE"))
-	if err != nil {
-		fmt.Println("could not parse 'SMOKE_LIVE' env var")
+	if err != nil || !isSmokeLive {
+		if err != nil {
+			fmt.Print("could not parse 'SMOKE_LIVE' env var")
+		}
+		fmt.Println("smoke test skipped.\nSet `SMOKE_LIVE=true` to run smoke test")
 		return false
 	}
 	return isSmokeLive
