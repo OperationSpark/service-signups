@@ -56,6 +56,7 @@ type (
 		LocationLine1        string `json:"locationLine1"`
 		LocationCityStateZip string `json:"locationCityStateZip"`
 		LocationMapURL       string `json:"locationMapUrl"`
+		JoinCode             string `json:"joinCode"`
 	}
 
 	SignupService struct {
@@ -103,6 +104,7 @@ type (
 		Name         string             `json:"name"`
 		LocationType string             `json:"locationType"`
 		Location     Location           `json:"location"`
+		JoinCode     string             `json:"joinCode"`
 	}
 
 	osRenderer struct {
@@ -165,6 +167,7 @@ func (s *Signup) welcomeData() (welcomeVariables, error) {
 		SessionTime:          s.StartDateTime.In(ctz).Format("3:04 PM MST"),
 		SessionDate:          s.StartDateTime.In(ctz).Format("Monday, Jan 02"),
 		ZoomURL:              s.ZoomMeetingURL(),
+		JoinCode:             s.JoinCode,
 		LocationLine1:        line1,
 		LocationCityStateZip: cityStateZip,
 		LocationMapURL:       greenlight.GoogleLocationLink(s.GooglePlace.Address),
@@ -242,6 +245,7 @@ func (su Signup) shortMessagingURL() (string, error) {
 		ZoomLink:     su.zoomMeetingURL,
 		Date:         su.StartDateTime,
 		Name:         su.NameFirst,
+		JoinCode:     su.JoinCode,
 		LocationType: su.LocationType,
 		Location: Location{
 			Name:         su.GooglePlace.Name,

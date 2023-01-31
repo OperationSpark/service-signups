@@ -24,6 +24,7 @@ func TestSendWelcome(t *testing.T) {
 			ReferrerResponse: "",
 			StartDateTime:    sessionStartDate,
 			Cohort:           "is-mar-14-22-12pm",
+			JoinCode:         "tlav",
 		}
 
 		domain := "test.notarealdomain.org"
@@ -61,6 +62,7 @@ func TestSendWelcome(t *testing.T) {
 
 			assertEqual(t, gotVars.FirstName, form.NameFirst)
 			assertEqual(t, gotVars.LastName, form.NameLast)
+			assertEqual(t, gotVars.JoinCode, form.JoinCode)
 			assertEqual(t, gotVars.SessionDate, "Monday, Mar 14")
 			assertEqual(t, gotVars.SessionTime, "12:00 PM CDT")
 			// TODO: ZoomURL
