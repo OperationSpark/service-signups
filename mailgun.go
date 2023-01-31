@@ -56,8 +56,11 @@ func (m MailgunService) sendWelcome(ctx context.Context, su Signup) error {
 			"locationLine1":        vars.LocationLine1,
 			"locationCityStateZip": vars.LocationCityStateZip,
 			"locationMapUrl":       vars.LocationMapURL,
-			"joinCode":             vars.JoinCode,
 		},
+	}
+	// add joinCode to variables if it exists
+	if vars.JoinCode != "" {
+		t.variables["joinCode"] = vars.JoinCode
 	}
 
 	if su.LocationType == "HYBRID" {

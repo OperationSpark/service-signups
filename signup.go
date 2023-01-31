@@ -245,7 +245,6 @@ func (su Signup) shortMessagingURL() (string, error) {
 		ZoomLink:     su.zoomMeetingURL,
 		Date:         su.StartDateTime,
 		Name:         su.NameFirst,
-		JoinCode:     su.JoinCode,
 		LocationType: su.LocationType,
 		Location: Location{
 			Name:         su.GooglePlace.Name,
@@ -254,6 +253,11 @@ func (su Signup) shortMessagingURL() (string, error) {
 			MapURL:       greenlight.GoogleLocationLink(su.GooglePlace.Address),
 		},
 	}
+
+	if su.JoinCode != "" {
+		p.JoinCode = su.JoinCode
+	}
+
 	encoded, err := p.toBase64()
 	if err != nil {
 		return "", fmt.Errorf("structToBase64: %w", err)
