@@ -25,7 +25,7 @@ type (
 		GooglePlace       greenlight.GooglePlace `json:"googlePlace" schema:"googlePlace"`
 		// Session's set location type. One of "IN_PERSON" | "VIRTUAL" | "IN_PERSON". If the session's location type is "HYBRID", a student can attend "IN_PERSON" or "VIRTUAL"ly.
 		LocationType     string    `json:"locationType" schema:"locationType"`
-		JoinCode         string    `json:"joinCode"`
+		JoinCode         string    `json:"joinCode,omitempty"`
 		NameFirst        string    `json:"nameFirst" schema:"nameFirst"`
 		NameLast         string    `json:"nameLast" schema:"nameLast"`
 		ProgramID        string    `json:"programId" schema:"programId"`
@@ -56,7 +56,7 @@ type (
 		LocationLine1        string `json:"locationLine1"`
 		LocationCityStateZip string `json:"locationCityStateZip"`
 		LocationMapURL       string `json:"locationMapUrl"`
-		JoinCode             string `json:"joinCode"`
+		JoinCode             string `json:"joinCode,omitempty"`
 	}
 
 	SignupService struct {
@@ -104,7 +104,7 @@ type (
 		Name         string             `json:"name"`
 		LocationType string             `json:"locationType"`
 		Location     Location           `json:"location"`
-		JoinCode     string             `json:"joinCode"`
+		JoinCode     string             `json:"joinCode,omitempty"`
 	}
 
 	osRenderer struct {
@@ -246,16 +246,13 @@ func (su Signup) shortMessagingURL() (string, error) {
 		Date:         su.StartDateTime,
 		Name:         su.NameFirst,
 		LocationType: su.LocationType,
+		JoinCode:     su.JoinCode,
 		Location: Location{
 			Name:         su.GooglePlace.Name,
 			Line1:        line1,
 			CityStateZip: cityStateZip,
 			MapURL:       greenlight.GoogleLocationLink(su.GooglePlace.Address),
 		},
-	}
-
-	if su.JoinCode != "" {
-		p.JoinCode = su.JoinCode
 	}
 
 	encoded, err := p.toBase64()
