@@ -36,14 +36,17 @@ type (
 		fromNum string
 	}
 
+	// represents greenlight open session API response
 	openSession struct {
 		ID           string                 `json:"_id"`
 		Cohort       string                 `json:"cohort"`
 		LocationType string                 `json:"locationType"`
 		GooglePlace  greenlight.GooglePlace `json:"googlePlace"`
-		Private      bool                   `json:"private"`
-		ProgramID    string                 `json:"programId"`
-		Times        struct {
+		// session join code
+		Code      string `json:"code"`
+		Private   bool   `json:"private"`
+		ProgramID string `json:"programId"`
+		Times     struct {
 			Start struct {
 				DateTime time.Time `json:"dateTime"`
 			} `json:"start"`

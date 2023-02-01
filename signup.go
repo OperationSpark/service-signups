@@ -25,6 +25,7 @@ type (
 		GooglePlace       greenlight.GooglePlace `json:"googlePlace" schema:"googlePlace"`
 		// Session's set location type. One of "IN_PERSON" | "VIRTUAL" | "IN_PERSON". If the session's location type is "HYBRID", a student can attend "IN_PERSON" or "VIRTUAL"ly.
 		LocationType     string    `json:"locationType" schema:"locationType"`
+		JoinCode         string    `json:"joinCode,omitempty"`
 		NameFirst        string    `json:"nameFirst" schema:"nameFirst"`
 		NameLast         string    `json:"nameLast" schema:"nameLast"`
 		ProgramID        string    `json:"programId" schema:"programId"`
@@ -55,6 +56,7 @@ type (
 		LocationLine1        string `json:"locationLine1"`
 		LocationCityStateZip string `json:"locationCityStateZip"`
 		LocationMapURL       string `json:"locationMapUrl"`
+		JoinCode             string `json:"joinCode,omitempty"`
 	}
 
 	SignupService struct {
@@ -102,6 +104,7 @@ type (
 		Name         string             `json:"name"`
 		LocationType string             `json:"locationType"`
 		Location     Location           `json:"location"`
+		JoinCode     string             `json:"joinCode,omitempty"`
 	}
 
 	osRenderer struct {
@@ -161,9 +164,10 @@ func (s *Signup) welcomeData() (welcomeVariables, error) {
 	return welcomeVariables{
 		FirstName:            s.NameFirst,
 		LastName:             s.NameLast,
-		SessionDate:          s.StartDateTime.In(ctz).Format("Monday, Jan 02"),
 		SessionTime:          s.StartDateTime.In(ctz).Format("3:04 PM MST"),
+		SessionDate:          s.StartDateTime.In(ctz).Format("Monday, Jan 02"),
 		ZoomURL:              s.ZoomMeetingURL(),
+		JoinCode:             s.JoinCode,
 		LocationLine1:        line1,
 		LocationCityStateZip: cityStateZip,
 		LocationMapURL:       greenlight.GoogleLocationLink(s.GooglePlace.Address),
@@ -242,6 +246,7 @@ func (su Signup) shortMessagingURL() (string, error) {
 		Date:         su.StartDateTime,
 		Name:         su.NameFirst,
 		LocationType: su.LocationType,
+		JoinCode:     su.JoinCode,
 		Location: Location{
 			Name:         su.GooglePlace.Name,
 			Line1:        line1,
@@ -249,6 +254,7 @@ func (su Signup) shortMessagingURL() (string, error) {
 			MapURL:       greenlight.GoogleLocationLink(su.GooglePlace.Address),
 		},
 	}
+
 	encoded, err := p.toBase64()
 	if err != nil {
 		return "", fmt.Errorf("structToBase64: %w", err)
