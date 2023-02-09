@@ -32,6 +32,11 @@ type (
 		conversationsIdentity string
 	}
 
+	// error type for invalid phone numbers
+	errInvalidNumber struct {
+		err error
+	}
+
 	twilioServiceOptions struct {
 		accountSID string
 		authToken  string
@@ -51,6 +56,10 @@ type (
 		conversationsIdentity string
 	}
 )
+
+func (e errInvalidNumber) Error() string {
+	return e.err.Error()
+}
 
 func NewTwilioService(o twilioServiceOptions) *smsService {
 	messengerBaseURL := "https://messenger.operationspark.org"
@@ -100,6 +109,12 @@ func (t *smsService) run(ctx context.Context, su Signup) error {
 	if len(existing) == 0 {
 		convoId, err = t.addNumberToConversation(toNum, convoName)
 		if err != nil {
+			twilioInvalidPhoneCode := "50407"
+			// check if error is due to number being invalid, if so use the errInvalidNumber type
+			if strings.Contains(err.Error(), twilioInvalidPhoneCode) {
+				return errInvalidNumber{err: fmt.Errorf("invalid number: %s", toNum)}
+			}
+
 			return fmt.Errorf("addNumberToConversation: %w", err)
 		}
 	} else {
