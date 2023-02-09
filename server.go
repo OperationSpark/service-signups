@@ -1,6 +1,7 @@
 package signup
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -8,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gorilla/schema"
@@ -51,6 +53,18 @@ func (ss *signupServer) HandleSignUp(w http.ResponseWriter, r *http.Request) {
 	// depending on what we get back, respond accordingly
 	if err != nil {
 		// TODO: handle different kinds of errors differently
+		// handle invalid phone number error
+		if strings.Contains(err.Error(), "invalid number") {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprint(w, http.StatusBadRequest)
+			fmt.Fprint(w, bytes.NewBufferString(`{
+				"message": "Phone Number Invalid",
+				"field": "phone number"
+			}`))
+			// http.Error(w, "Invalid Phone Number", http.StatusBadRequest)
+			return
+		}
 		fmt.Fprintf(os.Stderr, "\nproblem signing user up: %v\n\n", err)
 		fmt.Printf("Signup:\n%s\n", prettyPrint(su))
 		http.Error(w, "problem signing user up\n", http.StatusInternalServerError)
