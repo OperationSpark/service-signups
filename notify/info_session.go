@@ -167,8 +167,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	err = s.sendSMSReminders(ctx, sessions, reqBody.JobArgs.DryRun)
 	if err != nil {
-		fmt.Println("One or more message failed to send", err)
-		http.Error(w, "One or more message failed to send", http.StatusInternalServerError)
+		fmt.Println("One or more messages failed to send", err)
+		http.Error(w, "One or more messages failed to send", http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusOK)

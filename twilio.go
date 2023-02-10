@@ -204,7 +204,7 @@ func (t *smsService) addNumberToConversation(phNum, friendlyName string) (string
 	ppp.SetIdentity(t.conversationsIdentity)
 	_, err = t.client.ConversationsV1.CreateServiceConversationParticipant(t.conversationsSid, *cResp.Sid, ppp)
 	if err != nil {
-		return "", fmt.Errorf("createServiceConversationParticipant with Identity: %w", err)
+		return "", fmt.Errorf("createServiceConversationParticipant with Service Identity: %w: ", err)
 	}
 
 	// Add SMS Recipient to conversation
@@ -216,7 +216,7 @@ func (t *smsService) addNumberToConversation(phNum, friendlyName string) (string
 
 	_, err = t.client.ConversationsV1.CreateServiceConversationParticipant(t.conversationsSid, *cResp.Sid, pp)
 	if err != nil {
-		return "", fmt.Errorf("createServiceConversationParticipant: %w", err)
+		return "", fmt.Errorf("createServiceConversationParticipant: %w\nidentity: %q", err, phNum)
 	}
 
 	return *cResp.Sid, nil
