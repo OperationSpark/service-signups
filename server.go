@@ -56,13 +56,12 @@ func (ss *signupServer) HandleSignUp(w http.ResponseWriter, r *http.Request) {
 		// handle invalid phone number error
 		if strings.Contains(err.Error(), "invalid number") {
 			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusBadRequest)
-			fmt.Fprint(w, http.StatusBadRequest)
 			fmt.Fprint(w, bytes.NewBufferString(`{
 				"message": "Phone Number Invalid",
 				"field": "phone number"
-			}`))
-			// http.Error(w, "Invalid Phone Number", http.StatusBadRequest)
+				}`))
+			fmt.Fprint(w, http.StatusBadRequest)
+			http.Error(w, "Invalid Phone Number", http.StatusBadRequest)
 			return
 		}
 		fmt.Fprintf(os.Stderr, "\nproblem signing user up: %v\n\n", err)
