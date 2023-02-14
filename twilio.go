@@ -33,7 +33,7 @@ type (
 	}
 
 	// error type for invalid phone numbers
-	errInvalidNumber struct {
+	ErrInvalidNumber struct {
 		err error
 	}
 
@@ -57,7 +57,7 @@ type (
 	}
 )
 
-func (e errInvalidNumber) Error() string {
+func (e ErrInvalidNumber) Error() string {
 	return e.err.Error()
 }
 
@@ -112,7 +112,7 @@ func (t *smsService) run(ctx context.Context, su Signup) error {
 			twilioInvalidPhoneCode := "50407"
 			// check if error is due to number being invalid, if so use the errInvalidNumber type
 			if strings.Contains(err.Error(), twilioInvalidPhoneCode) {
-				return errInvalidNumber{err: fmt.Errorf("invalid number: %s", toNum)}
+				return ErrInvalidNumber{err: fmt.Errorf("invalid number: %s", toNum)}
 			}
 
 			return fmt.Errorf("addNumberToConversation: %w", err)

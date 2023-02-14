@@ -1,7 +1,6 @@
 package signup
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -21,6 +20,11 @@ type registerer interface {
 
 type signupServer struct {
 	service registerer
+}
+
+type invalidNumberData struct {
+	Message string `json:"message"`
+	Field   string `json:"field"`
 }
 
 func (ss *signupServer) HandleSignUp(w http.ResponseWriter, r *http.Request) {
@@ -56,12 +60,11 @@ func (ss *signupServer) HandleSignUp(w http.ResponseWriter, r *http.Request) {
 		// handle invalid phone number error
 		if strings.Contains(err.Error(), "invalid number") {
 			w.Header().Set("Content-Type", "application/json")
-			fmt.Fprint(w, bytes.NewBufferString(`{
-				"message": "Phone Number Invalid",
-				"field": "phone number"
-				}`))
 			fmt.Fprint(w, http.StatusBadRequest)
-			http.Error(w, "Invalid Phone Number", http.StatusBadRequest)
+			fmt.Fprint(w, invalidNumberData{
+				Message: "Invalid Phone Number",
+				Field:   "phone",
+			})
 			return
 		}
 		fmt.Fprintf(os.Stderr, "\nproblem signing user up: %v\n\n", err)
