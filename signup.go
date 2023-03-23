@@ -65,6 +65,12 @@ type (
 		meetings    map[int]string
 		tasks       []Task
 		zoomService mutationTask
+		gldbService codeCreator
+	}
+
+	// codeCreator creates a join code for a user.
+	codeCreator interface {
+		Create(userID, sessionID string) (string, error)
 	}
 
 	Task interface {
@@ -87,6 +93,7 @@ type (
 		tasks    []Task
 		// The Zoom Service needs to mutate the Signup struct with a meeting join URL. Due to this mutation, we need to pull the zoom service out of the task flow and use it before running the tasks.
 		zoomService mutationTask
+		gldbService codeCreator
 	}
 
 	Location struct {
@@ -282,6 +289,7 @@ func newSignupService(o signupServiceOptions) *SignupService {
 		meetings:    o.meetings,
 		tasks:       o.tasks,
 		zoomService: o.zoomService,
+		gldbService: o.gldbService,
 	}
 }
 

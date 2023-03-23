@@ -64,6 +64,13 @@ type (
 			DateTime time.Time `bson:"dateTime"`
 		} `bson:"start"`
 	}
+
+	UserJoinCode struct {
+		ID        string    `json:"_id"`
+		ExpiresAt time.Time `json:"expiresAt"`
+		UsedAt    string    `json:"usedAt"`
+		UserID    string    `json:"userId"`
+	}
 )
 
 // UnmarshalJSON safely handles a GooglePlaces with an empty string value.
