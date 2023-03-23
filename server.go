@@ -64,16 +64,13 @@ func (ss *signupServer) HandleSignUp(w http.ResponseWriter, r *http.Request) {
 				Message: "Invalid Phone Number",
 				Field:   "phone",
 			}
-			b, err := json.Marshal(errResp)
 
-			if err != nil {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			if err = json.NewEncoder(w).Encode(errResp); err != nil {
 				fmt.Fprintf(os.Stderr, "problem marshalling error response: %v", err)
 				http.Error(w, "problem marshalling error response", http.StatusInternalServerError)
-				return
 			}
-			w.Header().Set("Content-Type", "application/json")
-			// fmt.Fprint(w, http.StatusBadRequest)
-			fmt.Fprint(w, b)
 			return
 		}
 		fmt.Fprintf(os.Stderr, "\nproblem signing user up: %v\n\n", err)

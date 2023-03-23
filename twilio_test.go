@@ -10,6 +10,8 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 // Magic Test Numbers
@@ -33,7 +35,7 @@ func TestSendSMSInConversation(t *testing.T) {
 
 		mockTwilioAPI := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			err := r.ParseMultipartForm(128)
-			assertNilError(t, err)
+			require.NoError(t, err)
 
 			w.Header().Set("Content-Type", "application/json")
 			fmt.Fprint(w, http.StatusBadRequest)
@@ -140,14 +142,12 @@ func TestInvalidNumErr(t *testing.T) {
 		server.HandleSignUp(res, req)
 
 		// check that the response is a 400
-		assertStatus(t, 400, http.StatusBadRequest)
+		require.Equal(t, http.StatusBadRequest, res.Code)
 		// check that the response body is the expected error
 		var errResp ErrResp
 
-		err := json.Unmarshal([]byte(res.Body.Bytes()), &errResp)
-		fmt.Printf("%+v\n", res.Body.String())
-
-		assertEqual(t, err, `{ "message":  "Invalid Phone Number", "field": "phone" }`)
-
+		json.Unmarshal([]byte(res.Body.Bytes()), &errResp)
+		want := fmt.Sprintln(`{"message":"Invalid Phone Number","field":"phone"}`)
+		require.Equal(t, want, res.Body.String())
 	})
 }
