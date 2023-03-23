@@ -3,6 +3,7 @@ package signup
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -140,9 +141,13 @@ func TestInvalidNumErr(t *testing.T) {
 
 		// check that the response is a 400
 		assertStatus(t, 400, http.StatusBadRequest)
-		fmt.Print(res)
 		// check that the response body is the expected error
-		assertEqual(t, res.Body.String(), `400{Invalid Phone Number phone}`)
+		var errResp ErrResp
+
+		err := json.Unmarshal([]byte(res.Body.Bytes()), &errResp)
+		fmt.Printf("%+v\n", res.Body.String())
+
+		assertEqual(t, err, `{ "message":  "Invalid Phone Number", "field": "phone" }`)
 
 	})
 }

@@ -22,7 +22,7 @@ type signupServer struct {
 	service registerer
 }
 
-type invalidNumberData struct {
+type ErrResp struct {
 	Message string `json:"message"`
 	Field   string `json:"field"`
 }
@@ -59,12 +59,21 @@ func (ss *signupServer) HandleSignUp(w http.ResponseWriter, r *http.Request) {
 		// TODO: handle different kinds of errors differently
 		// handle invalid phone number error
 		if strings.Contains(err.Error(), "invalid number") {
-			w.Header().Set("Content-Type", "application/json")
-			fmt.Fprint(w, http.StatusBadRequest)
-			fmt.Fprint(w, invalidNumberData{
+			// marshall error response
+			errResp := ErrResp{
 				Message: "Invalid Phone Number",
 				Field:   "phone",
-			})
+			}
+			b, err := json.Marshal(errResp)
+
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "problem marshalling error response: %v", err)
+				http.Error(w, "problem marshalling error response", http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			// fmt.Fprint(w, http.StatusBadRequest)
+			fmt.Fprint(w, b)
 			return
 		}
 		fmt.Fprintf(os.Stderr, "\nproblem signing user up: %v\n\n", err)
