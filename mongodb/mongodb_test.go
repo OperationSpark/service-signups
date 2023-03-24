@@ -3,6 +3,7 @@ package mongodb_test
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"testing"
 	"time"
 
@@ -18,6 +19,7 @@ func TestCreate(t *testing.T) {
 	srv := mongodb.New(dbName, dbClient)
 
 	session := greenlight.Session{
+		ID:     randID(), // Simulate Greenlight IDs (not using ObjectId())
 		Cohort: "test",
 	}
 
@@ -25,7 +27,7 @@ func TestCreate(t *testing.T) {
 	session.Times.Start.DateTime, err = time.Parse(time.RFC3339, "2023-01-02T15:00:00Z")
 	require.NoError(t, err)
 
-	s, err := dbClient.Database(dbName).Collection("sessions").InsertOne(context.Background(), &session)
+	s, err := dbClient.Database(dbName).Collection("sessions").InsertOne(context.Background(), session)
 	require.NoError(t, err)
 	fmt.Printf("%+v\n", s)
 	fmt.Printf("%+v\n", session)
@@ -44,6 +46,17 @@ func TestCreate(t *testing.T) {
 	joinCode.Decode(&joinCodeDoc)
 
 	require.Equal(t, session.ID, joinCodeDoc.ID)
-	// require.Equal(t, )
 
+}
+
+// RandID generates a random 17-character string to simulate Meteor's Mongo ID generation.
+// Meteor did not originally use Mongo's ObjectID() for document IDs.
+func randID() string {
+	var letters = []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	length := 17
+	b := make([]rune, length)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
 }
