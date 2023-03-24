@@ -10,6 +10,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/bsontype"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type (
@@ -66,10 +67,11 @@ type (
 	}
 
 	UserJoinCode struct {
-		ID        string    `json:"_id"`
-		ExpiresAt time.Time `json:"expiresAt"`
-		UsedAt    string    `json:"usedAt"`
-		UserID    string    `json:"userId"`
+		ID        primitive.ObjectID `bson:"_id"`       // user join code ID
+		ExpiresAt time.Time          `bson:"expiresAt"` // 8 hours after start of session"
+		UsedAt    string             `bson:"usedAt"`    // "null | Date used"
+		UserID    string             `bson:"userId"`    // set when user join code is used in greenlight
+		SessionID string             `bson:"sessionId"` // Greenlight session ID
 	}
 )
 
