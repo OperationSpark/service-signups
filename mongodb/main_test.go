@@ -54,7 +54,7 @@ func TestMain(m *testing.M) {
 			return err
 		}
 
-		fmt.Printf("connected to DB @ %s", dbURL)
+		fmt.Printf("connected to DB @ %s\n", dbURL)
 		return dbClient.Ping(context.TODO(), nil)
 	})
 
