@@ -70,7 +70,7 @@ type (
 
 	// codeCreator creates a join code for a user.
 	codeCreator interface {
-		Create(userID, sessionID string) (string, error)
+		Create(ctx context.Context, sessionID string) (string, error)
 	}
 
 	Task interface {
@@ -304,6 +304,12 @@ func (sc *SignupService) register(ctx context.Context, su Signup) error {
 	if err != nil {
 		return fmt.Errorf("zoomService.run: %w", err)
 	}
+	joinCodeID, err := sc.gldbService.Create(ctx, su.SessionID)
+	if err != nil {
+		return fmt.Errorf("userJoinCode Create: %w", err)
+	}
+	// TODO attach to signup
+	fmt.Println(joinCodeID)
 
 	// Run each task in a go routine for concurrent execution
 	g, ctx := errgroup.WithContext(ctx)
