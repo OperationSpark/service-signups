@@ -252,13 +252,14 @@ func (su Signup) shortMessagingURL() (string, error) {
 	line1, cityStateZip := greenlight.ParseAddress(su.GooglePlace.Address)
 
 	p := rendererReqParams{
-		Template:     INFO_SESSION_TEMPLATE,
-		ZoomLink:     su.zoomMeetingURL,
-		Date:         su.StartDateTime,
-		Name:         su.NameFirst,
-		LocationType: su.LocationType,
-		JoinCode:     su.JoinCode,
-		IsGmail:      strings.HasSuffix(su.Email, "gmail.com"),
+		Template:      INFO_SESSION_TEMPLATE,
+		ZoomLink:      su.zoomMeetingURL,
+		Date:          su.StartDateTime,
+		Name:          su.NameFirst,
+		LocationType:  su.LocationType,
+		JoinCode:      su.JoinCode,
+		IsGmail:       strings.HasSuffix(su.Email, "gmail.com"),
+		GreenlightURL: fmt.Sprintf("https://greenlight.operationspark.org/sessions/%s/?subview=overview&userJoinCode=%s", su.SessionID, su.userJoinCode),
 		Location: Location{
 			Name:         su.GooglePlace.Name,
 			Line1:        line1,
