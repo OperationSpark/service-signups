@@ -258,6 +258,7 @@ func (su Signup) shortMessagingURL() (string, error) {
 		Name:         su.NameFirst,
 		LocationType: su.LocationType,
 		JoinCode:     su.JoinCode,
+		IsGmail:      strings.HasSuffix(su.Email, "gmail.com"),
 		Location: Location{
 			Name:         su.GooglePlace.Name,
 			Line1:        line1,
