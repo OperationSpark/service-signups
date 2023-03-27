@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type MongodbService struct {
@@ -29,7 +30,7 @@ func (m *MongodbService) Create(ctx context.Context, sessionID string) (string, 
 	userJoinCodeColl := m.client.Database(m.dbName).Collection("userJoinCode")
 	sessionColl := m.client.Database(m.dbName).Collection("sessions")
 
-	s := sessionColl.FindOne(ctx, bson.M{"_id": sessionID})
+	s := sessionColl.FindOne(ctx, bson.M{"_id": sessionID}, &options.FindOneOptions{Projection: bson.M{"times": 1}})
 	if s.Err() != nil {
 		return "", fmt.Errorf("findOne: %w", s.Err())
 	}
