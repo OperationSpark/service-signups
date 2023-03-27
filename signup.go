@@ -35,7 +35,9 @@ type (
 		StartDateTime    time.Time `json:"startDateTime,omitempty" schema:"startDateTime"`
 		Token            string    `json:"token" schema:"token"`
 		// State or country where the person resides.
-		UserLocation   string `json:"userLocation" schema:"userLocation"`
+		UserLocation string `json:"userLocation" schema:"userLocation"`
+
+		userJoinCode   string
 		zoomMeetingID  int64
 		zoomMeetingURL string
 	}
@@ -105,13 +107,15 @@ type (
 
 	// Request params for the Operation Spark Message Template Renderer service.
 	rendererReqParams struct {
-		Template     osRendererTemplate `json:"template"`
-		ZoomLink     string             `json:"zoomLink"`
-		Date         time.Time          `json:"date"`
-		Name         string             `json:"name"`
-		LocationType string             `json:"locationType"`
-		Location     Location           `json:"location"`
-		JoinCode     string             `json:"joinCode,omitempty"`
+		Template      osRendererTemplate `json:"template"`
+		ZoomLink      string             `json:"zoomLink"`
+		Date          time.Time          `json:"date"`
+		Name          string             `json:"name"`
+		LocationType  string             `json:"locationType"`
+		Location      Location           `json:"location"`
+		JoinCode      string             `json:"joinCode,omitempty"`
+		IsGmail       bool               `json:"isGmail"`
+		GreenlightURL string             `json:"greenlightUrl"`
 	}
 
 	osRenderer struct {

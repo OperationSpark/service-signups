@@ -175,7 +175,7 @@ func NewSignupServer() *signupServer {
 
 	mongoClient, dbName, err := getMongoClient()
 	if err != nil {
-		log.Fatalf("Could not connect to MongoDB: %v", err)
+		log.Printf("Could not connect to MongoDB: %v", err)
 	}
 
 	gldbService := mongodb.New(dbName, mongoClient)

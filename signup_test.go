@@ -570,13 +570,14 @@ func TestShortMessagingURL(t *testing.T) {
 			Cell:          "555-555-5555",
 			StartDateTime: mustMakeTime(t, time.RFC3339, "2022-03-14T17:00:00.000Z"),
 			Cohort:        "is-mar-14-22-12pm",
-			Email:         "yasiin@blackstar.net",
+			Email:         "yasiin@gmail.com",
 			SessionID:     "WpkB3jcw6gCw2uEMf",
 			LocationType:  "HYBRID",
 			GooglePlace: greenlight.GooglePlace{
 				Name:    "Some Place",
 				Address: "2723 Guess Rd, Durham, NC 27705",
 			},
+			userJoinCode: "6421ecaa903dc77763e51829",
 		}
 
 		wantURLPrefix := "https://sms.operationspark.org/m/"
@@ -611,6 +612,10 @@ func TestShortMessagingURL(t *testing.T) {
 		assertEqual(t, gotParams.Location.Line1, "2723 Guess Rd")
 		assertEqual(t, gotParams.Location.CityStateZip, "Durham, NC 27705")
 		assertEqual(t, gotParams.Location.MapURL, "https://www.google.com/maps/place/2723+Guess+Rd%2CDurham%2C+NC+27705")
+		// should be true because "gmail.com" should be the signup's email address domain
+		assertEqual(t, gotParams.IsGmail, true)
+		assertEqual(t, gotParams.GreenlightURL, "https://greenlight.operationspark.org/sessions/WpkB3jcw6gCw2uEMf/?subview=overview&userJoinCode=6421ecaa903dc77763e51829")
+
 	})
 }
 
@@ -697,4 +702,5 @@ func TestCreateMessageURL(t *testing.T) {
 
 		require.True(t, bytes.Contains(jsonBytes, []byte(`"locationType":"VIRTUAL"`)), "decoded JSON should contain the VIRTUAL location type")
 	})
+
 }
