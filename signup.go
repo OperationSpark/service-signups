@@ -314,8 +314,8 @@ func (sc *SignupService) register(ctx context.Context, su Signup) error {
 	if err != nil {
 		return fmt.Errorf("userJoinCode Create: %w", err)
 	}
-	// TODO attach to signup
-	fmt.Println(joinCodeID)
+
+	su.userJoinCode = joinCodeID
 
 	// Run each task in a go routine for concurrent execution
 	g, ctx := errgroup.WithContext(ctx)
