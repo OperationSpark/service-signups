@@ -43,7 +43,8 @@ func TestCreate(t *testing.T) {
 	require.NoError(t, joinCodeDoc.Err())
 
 	var joinCode greenlight.UserJoinCode
-	joinCodeDoc.Decode(&joinCode)
+	err = joinCodeDoc.Decode(&joinCode)
+	require.NoError(t, err)
 
 	wantExpiresAt, err := time.Parse(time.RFC3339, "2023-01-02T23:00:00Z")
 	require.NoError(t, err)
