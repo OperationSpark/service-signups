@@ -140,7 +140,8 @@ func TestInvalidNumErr(t *testing.T) {
 		// check that the response body is the expected error
 		var errResp errResp
 
-		json.Unmarshal([]byte(res.Body.Bytes()), &errResp)
+		err := json.Unmarshal([]byte(res.Body.Bytes()), &errResp)
+		require.NoError(t, err)
 		want := fmt.Sprintln(`{"message":"Invalid Phone Number","field":"phone"}`)
 		require.Equal(t, want, res.Body.String())
 	})
