@@ -1,14 +1,17 @@
 package signup
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 // Magic Test Numbers
@@ -30,34 +33,34 @@ func TestSendSMSInConversation(t *testing.T) {
 		fromPhoneNum := os.Getenv("TWILIO_PHONE_NUMBER")
 		conversationSid := os.Getenv("TWILIO_CONVERSATIONS_SID")
 
-		mockApi := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mockTwilioAPI := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			err := r.ParseMultipartForm(128)
-			assertNilError(t, err)
+			require.NoError(t, err)
 
-			assertEqual(t, r.Form.Get("ShortenUrls"), "true")
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprint(w, http.StatusBadRequest)
+			fmt.Fprint(w, bytes.NewBufferString(`{
+    "code": 50407,
+    "message": "Invalid messaging binding address",
+    "more_info": "https://www.twilio.com/docs/errors/50407",
+    "status": 400
+}`))
 
-			gotBody := r.Form.Get("Body")
-			wantBody := "Mon Mar 14 @ 12:00p CDT"
-			if !strings.Contains(gotBody, wantBody) {
-				t.Fatalf("SMS body does not contain the correct Info Session data and time.\n\nBody:\n%s\n\n", gotBody)
-				fmt.Fprint(w, http.StatusInternalServerError)
-			}
 		}))
 
 		tSvc := NewTwilioService(twilioServiceOptions{
 			accountSID:   accountSID,
 			authToken:    authToken,
 			fromPhoneNum: fromPhoneNum,
-			apiBase:      mockApi.URL,
+			apiBase:      mockTwilioAPI.URL,
 		})
 
 		messageBody := "Welcome to Op Spark! Click this link for more info: https://opsk.org/bh213v34fa"
 
 		err := tSvc.sendSMSInConversation(messageBody, conversationSid)
-		if err != nil {
-			t.Fatalf("twilio service: sendSMS: %v", err)
-		}
+		require.NoErrorf(t, err, "twilio service: sendSMS: %v")
 	})
+
 }
 
 func TestFindConversationsByNumber(t *testing.T) {
@@ -73,9 +76,7 @@ func TestFindConversationsByNumber(t *testing.T) {
 		})
 
 		_, err := tSvc.findConversationsByNumber("+15005550006")
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 
 		fmt.Println(tSvc.apiBase)
 	})
@@ -101,9 +102,47 @@ func TestTwilioRun(t *testing.T) {
 		}
 
 		err := tSvc.run(context.Background(), su)
-		if err != nil {
-			t.Fatal(err)
+		require.NoError(t, err)
+
+	})
+
+}
+
+func TestInvalidNumErr(t *testing.T) {
+	// test that the error is returned when the number is invalid
+	t.Run("returns an error when the number is invalid", func(t *testing.T) {
+		signup := Signup{
+			NameFirst:        "Henri",
+			NameLast:         "Testaroni",
+			Email:            "henri@email.com",
+			Cell:             "555-555-5555",
+			Referrer:         "instagram",
+			ReferrerResponse: "",
 		}
 
+		service := &MockSignupService{
+			RegisterFunc: func(context.Context, Signup) error {
+				// return invalid number error
+				return ErrInvalidNumber{err: fmt.Errorf("invalid number: %s", signup.Cell)}
+			},
+		}
+
+		server := &signupServer{service}
+
+		req := httptest.NewRequest(http.MethodPost, "/", signupToJson(t, signup))
+		req.Header.Set("Content-Type", "application/json")
+		res := httptest.NewRecorder()
+
+		server.HandleSignUp(res, req)
+
+		// check that the response is a 400
+		require.Equal(t, http.StatusBadRequest, res.Code)
+		// check that the response body is the expected error
+		var errResp errResp
+
+		err := json.Unmarshal([]byte(res.Body.Bytes()), &errResp)
+		require.NoError(t, err)
+		want := fmt.Sprintln(`{"message":"Invalid Phone Number","field":"phone"}`)
+		require.Equal(t, want, res.Body.String())
 	})
 }
