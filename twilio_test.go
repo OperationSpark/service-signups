@@ -58,9 +58,7 @@ func TestSendSMSInConversation(t *testing.T) {
 		messageBody := "Welcome to Op Spark! Click this link for more info: https://opsk.org/bh213v34fa"
 
 		err := tSvc.sendSMSInConversation(messageBody, conversationSid)
-		if err != nil {
-			t.Fatalf("twilio service: sendSMS: %v", err)
-		}
+		require.NoErrorf(t, err, "twilio service: sendSMS: %v")
 	})
 
 }
@@ -78,9 +76,7 @@ func TestFindConversationsByNumber(t *testing.T) {
 		})
 
 		_, err := tSvc.findConversationsByNumber("+15005550006")
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 
 		fmt.Println(tSvc.apiBase)
 	})
@@ -106,9 +102,7 @@ func TestTwilioRun(t *testing.T) {
 		}
 
 		err := tSvc.run(context.Background(), su)
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 
 	})
 
@@ -144,7 +138,7 @@ func TestInvalidNumErr(t *testing.T) {
 		// check that the response is a 400
 		require.Equal(t, http.StatusBadRequest, res.Code)
 		// check that the response body is the expected error
-		var errResp ErrResp
+		var errResp errResp
 
 		json.Unmarshal([]byte(res.Body.Bytes()), &errResp)
 		want := fmt.Sprintln(`{"message":"Invalid Phone Number","field":"phone"}`)
