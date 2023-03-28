@@ -27,7 +27,7 @@ func New(dbName string, client *mongo.Client) *MongodbService {
 // Creates a join code document (including SessionID and ExpiresAt) and saves it to the Greenlight database.
 // Returns the join code document ID.
 func (m *MongodbService) Create(ctx context.Context, sessionID string) (string, error) {
-	userJoinCodeColl := m.client.Database(m.dbName).Collection("userJoinCode")
+	userJoinCodeColl := m.client.Database(m.dbName).Collection("userJoinCodes")
 	sessionColl := m.client.Database(m.dbName).Collection("sessions")
 
 	s := sessionColl.FindOne(ctx, bson.M{"_id": sessionID}, &options.FindOneOptions{Projection: bson.M{"times": 1}})

@@ -34,7 +34,7 @@ func TestCreate(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, joinCodeId)
 
-	userJoinCodeColl := dbClient.Database(dbName).Collection("userJoinCode")
+	userJoinCodeColl := dbClient.Database(dbName).Collection("userJoinCodes")
 
 	objID, err := primitive.ObjectIDFromHex(joinCodeId) // change string id to mongo ObjectID
 	require.NoError(t, err)
