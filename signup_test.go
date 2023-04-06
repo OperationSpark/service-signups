@@ -46,6 +46,12 @@ func (*MockZoomService) name() string {
 	return "mock zoom service"
 }
 
+type MockGreenlightDBService struct{}
+
+func (m *MockGreenlightDBService) Create(ctx context.Context, sessionID string) (string, error) {
+	return "", nil
+}
+
 func TestRegisterUser(t *testing.T) {
 	t.Run("triggers an 'Welcome Email'", func(t *testing.T) {
 		signup := Signup{
@@ -64,13 +70,12 @@ func TestRegisterUser(t *testing.T) {
 			},
 		}
 
-		zoomService := &MockZoomService{}
-
 		signupService := newSignupService(signupServiceOptions{
 			tasks:       []Task{mailService},
-			zoomService: zoomService,
+			zoomService: &MockZoomService{},
 			// zoom meeting id for 12 central
-			meetings: map[int]string{12: "983782"},
+			meetings:    map[int]string{12: "983782"},
+			gldbService: &MockGreenlightDBService{},
 		})
 
 		err := signupService.register(context.Background(), signup)
@@ -105,6 +110,7 @@ func TestRegisterUser(t *testing.T) {
 		signupService := newSignupService(signupServiceOptions{
 			tasks:       []Task{mailService},
 			zoomService: zoomService,
+			gldbService: &MockGreenlightDBService{},
 		})
 
 		err := signupService.register(context.Background(), signup)
@@ -404,11 +410,13 @@ https://oprk.org/kRds5MKvKI`
 func TestStructToBase64(t *testing.T) {
 	t.Run("serializes a struct to base 64 encoding", func(t *testing.T) {
 		params := rendererReqParams{
-			Template:     "InfoSession",
-			ZoomLink:     "https://us06web.zoom.us/j/12345678910",
-			Date:         mustMakeTime(t, time.RFC3339, "2022-10-05T17:00:00.000Z"),
-			Name:         "FirstName",
-			LocationType: "Hybrid",
+			Template:      "InfoSession",
+			ZoomLink:      "https://us06web.zoom.us/j/12345678910",
+			Date:          mustMakeTime(t, time.RFC3339, "2022-10-05T17:00:00.000Z"),
+			Name:          "FirstName",
+			IsGmail:       false,
+			LocationType:  "Hybrid",
+			GreenlightURL: "https://greenlight.operationspark.org/sessions/kyvYitLoFfTickbP2/?userJoinCode=123415&joinCode=12314",
 			Location: Location{
 				Name:         "Some Place",
 				Line1:        "123 Main St",
@@ -417,7 +425,7 @@ func TestStructToBase64(t *testing.T) {
 			},
 		}
 
-		want := "eyJ0ZW1wbGF0ZSI6IkluZm9TZXNzaW9uIiwiem9vbUxpbmsiOiJodHRwczovL3VzMDZ3ZWIuem9vbS51cy9qLzEyMzQ1Njc4OTEwIiwiZGF0ZSI6IjIwMjItMTAtMDVUMTc6MDA6MDBaIiwibmFtZSI6IkZpcnN0TmFtZSIsImxvY2F0aW9uVHlwZSI6Ikh5YnJpZCIsImxvY2F0aW9uIjp7Im5hbWUiOiJTb21lIFBsYWNlIiwibGluZTEiOiIxMjMgTWFpbiBTdCIsImNpdHlTdGF0ZVppcCI6IkNpdHksIFN0YXRlIDEyMzQ1IiwibWFwVXJsIjoiaHR0cHM6Ly93d3cuZ29vZ2xlLmNvbS9tYXBzL3BsYWNlLzEyMytNYWluK1N0LCtDaXR5LCtTdGF0ZSsxMjM0NSJ9fQ=="
+		want := "eyJ0ZW1wbGF0ZSI6IkluZm9TZXNzaW9uIiwiem9vbUxpbmsiOiJodHRwczovL3VzMDZ3ZWIuem9vbS51cy9qLzEyMzQ1Njc4OTEwIiwiZGF0ZSI6IjIwMjItMTAtMDVUMTc6MDA6MDBaIiwibmFtZSI6IkZpcnN0TmFtZSIsImxvY2F0aW9uVHlwZSI6Ikh5YnJpZCIsImxvY2F0aW9uIjp7Im5hbWUiOiJTb21lIFBsYWNlIiwibGluZTEiOiIxMjMgTWFpbiBTdCIsImNpdHlTdGF0ZVppcCI6IkNpdHksIFN0YXRlIDEyMzQ1IiwibWFwVXJsIjoiaHR0cHM6Ly93d3cuZ29vZ2xlLmNvbS9tYXBzL3BsYWNlLzEyMytNYWluK1N0LCtDaXR5LCtTdGF0ZSsxMjM0NSJ9LCJpc0dtYWlsIjpmYWxzZSwiZ3JlZW5saWdodFVybCI6Imh0dHBzOi8vZ3JlZW5saWdodC5vcGVyYXRpb25zcGFyay5vcmcvc2Vzc2lvbnMva3l2WWl0TG9GZlRpY2tiUDIvP3VzZXJKb2luQ29kZT0xMjM0MTVcdTAwMjZqb2luQ29kZT0xMjMxNCJ9"
 
 		got, err := params.toBase64()
 		if err != nil {
@@ -653,9 +661,7 @@ func TestCreateMessageURL(t *testing.T) {
 		// Decode the base64 encoded data from the generated URL
 		encoded := strings.TrimPrefix(u.Path, "/m/")
 		d := base64.NewDecoder(base64.StdEncoding, strings.NewReader(encoded))
-		decodedJson := make([]byte, 420)
-		n, err := d.Read(decodedJson)
-		require.Greater(t, n, 0)
+		decodedJson, err := io.ReadAll(d)
 		require.NoError(t, err)
 
 		// Unmarshal the decoded JSON into a messaging request params struct
