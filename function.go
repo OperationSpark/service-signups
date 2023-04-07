@@ -88,7 +88,7 @@ func getMongoClient() (*mongo.Client, string, error) {
 	isCI := os.Getenv("CI") == "true"
 	parsed, err := url.Parse(mongoURI)
 	if isCI || (mongoURI == "" || err != nil) {
-		return nil, "", fmt.Errorf("Invalid 'MONGO_URI' environmental variable: %q\n", mongoURI)
+		return nil, "", fmt.Errorf("invalid 'MONGO_URI' environmental variable: %q", mongoURI)
 	}
 	dbName := strings.TrimPrefix(parsed.Path, "/")
 	m, err := mongo.Connect(context.Background(), options.Client().ApplyURI(mongoURI))
@@ -175,7 +175,7 @@ func NewSignupServer() *signupServer {
 
 	mongoClient, dbName, err := getMongoClient()
 	if err != nil {
-		log.Printf("Could not connect to MongoDB: %v", err)
+		log.Printf("Could not connect to MongoDB: %v\n", err)
 	}
 
 	gldbService := mongodb.New(dbName, mongoClient)
