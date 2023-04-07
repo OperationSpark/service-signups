@@ -25,19 +25,19 @@ func New(dbName string, client *mongo.Client) *MongodbService {
 }
 
 // Creates a join code document (including SessionID and ExpiresAt) and saves it to the Greenlight database.
-// Returns the join code document ID.
-func (m *MongodbService) Create(ctx context.Context, sessionID string) (string, error) {
+// Returns the join code document ID and the session join code.
+func (m *MongodbService) Create(ctx context.Context, sessionID string) (string, string, error) {
 	userJoinCodeColl := m.client.Database(m.dbName).Collection("userJoinCodes")
 	sessionColl := m.client.Database(m.dbName).Collection("sessions")
 
-	s := sessionColl.FindOne(ctx, bson.M{"_id": sessionID}, &options.FindOneOptions{Projection: bson.M{"times": 1}})
+	s := sessionColl.FindOne(ctx, bson.M{"_id": sessionID}, &options.FindOneOptions{Projection: bson.M{"times": 1, "code": 1}})
 	if s.Err() != nil {
-		return "", fmt.Errorf("findOne: %w", s.Err())
+		return "", "", fmt.Errorf("findOne: %w", s.Err())
 	}
 
 	var session greenlight.Session
 	if err := s.Decode(&session); err != nil {
-		return "", fmt.Errorf("decode session: %w", err)
+		return "", "", fmt.Errorf("decode session: %w", err)
 	}
 
 	joinData := greenlight.UserJoinCode{
@@ -47,11 +47,11 @@ func (m *MongodbService) Create(ctx context.Context, sessionID string) (string, 
 
 	ior, err := userJoinCodeColl.InsertOne(ctx, joinData)
 	if err != nil {
-		return "", fmt.Errorf("insertOne: %w", err)
+		return "", "", fmt.Errorf("insertOne: %w", err)
 	}
 
 	joinDataID := ior.InsertedID
 	id := joinDataID.(primitive.ObjectID).Hex()
 
-	return id, nil
+	return id, session.JoinCode, nil
 }

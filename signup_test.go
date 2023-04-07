@@ -48,8 +48,8 @@ func (*MockZoomService) name() string {
 
 type MockGreenlightDBService struct{}
 
-func (m *MockGreenlightDBService) Create(ctx context.Context, sessionID string) (string, error) {
-	return "", nil
+func (m *MockGreenlightDBService) Create(ctx context.Context, sessionID string) (string, string, error) {
+	return "", "", nil
 }
 
 func TestRegisterUser(t *testing.T) {

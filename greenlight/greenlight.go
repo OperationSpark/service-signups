@@ -44,6 +44,7 @@ type (
 		Name         string   `bson:"name"`
 		Students     []string `bson:"students"`
 		Times        Times    `bson:"times"` // TODO: Check out "inline" struct tag
+		JoinCode     string   `bson:"code"`
 	}
 
 	Signup struct {
