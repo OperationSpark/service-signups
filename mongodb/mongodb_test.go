@@ -37,7 +37,7 @@ func TestCreate(t *testing.T) {
 
 	userJoinCodeColl := dbClient.Database(dbName).Collection("userJoinCodes")
 
-	objID, err := primitive.ObjectIDFromHex(joinCodeId) // change string id to mongo ObjectID
+	objID, err := primitive.ObjectIDFromHex(joinCodeId) // change string ID to Mongo ObjectID
 	require.NoError(t, err)
 
 	joinCodeDoc := userJoinCodeColl.FindOne(context.Background(), bson.M{"_id": objID})
