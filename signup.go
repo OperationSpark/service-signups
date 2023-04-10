@@ -70,7 +70,7 @@ type (
 		gldbService codeCreator
 	}
 
-	// codeCreator creates a join code for a user.
+	// codeCreator creates a Session join code for a user.
 	codeCreator interface {
 		Create(ctx context.Context, sessionID string) (string, string, error)
 	}
