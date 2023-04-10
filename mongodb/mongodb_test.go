@@ -31,7 +31,7 @@ func TestCreate(t *testing.T) {
 	_, err = dbClient.Database(dbName).Collection("sessions").InsertOne(context.Background(), session)
 	require.NoError(t, err)
 
-	joinCodeId, sessionJoinCode, err := srv.Create(context.Background(), session.ID)
+	joinCodeId, sessionJoinCode, err := srv.CreateUserJoinCode(context.Background(), session.ID)
 	require.NoError(t, err)
 	require.NotEmpty(t, joinCodeId)
 
