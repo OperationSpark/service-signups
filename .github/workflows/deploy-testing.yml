@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - "testing"
+      - "62-support-for-auto-enrollment"
 
 jobs:
   build-deploy-cloud-function:
