@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net/url"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -592,7 +591,7 @@ func TestShortMessagingURL(t *testing.T) {
 		wantURLPrefix := "https://sms.operationspark.org/m/"
 
 		// method under test
-		gotURL, err := s.shortMessagingURL(os.Getenv("GREENLIGHT_HOST"))
+		gotURL, err := s.shortMessagingURL("https://greenlight.operationspark.org")
 		if err != nil {
 			t.Fatal(err)
 		}
