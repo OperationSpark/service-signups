@@ -75,7 +75,7 @@ type (
 
 	UnixTime time.Time
 )
-
+// UnmarshalBSONValue unmarshals a Unix time (seconds after Jan 1, 1970 00:00 UTC) to `time.Time`. Fields using the UnixTime type were not serialized with the default Mongo ISODate so need custom marshaling/unmarshaling.
 func (ut *UnixTime) UnmarshalBSONValue(t bsontype.Type, data []byte) error {
 	rv := bson.RawValue{Type: t, Value: data}
 	*ut = UnixTime(time.Unix(rv.AsInt64(), 0))
