@@ -1,9 +1,9 @@
 name: GCP Cloud Functions Deploy (Testing)
 on:
+  workflow_dispatch:
   push:
     branches:
-      - "testing"
-      - "62-support-for-auto-enrollment"
+      - testing
 
 jobs:
   build-deploy-cloud-function:
