@@ -67,7 +67,6 @@ type (
 	}
 
 	UserJoinCode struct {
-		// ID        primitive.ObjectID `bson:"_id"`       // user join code ID
 		ExpiresAt time.Time `bson:"expiresAt"` // 8 hours after start of session"
 		UsedAt    string    `bson:"usedAt"`    // "null | Date used"
 		UserID    string    `bson:"userId"`    // set when user join code is used in greenlight
