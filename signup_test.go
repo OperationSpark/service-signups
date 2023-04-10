@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -48,7 +49,7 @@ func (*MockZoomService) name() string {
 
 type MockGreenlightDBService struct{}
 
-func (m *MockGreenlightDBService) Create(ctx context.Context, sessionID string) (string, string, error) {
+func (m *MockGreenlightDBService) CreateUserJoinCode(ctx context.Context, sessionID string) (string, string, error) {
 	return "", "", nil
 }
 
@@ -591,7 +592,7 @@ func TestShortMessagingURL(t *testing.T) {
 		wantURLPrefix := "https://sms.operationspark.org/m/"
 
 		// method under test
-		gotURL, err := s.shortMessagingURL()
+		gotURL, err := s.shortMessagingURL(os.Getenv("GREENLIGHT_HOST"))
 		if err != nil {
 			t.Fatal(err)
 		}

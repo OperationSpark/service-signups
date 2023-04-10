@@ -72,7 +72,7 @@ type (
 
 	// codeCreator creates a Session join code for a user.
 	codeCreator interface {
-		Create(ctx context.Context, sessionID string) (string, string, error)
+		CreateUserJoinCode(ctx context.Context, sessionID string) (string, string, error)
 	}
 
 	Task interface {
@@ -248,7 +248,7 @@ func (su Signup) shortMessage(infoURL string) (string, error) {
 
 // ShortMessagingURL produces a custom URL for use on Operation Spark's SMS Messaging Preview service.
 // https://github.com/OperationSpark/sms.opspark.org
-func (su Signup) shortMessagingURL() (string, error) {
+func (su Signup) shortMessagingURL(greenlightHost string) (string, error) {
 	line1, cityStateZip := greenlight.ParseAddress(su.GooglePlace.Address)
 
 	p := rendererReqParams{
@@ -310,7 +310,7 @@ func (sc *SignupService) register(ctx context.Context, su Signup) error {
 	if err != nil {
 		return fmt.Errorf("zoomService.run: %w", err)
 	}
-	joinCodeID, sessionJoinCode, err := sc.gldbService.Create(ctx, su.SessionID)
+	joinCodeID, sessionJoinCode, err := sc.gldbService.CreateUserJoinCode(ctx, su.SessionID)
 	if err != nil {
 		return fmt.Errorf("userJoinCode Create: %w", err)
 	}
