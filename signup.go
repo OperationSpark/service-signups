@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -249,7 +248,7 @@ func (su Signup) shortMessage(infoURL string) (string, error) {
 
 // ShortMessagingURL produces a custom URL for use on Operation Spark's SMS Messaging Preview service.
 // https://github.com/OperationSpark/sms.opspark.org
-func (su Signup) shortMessagingURL(greenlightHost string) (string, error) {
+func (su Signup) shortMessagingURL(greenlightHost, baseURL string) (string, error) {
 	line1, cityStateZip := greenlight.ParseAddress(su.GooglePlace.Address)
 
 	p := rendererReqParams{
@@ -274,7 +273,6 @@ func (su Signup) shortMessagingURL(greenlightHost string) (string, error) {
 		return "", fmt.Errorf("structToBase64: %w", err)
 	}
 
-	baseURL := os.Getenv("OS_RENDERING_SERVICE_URL")
 	return fmt.Sprintf("%s/m/%s", baseURL, encoded), nil
 }
 

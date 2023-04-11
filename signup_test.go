@@ -591,14 +591,15 @@ func TestShortMessagingURL(t *testing.T) {
 		wantURLPrefix := "https://sms.operationspark.org/m/"
 
 		// method under test
-		gotURL, err := s.shortMessagingURL("https://greenlight.operationspark.org")
+		gotURL, err := s.shortMessagingURL("https://greenlight.operationspark.org", "https://sms.operationspark.org")
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		// the messaging URL should be prefixed with the passed in base URL
 		if !strings.HasPrefix(gotURL, wantURLPrefix) {
-			t.Fatalf("URL: %q doesn't have prefix: %q", wantURLPrefix, gotURL)
+			fmt.Print(wantURLPrefix)
+			t.Fatalf("URL: %q doesn't have prefix: %q", gotURL, wantURLPrefix)
 		}
 
 		// grab the encoded info session details from the URL

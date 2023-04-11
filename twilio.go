@@ -123,7 +123,7 @@ func (t *smsService) run(ctx context.Context, su Signup) error {
 	}
 
 	// create user-specific info session details URL
-	msgngURL, err := su.shortMessagingURL(os.Getenv("GREENLIGHT_HOST"))
+	msgngURL, err := su.shortMessagingURL(os.Getenv("GREENLIGHT_HOST"), os.Getenv("OS_RENDERING_SERVICE_URL"))
 	if err != nil {
 		return fmt.Errorf("shortMessagingURL: %w", err)
 	}
