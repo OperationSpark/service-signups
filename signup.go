@@ -259,7 +259,7 @@ func (su Signup) shortMessagingURL(greenlightHost, baseURL string) (string, erro
 		LocationType:  su.LocationType,
 		JoinCode:      su.JoinCode,
 		IsGmail:       strings.HasSuffix(su.Email, "gmail.com"),
-		GreenlightURL: fmt.Sprintf("%s/sessions/%s/?subview=overview&userJoinCode=%s", greenlightHost, su.SessionID, su.userJoinCode),
+		GreenlightURL: fmt.Sprintf("%s/sessions/%s/?subview=overview&userJoinCode=%s&joinCode=%s", greenlightHost, su.SessionID, su.userJoinCode, su.JoinCode),
 		Location: Location{
 			Name:         su.GooglePlace.Name,
 			Line1:        line1,

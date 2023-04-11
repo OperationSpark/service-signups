@@ -586,6 +586,7 @@ func TestShortMessagingURL(t *testing.T) {
 				Address: "2723 Guess Rd, Durham, NC 27705",
 			},
 			userJoinCode: "6421ecaa903dc77763e51829",
+			JoinCode:     "hqy0", // signup has a joinCode property accessed from the session once it gets to shortMessagingURL
 		}
 
 		wantURLPrefix := "https://sms.operationspark.org/m/"
@@ -623,7 +624,7 @@ func TestShortMessagingURL(t *testing.T) {
 		assertEqual(t, gotParams.Location.MapURL, "https://www.google.com/maps/place/2723+Guess+Rd%2CDurham%2C+NC+27705")
 		// should be true because "gmail.com" should be the signup's email address domain
 		assertEqual(t, gotParams.IsGmail, true)
-		assertEqual(t, gotParams.GreenlightURL, "https://greenlight.operationspark.org/sessions/WpkB3jcw6gCw2uEMf/?subview=overview&userJoinCode=6421ecaa903dc77763e51829")
+		assertEqual(t, gotParams.GreenlightURL, "https://greenlight.operationspark.org/sessions/WpkB3jcw6gCw2uEMf/?subview=overview&userJoinCode=6421ecaa903dc77763e51829&joinCode=hqy0")
 
 	})
 }
