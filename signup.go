@@ -309,13 +309,16 @@ func (sc *SignupService) register(ctx context.Context, su Signup) error {
 	if err != nil {
 		return fmt.Errorf("zoomService.run: %w", err)
 	}
-	joinCodeID, sessionJoinCode, err := sc.gldbService.CreateUserJoinCode(ctx, su.SessionID)
-	if err != nil {
-		return fmt.Errorf("userJoinCode Create: %w", err)
-	}
 
-	su.userJoinCode = joinCodeID
-	su.JoinCode = sessionJoinCode
+	if su.SessionID != "" {
+		joinCodeID, sessionJoinCode, err := sc.gldbService.CreateUserJoinCode(ctx, su.SessionID)
+		if err != nil {
+			return fmt.Errorf("userJoinCode Create: %w", err)
+		}
+
+		su.userJoinCode = joinCodeID
+		su.JoinCode = sessionJoinCode
+	}
 
 	// Run each task in a go routine for concurrent execution
 	g, ctx := errgroup.WithContext(ctx)
