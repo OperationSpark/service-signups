@@ -24,16 +24,18 @@ type (
 		Email             string                 `json:"email" schema:"email"`
 		GooglePlace       greenlight.GooglePlace `json:"googlePlace" schema:"googlePlace"`
 		// Session's set location type. One of "IN_PERSON" | "VIRTUAL" | "IN_PERSON". If the session's location type is "HYBRID", a student can attend "IN_PERSON" or "VIRTUAL"ly.
-		LocationType     string    `json:"locationType" schema:"locationType"`
-		JoinCode         string    `json:"joinCode,omitempty"`
-		NameFirst        string    `json:"nameFirst" schema:"nameFirst"`
-		NameLast         string    `json:"nameLast" schema:"nameLast"`
-		ProgramID        string    `json:"programId" schema:"programId"`
-		Referrer         string    `json:"referrer" schema:"referrer"`
-		ReferrerResponse string    `json:"referrerResponse" schema:"referrerResponse"`
-		SessionID        string    `json:"sessionId" schema:"sessionId"`
-		StartDateTime    time.Time `json:"startDateTime,omitempty" schema:"startDateTime"`
-		Token            string    `json:"token" schema:"token"`
+		LocationType     string `json:"locationType" schema:"locationType"`
+		JoinCode         string `json:"joinCode,omitempty"`
+		NameFirst        string `json:"nameFirst" schema:"nameFirst"`
+		NameLast         string `json:"nameLast" schema:"nameLast"`
+		ProgramID        string `json:"programId" schema:"programId"`
+		Referrer         string `json:"referrer" schema:"referrer"`
+		ReferrerResponse string `json:"referrerResponse" schema:"referrerResponse"`
+		SessionID        string `json:"sessionId" schema:"sessionId"`
+		// If the user has opted-in to receiving text messages.
+		SMSOptIn      bool      `json:"smsOptIn"`
+		StartDateTime time.Time `json:"startDateTime,omitempty" schema:"startDateTime"`
+		Token         string    `json:"token" schema:"token"`
 		// State or country where the person resides.
 		UserLocation   string `json:"userLocation" schema:"userLocation"`
 		zoomMeetingID  int64
