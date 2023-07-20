@@ -97,6 +97,11 @@ func NewTwilioService(o twilioServiceOptions) *smsService {
 //
 // Note: Twilio has a free Link Shortening service, but it is only available with the Messaging API, not Conversations.
 func (t *smsService) run(ctx context.Context, su Signup) error {
+	if !su.SMSOptIn {
+		fmt.Printf("User opted-out from SMS messages: %s\n", su.String())
+		return nil
+	}
+
 	toNum := t.FormatCell(su.Cell)
 	convoName := fmt.Sprintf("%s %s", su.NameFirst, su.NameLast[0:1])
 	convoId := ""
@@ -120,6 +125,11 @@ func (t *smsService) run(ctx context.Context, su Signup) error {
 	} else {
 		// TODO: Fix this potentially faulty logic if picking the first existing conversation
 		convoId = *existing[0].ConversationSid
+	}
+
+	// Send Opt-in confirmation
+	if err := t.optInConfirmation(ctx, toNum); err != nil {
+		return fmt.Errorf("optInConfirmation: %w", err)
 	}
 
 	// create user-specific info session details URL
@@ -245,6 +255,11 @@ func (t *smsService) sendConvoWebhook(ctx context.Context, convoID string) error
 		return handleHTTPError(resp)
 	}
 	return nil
+}
+
+func (t *smsService) optInConfirmation(ctx context.Context, toNum string) error {
+	msg := "You've opted in for texts from Operation Spark for upcoming sessions. You can text us here if you have further questions. Message and data rates may apply. Reply STOP to unsubscribe."
+	return t.Send(ctx, toNum, msg)
 }
 
 // Send sends an SMS message to the given toNum and returns an error.
