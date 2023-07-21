@@ -40,6 +40,7 @@ func TestSmokeSignup(t *testing.T) {
 		Referrer:          "verbal",
 		ReferrerResponse:  "Automated Smoke Test",
 		SessionID:         s.selectedSession.ID,
+		SMSOptIn:          true,
 		StartDateTime:     s.selectedSession.Times.Start.DateTime,
 		UserLocation:      "South Dakota",
 	}
