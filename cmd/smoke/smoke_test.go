@@ -54,19 +54,29 @@ func TestSmokeSignup(t *testing.T) {
 	err = s.postSignup(su)
 	require.NoError(t, err, "POST Signup to Cloud Function")
 
-	// Get expected SMS message from Twilio API
-	sms, err := fetchSMSmessage(s.toNum, s.fromNum)
+	// TODO: ** Fetch last two messages. As of this commit, Twilio is blocking our opt-in message with error 30034. They will block some number of messages until our A2P 10DLC campaign is approved. In meantime, assume the opt-in confirmation message will be blocked and the last delivered message will be the Info Session confirmation. ***
+	// Get the last 2 text messages from Twilio API
+	// The first should be the Opt-in confirmation
+	// The second should be the Info Session confirmation with the short link.
+	expectedMessageAmt := 1
+	msgs, err := fetchLastTextMessages(s.toNum, s.fromNum, expectedMessageAmt)
 	require.NoError(t, err)
-	require.NotEmptyf(t, sms, "no message found sent from %q -> %q", s.fromNum, s.toNum)
+	require.NotEmptyf(t, msgs, "no messages found sent from %q -> %q", s.fromNum, s.toNum)
+	require.Len(t, msgs, expectedMessageAmt, "Expected %d text messages sent", expectedMessageAmt)
 
+	// TODO: Check opt-in message once campaign approved. See above comment.
+	// textOptInMsg := msgs[0]
+	// require.Containsf(t, textOptInMsg, "opt", "expected an opt-in confirmation containing the word 'opt'\ngot:\n%q", textOptInMsg)
+
+	infoSessionConfirmation := msgs[0]
 	// Parse info link in SMS
-	link := parseSMSShortLink(sms)
+	link := parseSMSShortLink(infoSessionConfirmation)
 	// Intentionally using assert to continue running tests even if shortener fails
-	assert.NotEmpty(t, link, "URL Shortener service failed\nSMS: %q", sms)
+	assert.NotEmpty(t, link, "URL Shortener service failed\nSMS: %q", infoSessionConfirmation)
 
 	if link == "" {
 		// Shortener service failed, get the long link
-		link = parseSMSOriginalLink(sms)
+		link = parseSMSOriginalLink(infoSessionConfirmation)
 	}
 
 	// Visit link
@@ -90,7 +100,8 @@ func TestSmokeSignup(t *testing.T) {
 		// Zoom link
 		"https://us06web.zoom.us/w/8", //...
 	}
-	// conditionally check for location infomation
+
+	// conditionally check for location information
 	if s.selectedSession.LocationType == "HYBRID" || s.selectedSession.LocationType == "IN_PERSON" {
 		// Google Map link
 		infoHTMLtargets = append(infoHTMLtargets,
@@ -123,7 +134,7 @@ func TestLinkExtractors(t *testing.T) {
 }
 
 func TestCheckInfoPageContent(t *testing.T) {
-	t.Run("returns no error if all the target strigns are found", func(t *testing.T) {
+	t.Run("returns no error if all the target strings are found", func(t *testing.T) {
 		html := `<html><body>Henri</body></html>`
 		err := checkInfoPageContent(strings.NewReader(html), "Henri")
 		require.NoError(t, err)
