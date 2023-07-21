@@ -149,7 +149,7 @@ func makeAuthenticatedReq(method string, url string, body io.Reader) (*http.Requ
 	return req, err
 }
 
-func fetchSMSmessage(toNum, fromNum string) (string, error) {
+func fetchLastTextMessages(toNum, fromNum string, n int) ([]string, error) {
 	accountSID := os.Getenv("TWILIO_ACCOUNT_SID")
 
 	client := twilio.NewRestClientWithParams(twilio.ClientParams{
@@ -161,17 +161,22 @@ func fetchSMSmessage(toNum, fromNum string) (string, error) {
 	params.SetPathAccountSid(accountSID)
 	params.SetTo(toNum)
 	params.SetFrom(fromNum)
-	params.SetLimit(1)
+	params.SetLimit(n)
+
+	var msgBodies []string
 
 	messages, err := client.Api.ListMessage(params)
 	if err != nil {
-		return "", fmt.Errorf("fetchMessage: %w", err)
+		return msgBodies, fmt.Errorf("fetchMessage: %w", err)
 	}
 	if len(messages) == 0 {
-		return "", fmt.Errorf("no messages found sent from %q -> %q", fromNum, toNum)
+		return msgBodies, fmt.Errorf("no messages found sent from %q -> %q", fromNum, toNum)
 	}
 
-	return *messages[0].Body, nil
+	for _, m := range messages {
+		msgBodies = append(msgBodies, *m.Body)
+	}
+	return msgBodies, nil
 }
 
 // ParseSMSShortLink pulls a "ospk.org" short link out of a string.
