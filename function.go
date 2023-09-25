@@ -160,6 +160,9 @@ func NewSignupServer() *signupServer {
 		conversationsSid:           twilioConversationsSid,
 	})
 
+	snapMailURL := os.Getenv("SNAP_MAIL_URL")
+	snapMailSvc := NewSnapMail(snapMailURL)
+
 	registrationService := newSignupService(
 		signupServiceOptions{
 			meetings: map[int]string{
@@ -179,6 +182,8 @@ func NewSignupServer() *signupServer {
 				slackSvc,
 				// sending an SMS confirmation message to the user.
 				twilioSvc,
+				// sending Signup message to SNAP mail application
+				snapMailSvc,
 			},
 		},
 	)
