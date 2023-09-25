@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
@@ -696,5 +698,42 @@ func TestCreateMessageURL(t *testing.T) {
 		require.NoError(t, err)
 
 		require.True(t, bytes.Contains(jsonBytes, []byte(`"locationType":"VIRTUAL"`)), "decoded JSON should contain the VIRTUAL location type")
+	})
+}
+
+func TestSnapMail(t *testing.T) {
+	t.Run("posts an event payload in json", func(t *testing.T) {
+		want := signupEvent{
+			Type: "SESSION_SIGNUP",
+			Payload: Payload{
+				NameFirst:     "Abigail",
+				NameLast:      "Test",
+				Email:         "abigailtest@test.org",
+				SessionID:     "tMisBjpLQt8H3oD8B",
+				StartDateTime: mustMakeTime(t, time.RFC3339, "2023-09-23T18:00:00.000Z"),
+			},
+		}
+		mockSnapServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var result signupEvent
+			err := json.NewDecoder(r.Body).Decode(&result)
+			assertNilError(t, err)
+
+			assertDeepEqual(t, result.Type, want.Type)
+			assertDeepEqual(t, result.Payload.Email, want.Payload.Email)
+			assertDeepEqual(t, result.Payload.NameFirst, want.Payload.NameFirst)
+			assertDeepEqual(t, result.Payload.NameLast, want.Payload.NameLast)
+			assertDeepEqual(t, result.Payload.SessionID, want.Payload.SessionID)
+			assertDeepEqual(t, result.Payload.StartDateTime, want.Payload.StartDateTime)
+
+		}))
+
+		NewSnapMail(mockSnapServer.URL).run(context.Background(), Signup{
+			NameFirst:     "Abigail",
+			NameLast:      "Test",
+			Email:         "abigailtest@test.org",
+			SessionID:     "tMisBjpLQt8H3oD8B",
+			StartDateTime: mustMakeTime(t, time.RFC3339, "2023-09-23T18:00:00.000Z"),
+		})
+
 	})
 }
