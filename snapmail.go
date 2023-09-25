@@ -13,12 +13,17 @@ type SnapMail struct {
 	client *http.Client
 }
 
-type signupEvent struct {
+type Payload struct {
 	Email         string    `json:"email"`
 	NameFirst     string    `json:"nameFirst"`
 	NameLast      string    `json:"nameLast"`
 	SessionID     string    `json:"sessionId"`
 	StartDateTime time.Time `json:"startDateTime,omitempty"`
+}
+
+type signupEvent struct {
+	Type    string  `json:"eventType"`
+	Payload Payload `json:"payload"`
 }
 
 func NewSnapMail(url string) *SnapMail {
@@ -34,11 +39,14 @@ func (sm *SnapMail) name() string {
 
 func (sm *SnapMail) run(ctx context.Context, signup Signup) error {
 	event := signupEvent{
-		Email:         signup.Email,
-		NameFirst:     signup.NameFirst,
-		NameLast:      signup.NameLast,
-		SessionID:     signup.SessionID,
-		StartDateTime: signup.StartDateTime,
+		Type: "SESSION_SIGNUP",
+		Payload: Payload{
+			Email:         signup.Email,
+			NameFirst:     signup.NameFirst,
+			NameLast:      signup.NameLast,
+			SessionID:     signup.SessionID,
+			StartDateTime: signup.StartDateTime,
+		},
 	}
 
 	payload, err := json.Marshal(&event)
