@@ -718,12 +718,12 @@ func TestSnapMail(t *testing.T) {
 			err := json.NewDecoder(r.Body).Decode(&result)
 			assertNilError(t, err)
 
-			assertDeepEqual(t, result.Type, want.Type)
-			assertDeepEqual(t, result.Payload.Email, want.Payload.Email)
-			assertDeepEqual(t, result.Payload.NameFirst, want.Payload.NameFirst)
-			assertDeepEqual(t, result.Payload.NameLast, want.Payload.NameLast)
-			assertDeepEqual(t, result.Payload.SessionID, want.Payload.SessionID)
-			assertDeepEqual(t, result.Payload.StartDateTime, want.Payload.StartDateTime)
+			assertEqual(t, result.Type, want.Type)
+			assertEqual(t, result.Payload.Email, want.Payload.Email)
+			assertEqual(t, result.Payload.NameFirst, want.Payload.NameFirst)
+			assertEqual(t, result.Payload.NameLast, want.Payload.NameLast)
+			assertEqual(t, result.Payload.SessionID, want.Payload.SessionID)
+			assertEqual(t, result.Payload.StartDateTime, want.Payload.StartDateTime)
 
 		}))
 
