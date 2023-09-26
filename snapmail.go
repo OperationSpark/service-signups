@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"time"
+
+	"github.com/operationspark/service-signup/gcloud"
 )
 
 type SnapMail struct {
@@ -54,7 +56,7 @@ func (sm *SnapMail) run(ctx context.Context, signup Signup) error {
 		return err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, sm.url, bytes.NewReader(payload))
+	req, err := gcloud.MakeAuthenticatedReq(ctx, http.MethodPost, sm.url, bytes.NewReader(payload))
 	if err != nil {
 		return err
 	}
