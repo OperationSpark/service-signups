@@ -91,7 +91,7 @@ func TestSmokeSignup(t *testing.T) {
 		// Session Date
 		s.selectedSession.Times.Start.DateTime.In(ct).Format("Monday, January 2, 2006"),
 		// Session Time
-		s.selectedSession.Times.Start.DateTime.In(ct).Format("3:00pm (MST)"),
+		s.selectedSession.Times.Start.DateTime.In(ct).Format("3:04pm (MST)"),
 		// Name
 		su.NameFirst,
 		//xJoin Code
