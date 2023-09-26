@@ -727,13 +727,14 @@ func TestSnapMail(t *testing.T) {
 			assert.Equal(t, want.Payload.StartDateTime, result.Payload.StartDateTime)
 		}))
 
-		NewSnapMail(mockSnapServer.URL).run(context.Background(), Signup{
+		err := NewSnapMail(mockSnapServer.URL).run(context.Background(), Signup{
 			NameFirst:     "Abigail",
 			NameLast:      "Test",
 			Email:         "abigailtest@test.org",
 			SessionID:     "tMisBjpLQt8H3oD8B",
 			StartDateTime: mustMakeTime(t, time.RFC3339, "2023-09-23T18:00:00.000Z"),
 		})
+		assertNilError(t, err)
 
 	})
 }
