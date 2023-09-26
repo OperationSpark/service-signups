@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 	"time"
 
-	"github.com/operationspark/service-signup/gcloud"
+	"google.golang.org/api/idtoken"
 )
 
 type SnapMail struct {
@@ -29,8 +30,12 @@ type signupEvent struct {
 }
 
 func NewSnapMail(url string) *SnapMail {
+	client, err := idtoken.NewClient(context.Background(), url)
+	if err != nil {
+		log.Fatal(err)
+	}
 	return &SnapMail{
-		client: http.DefaultClient,
+		client: client,
 		url:    url,
 	}
 }
@@ -56,7 +61,7 @@ func (sm *SnapMail) run(ctx context.Context, signup Signup) error {
 		return err
 	}
 
-	req, err := gcloud.MakeAuthenticatedReq(ctx, http.MethodPost, sm.url, bytes.NewReader(payload))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, sm.url, bytes.NewReader(payload))
 	if err != nil {
 		return err
 	}
