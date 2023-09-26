@@ -36,7 +36,7 @@ func NewSnapMail(url string) *SnapMail {
 	// In the CI environment, we don't have access to the GCP Service Account and we don't want to fail the build.
 	// The only reason this is an issue is because we need to use init() to register the function with the functions-framework.
 	// If we could avoid that, we could avoid this check.
-	if os.Getenv("CI") != "" {
+	if os.Getenv("CI") == "" {
 		client, err = idtoken.NewClient(context.Background(), url)
 		if err != nil {
 			log.Fatal(err)
