@@ -19,6 +19,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/operationspark/service-signup/greenlight"
 	"github.com/operationspark/service-signup/notify"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -718,13 +719,12 @@ func TestSnapMail(t *testing.T) {
 			err := json.NewDecoder(r.Body).Decode(&result)
 			assertNilError(t, err)
 
-			assertEqual(t, result.Type, want.Type)
-			assertEqual(t, result.Payload.Email, want.Payload.Email)
-			assertEqual(t, result.Payload.NameFirst, want.Payload.NameFirst)
-			assertEqual(t, result.Payload.NameLast, want.Payload.NameLast)
-			assertEqual(t, result.Payload.SessionID, want.Payload.SessionID)
-			assertEqual(t, result.Payload.StartDateTime, want.Payload.StartDateTime)
-
+			assert.Equal(t, want.Type, result.Type)
+			assert.Equal(t, want.Payload.Email, result.Payload.Email)
+			assert.Equal(t, want.Payload.NameFirst, result.Payload.NameFirst)
+			assert.Equal(t, want.Payload.NameLast, result.Payload.NameLast)
+			assert.Equal(t, want.Payload.SessionID, result.Payload.SessionID)
+			assert.Equal(t, want.Payload.StartDateTime, result.Payload.StartDateTime)
 		}))
 
 		NewSnapMail(mockSnapServer.URL).run(context.Background(), Signup{
