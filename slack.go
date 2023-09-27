@@ -25,7 +25,14 @@ func (sl slackService) name() string {
 }
 
 func NewSlackService(webhookURL string) *slackService {
-	return &slackService{webhookURL}
+	return &slackService{
+		webhookURL: webhookURL,
+	}
+}
+
+// IsRequired returns false because the slack message notification is just nice to have.
+func (sl slackService) isRequired() bool {
+	return false
 }
 
 type message struct {
