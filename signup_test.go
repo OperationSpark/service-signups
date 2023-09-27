@@ -691,16 +691,12 @@ func TestCreateMessageURL(t *testing.T) {
 
 		// Decode the base64 encoded data from the generated URL
 		encoded := strings.TrimPrefix(u.Path, "/m/")
-		d := base64.NewDecoder(base64.StdEncoding, strings.NewReader(encoded))
-		decodedJson := make([]byte, 420)
-		n, err := d.Read(decodedJson)
-		require.Greater(t, n, 0)
+		decodedJson, err := base64.URLEncoding.DecodeString(encoded)
 		require.NoError(t, err)
 
 		// Unmarshal the decoded JSON into a messaging request params struct
 		var params rendererReqParams
-		jd := json.NewDecoder(bytes.NewReader(decodedJson))
-		err = jd.Decode(&params)
+		err = json.NewDecoder(bytes.NewReader(decodedJson)).Decode(&params)
 		require.NoError(t, err)
 
 		// Verify the location data matches the input from the Participant
