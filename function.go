@@ -164,6 +164,7 @@ func NewSignupServer() *signupServer {
 	snapMailURL := os.Getenv("SNAP_MAIL_URL")
 
 	// If we're running in GCP (K_SERVICE env var is set), we can use the GCP Service Account to authenticate with SNAP Mail.
+	// https://cloud.google.com/functions/docs/configuring/env-var#runtime_environment_variables_set_automatically
 	snapMailOptions := []snapMailOption{}
 	if len(os.Getenv("K_SERVICE")) > 0 {
 		client, err := idtoken.NewClient(context.Background(), snapMailURL)
