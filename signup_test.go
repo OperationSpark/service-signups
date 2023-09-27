@@ -27,6 +27,11 @@ type MockMailgunService struct {
 	called      bool
 }
 
+// IsRequired returns true because the welcome email is should be sent after a student signs up.
+func (m *MockMailgunService) isRequired() bool {
+	return true
+}
+
 func (ms *MockMailgunService) run(ctx context.Context, su Signup) error {
 	ms.called = true
 	return ms.WelcomeFunc(ctx, su)
@@ -48,7 +53,21 @@ func (*MockZoomService) name() string {
 	return "mock zoom service"
 }
 
-func TestRegisterUser(t *testing.T) {
+type notRequiredTask struct{}
+
+func (n notRequiredTask) run(ctx context.Context, su Signup) error {
+	return fmt.Errorf("non-required task failed")
+}
+
+func (n notRequiredTask) isRequired() bool {
+	return false
+}
+
+func (n notRequiredTask) name() string {
+	return "not required task"
+}
+
+func TestRegister(t *testing.T) {
 	t.Run("triggers an 'Welcome Email'", func(t *testing.T) {
 		signup := Signup{
 			NameFirst:        "Henri",
@@ -117,6 +136,29 @@ func TestRegisterUser(t *testing.T) {
 		if !mailService.called {
 			t.Fatal("mailService.SendWelcome should have been called")
 		}
+	})
+
+	t.Run("Completes signup if non-required task fails", func(t *testing.T) {
+		signup := Signup{
+			NameFirst:        "Henri",
+			NameLast:         "Testaroni",
+			Email:            "henri@email.com",
+			Cell:             "555-123-4567",
+			Referrer:         "instagram",
+			ReferrerResponse: "",
+			StartDateTime:    time.Time{}, // Empty session start time
+		}
+
+		signupService := newSignupService(signupServiceOptions{
+			tasks:       []Task{notRequiredTask{}},
+			zoomService: &MockZoomService{},
+		})
+
+		err := signupService.register(context.Background(), signup)
+		if err != nil {
+			t.Fatalf("register: %v", err)
+		}
+
 	})
 }
 

@@ -24,6 +24,11 @@ func (g greenlightService) run(ctx context.Context, su Signup) error {
 	return g.postWebhook(ctx, su)
 }
 
+// IsRequired return true because the signup record in Greenlight is needed by staff.
+func (g greenlightService) isRequired() bool {
+	return true
+}
+
 func (g greenlightService) name() string {
 	return "greenlight service"
 }
