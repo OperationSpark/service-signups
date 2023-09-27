@@ -19,7 +19,6 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/operationspark/service-signup/greenlight"
 	"github.com/operationspark/service-signup/notify"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -704,36 +703,24 @@ func TestCreateMessageURL(t *testing.T) {
 
 func TestSnapMail(t *testing.T) {
 	t.Run("posts an event payload in json", func(t *testing.T) {
-		want := signupEvent{
-			Type: "SESSION_SIGNUP",
-			Payload: Payload{
-				NameFirst:     "Abigail",
-				NameLast:      "Test",
-				Email:         "abigailtest@test.org",
-				SessionID:     "tMisBjpLQt8H3oD8B",
-				StartDateTime: mustMakeTime(t, time.RFC3339, "2023-09-23T18:00:00.000Z"),
-			},
-		}
-		mockSnapServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			var result signupEvent
-			err := json.NewDecoder(r.Body).Decode(&result)
-			assertNilError(t, err)
-
-			assert.Equal(t, want.Type, result.Type)
-			assert.Equal(t, want.Payload.Email, result.Payload.Email)
-			assert.Equal(t, want.Payload.NameFirst, result.Payload.NameFirst)
-			assert.Equal(t, want.Payload.NameLast, result.Payload.NameLast)
-			assert.Equal(t, want.Payload.SessionID, result.Payload.SessionID)
-			assert.Equal(t, want.Payload.StartDateTime, result.Payload.StartDateTime)
-		}))
-
-		err := NewSnapMail(mockSnapServer.URL).run(context.Background(), Signup{
+		su := Signup{
 			NameFirst:     "Abigail",
 			NameLast:      "Test",
 			Email:         "abigailtest@test.org",
 			SessionID:     "tMisBjpLQt8H3oD8B",
 			StartDateTime: mustMakeTime(t, time.RFC3339, "2023-09-23T18:00:00.000Z"),
-		})
+		}
+		wantJSON := `{"eventType":"SESSION_SIGNUP","payload":{"email":"abigailtest@test.org","nameFirst":"Abigail","nameLast":"Test","sessionId":"tMisBjpLQt8H3oD8B","startDateTime":"2023-09-23T18:00:00Z"}}`
+
+		mockSnapServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			assertEqual(t, r.URL.Path, "/events")
+
+			gotJSON, err := io.ReadAll(r.Body)
+			assertNilError(t, err)
+			assertEqual(t, string(gotJSON), wantJSON)
+		}))
+
+		err := NewSnapMail(mockSnapServer.URL).run(context.Background(), su)
 		assertNilError(t, err)
 
 	})
