@@ -4,12 +4,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
-	"os"
+	"net/url"
 	"time"
-
-	"google.golang.org/api/idtoken"
 )
 
 type SnapMail struct {
@@ -30,22 +29,22 @@ type signupEvent struct {
 	Payload Payload `json:"payload"`
 }
 
-func NewSnapMail(url string) *SnapMail {
-	client := http.DefaultClient
-	var err error
-	// In the CI environment, we don't have access to the GCP Service Account and we don't want to fail the build.
-	// The only reason this is an issue is because we need to use init() to register the function with the functions-framework.
-	// If we could avoid that, we could avoid this check.
-	if os.Getenv("CI") == "" {
-		client, err = idtoken.NewClient(context.Background(), url)
-		if err != nil {
-			log.Fatal(err)
-		}
+type snapMailOption func(*SnapMail)
+
+func NewSnapMail(apiBase string, opts ...snapMailOption) *SnapMail {
+	endpoint, err := url.Parse(apiBase)
+	if err != nil {
+		log.Fatal(fmt.Errorf("SNAP mail URL parse: %v", err))
 	}
-	return &SnapMail{
-		client: client,
-		url:    url,
+
+	sm := &SnapMail{
+		client: http.DefaultClient,
+		url:    endpoint.JoinPath("/events").String(),
 	}
+	for _, opt := range opts {
+		opt(sm)
+	}
+	return sm
 }
 
 func (sm *SnapMail) name() string {
@@ -84,4 +83,10 @@ func (sm *SnapMail) run(ctx context.Context, signup Signup) error {
 		return handleHTTPError(resp)
 	}
 	return nil
+}
+
+func WithClient(client *http.Client) snapMailOption {
+	return func(sm *SnapMail) {
+		sm.client = client
+	}
 }
