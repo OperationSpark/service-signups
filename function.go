@@ -14,6 +14,7 @@ import (
 	"github.com/operationspark/service-signup/notify"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"google.golang.org/api/idtoken"
 )
 
 type (
@@ -161,7 +162,18 @@ func NewSignupServer() *signupServer {
 	})
 
 	snapMailURL := os.Getenv("SNAP_MAIL_URL")
-	snapMailSvc := NewSnapMail(snapMailURL)
+
+	// If we're running in GCP (K_SERVICE env var is set), we can use the GCP Service Account to authenticate with SNAP Mail.
+	// https://cloud.google.com/functions/docs/configuring/env-var#runtime_environment_variables_set_automatically
+	snapMailOptions := []snapMailOption{}
+	if len(os.Getenv("K_SERVICE")) > 0 {
+		client, err := idtoken.NewClient(context.Background(), snapMailURL)
+		if err != nil {
+			log.Fatal(err)
+		}
+		snapMailOptions = append(snapMailOptions, WithClient(client))
+	}
+	snapMailSvc := NewSnapMail(snapMailURL, snapMailOptions...)
 
 	registrationService := newSignupService(
 		signupServiceOptions{
