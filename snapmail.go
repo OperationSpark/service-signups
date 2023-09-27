@@ -25,8 +25,8 @@ type Payload struct {
 }
 
 type signupEvent struct {
-	Type    string  `json:"eventType"`
-	Payload Payload `json:"payload"`
+	EventType string  `json:"eventType"`
+	Payload   Payload `json:"payload"`
 }
 
 type snapMailOption func(*SnapMail)
@@ -53,7 +53,7 @@ func (sm *SnapMail) name() string {
 
 func (sm *SnapMail) run(ctx context.Context, signup Signup) error {
 	event := signupEvent{
-		Type: "SESSION_SIGNUP",
+		EventType: "SESSION_SIGNUP",
 		Payload: Payload{
 			Email:         signup.Email,
 			NameFirst:     signup.NameFirst,
