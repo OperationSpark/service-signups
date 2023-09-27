@@ -51,6 +51,11 @@ func (sm *SnapMail) name() string {
 	return "SNAP Mailer"
 }
 
+// IsRequired returns false because the snapMail webhook data can be retrieved from elsewhere and is not required for most students.
+func (sm *SnapMail) isRequired() bool {
+	return false
+}
+
 func (sm *SnapMail) run(ctx context.Context, signup Signup) error {
 	event := signupEvent{
 		EventType: "SESSION_SIGNUP",

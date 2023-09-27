@@ -92,6 +92,11 @@ func NewTwilioService(o twilioServiceOptions) *smsService {
 	}
 }
 
+// IsRequired returns true because the SMS message is required to be sent to the student so that they can attend the info session.
+func (s smsService) isRequired() bool {
+	return true
+}
+
 // Run sends an Info Session signup confirmation SMS to the registered participant. We use Twilio's Conversations API instead of the Messaging API to allow multiple staff members communicate with the participant through the same outgoing SMS number.
 // The confirmation SMS contains a link that when clicked generates a custom page containing information on the upcoming Info Session. This signup-specific link is shortened before sent.
 //

@@ -29,6 +29,11 @@ func NewMailgunService(domain, apiKey, baseAPIurlOverride string) *MailgunServic
 	}
 }
 
+// IsRequired returns true because the email needs to be sent to the student to that they can attend the info session.
+func (m MailgunService) isRequired() bool {
+	return true
+}
+
 func (m MailgunService) run(ctx context.Context, su Signup) error {
 	return m.sendWelcome(ctx, su)
 }

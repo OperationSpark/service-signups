@@ -75,6 +75,8 @@ type (
 		run(ctx context.Context, signup Signup) error
 		// Name Returns the name of the task.
 		name() string
+		// IsRequired determines if the signup request fails when this task fails. If the task is not required and fails, the signup can still succeed.
+		isRequired() bool
 	}
 
 	mutationTask interface {
@@ -306,7 +308,10 @@ func (sc *SignupService) register(ctx context.Context, su Signup) error {
 			g.Go(func() error {
 				err := t.run(ctx, su)
 				if err != nil {
-					return fmt.Errorf("task failed: %q: %v", t.name(), err)
+					if t.isRequired() {
+						return fmt.Errorf("task failed: %q: %w", t.name(), err)
+					}
+					fmt.Printf("task failed: %q: %v", t.name(), err)
 				}
 				return nil
 			})
