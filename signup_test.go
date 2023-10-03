@@ -747,8 +747,9 @@ func TestSnapMail(t *testing.T) {
 			Email:         "abigailtest@test.org",
 			SessionID:     "tMisBjpLQt8H3oD8B",
 			StartDateTime: mustMakeTime(t, time.RFC3339, "2023-09-23T18:00:00.000Z"),
+			Cell:          "555-555-5555",
 		}
-		wantJSON := `{"eventType":"SESSION_SIGNUP","payload":{"email":"abigailtest@test.org","nameFirst":"Abigail","nameLast":"Test","sessionId":"tMisBjpLQt8H3oD8B","startDateTime":"2023-09-23T18:00:00Z"}}`
+		wantJSON := `{"eventType":"SESSION_SIGNUP","payload":{"email":"abigailtest@test.org","nameFirst":"Abigail","nameLast":"Test","sessionId":"tMisBjpLQt8H3oD8B","startDateTime":"2023-09-23T18:00:00Z","phone":"555-555-5555"}}`
 
 		mockSnapServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			assertEqual(t, r.URL.Path, "/events")
