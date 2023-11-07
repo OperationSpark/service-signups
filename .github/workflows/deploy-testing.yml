@@ -50,6 +50,7 @@ jobs:
             OS_RENDERING_SERVICE_URL=${{secrets.OS_RENDERING_SERVICE_URL}},
             SNAP_MAIL_URL=${{secrets.SNAP_MAIL_URL}},
             MONGO_URI=${{secrets.MONGO_URI}},
+            SIGNING_SECRET=${{secrets.SIGNING_SECRET}},
             APP_ENV=testing
       - id: "trigger-url"
         run: 'echo "${{ steps.deploy.outputs.url }}"'
