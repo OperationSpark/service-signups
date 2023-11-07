@@ -754,12 +754,18 @@ func TestSnapMail(t *testing.T) {
 		mockSnapServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			assertEqual(t, r.URL.Path, "/events")
 
+			signature := r.Header.Get("X-Signature-256")
+			assertEqual(t, signature, "sha256=d0c60e4c56076f1128f496fe7e6d4f696c5e8684ff407a3f25c95371e4bd9fbc")
+
 			gotJSON, err := io.ReadAll(r.Body)
 			assertNilError(t, err)
 			assertEqual(t, string(gotJSON), wantJSON)
 		}))
 
-		err := NewSnapMail(mockSnapServer.URL).run(context.Background(), su)
+		signingKey := "testkey"
+
+		err := NewSnapMail(mockSnapServer.URL, WithSigningSecret(signingKey)).run(context.Background(), su)
+
 		assertNilError(t, err)
 
 	})

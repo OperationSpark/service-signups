@@ -12,8 +12,9 @@ import (
 )
 
 type SnapMail struct {
-	url    string // Service HTTP endpoint
-	client *http.Client
+	url           string // Service HTTP endpoint
+	client        *http.Client
+	signingSecret []byte // Secret used to sign the request body
 }
 
 type Payload struct {
@@ -75,14 +76,21 @@ func (sm *SnapMail) run(ctx context.Context, signup Signup) error {
 		return err
 	}
 
+	signature, err := createSignature(payload, sm.signingSecret)
+	if err != nil {
+		return fmt.Errorf("createSignature: %w", err)
+	}
+
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, sm.url, bytes.NewReader(payload))
 	if err != nil {
-		return err
+		return fmt.Errorf("http.NewRequestWithContext: %w", err)
 	}
-	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Signature-256", string(signature))
+
 	resp, err := sm.client.Do(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("client.Do: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -95,5 +103,11 @@ func (sm *SnapMail) run(ctx context.Context, signup Signup) error {
 func WithClient(client *http.Client) snapMailOption {
 	return func(sm *SnapMail) {
 		sm.client = client
+	}
+}
+
+func WithSigningSecret(secret string) snapMailOption {
+	return func(sm *SnapMail) {
+		sm.signingSecret = []byte(secret)
 	}
 }
