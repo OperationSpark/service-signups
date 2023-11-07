@@ -49,6 +49,7 @@ jobs:
             OS_MESSAGING_SERVICE_URL=${{secrets.OS_MESSAGING_SERVICE_URL}},
             OS_RENDERING_SERVICE_URL=${{secrets.OS_RENDERING_SERVICE_URL}},
             SNAP_MAIL_URL=${{secrets.SNAP_MAIL_URL}},
-            MONGO_URI=${{secrets.MONGO_URI}}
+            MONGO_URI=${{secrets.MONGO_URI}},
+            SIGNING_SECRET=${{secrets.SIGNING_SECRET}}
       - id: "trigger-url"
         run: 'echo "${{ steps.deploy.outputs.url }}"'
