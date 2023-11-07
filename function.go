@@ -171,7 +171,11 @@ func NewSignupServer() *signupServer {
 		if err != nil {
 			log.Fatal(err)
 		}
-		snapMailOptions = append(snapMailOptions, WithClient(client))
+		snapMailOptions = append(
+			snapMailOptions,
+			WithClient(client),
+			WithSigningSecret(os.Getenv("SIGNING_SECRET")),
+		)
 	}
 	snapMailSvc := NewSnapMail(snapMailURL, snapMailOptions...)
 
