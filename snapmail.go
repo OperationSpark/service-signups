@@ -21,6 +21,7 @@ type Payload struct {
 	Email         string    `json:"email"`
 	NameFirst     string    `json:"nameFirst"`
 	NameLast      string    `json:"nameLast"`
+	SessionCohort string    `json:"sessionCohort"`
 	SessionID     string    `json:"sessionId"`
 	StartDateTime time.Time `json:"startDateTime,omitempty"`
 	Mobile        string    `json:"mobile"`
@@ -66,6 +67,7 @@ func (sm *SnapMail) run(ctx context.Context, signup Signup) error {
 			NameFirst:     signup.NameFirst,
 			NameLast:      signup.NameLast,
 			SessionID:     signup.SessionID,
+			SessionCohort: signup.Cohort,
 			StartDateTime: signup.StartDateTime,
 			Mobile:        signup.Cell,
 		},
