@@ -748,14 +748,15 @@ func TestSnapMail(t *testing.T) {
 			SessionID:     "tMisBjpLQt8H3oD8B",
 			StartDateTime: mustMakeTime(t, time.RFC3339, "2023-09-23T18:00:00.000Z"),
 			Cell:          "555-555-5555",
+			Cohort:        "is-sep-23-23-12pm",
 		}
-		wantJSON := `{"eventType":"SESSION_SIGNUP","payload":{"email":"abigailtest@test.org","nameFirst":"Abigail","nameLast":"Test","sessionId":"tMisBjpLQt8H3oD8B","startDateTime":"2023-09-23T18:00:00Z","mobile":"555-555-5555"}}`
+		wantJSON := `{"eventType":"SESSION_SIGNUP","payload":{"email":"abigailtest@test.org","nameFirst":"Abigail","nameLast":"Test","sessionCohort":"is-sep-23-23-12pm","sessionId":"tMisBjpLQt8H3oD8B","startDateTime":"2023-09-23T18:00:00Z","mobile":"555-555-5555"}}`
 
 		mockSnapServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			assertEqual(t, r.URL.Path, "/events")
 
 			signature := r.Header.Get("X-Signature-256")
-			assertEqual(t, signature, "sha256=d0c60e4c56076f1128f496fe7e6d4f696c5e8684ff407a3f25c95371e4bd9fbc")
+			assertEqual(t, signature, "sha256=9ed748a0bec0b1783ceee360c0a99657c1161c56e13af77c91bc01be72111e1d")
 
 			gotJSON, err := io.ReadAll(r.Body)
 			assertNilError(t, err)
