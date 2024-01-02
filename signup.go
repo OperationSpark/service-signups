@@ -24,16 +24,18 @@ type (
 		Email             string                 `json:"email" schema:"email"`
 		GooglePlace       greenlight.GooglePlace `json:"googlePlace" schema:"googlePlace"`
 		// Session's set location type. One of "IN_PERSON" | "VIRTUAL" | "IN_PERSON". If the session's location type is "HYBRID", a student can attend "IN_PERSON" or "VIRTUAL"ly.
-		LocationType     string    `json:"locationType" schema:"locationType"`
-		JoinCode         string    `json:"joinCode,omitempty"`
-		NameFirst        string    `json:"nameFirst" schema:"nameFirst"`
-		NameLast         string    `json:"nameLast" schema:"nameLast"`
-		ProgramID        string    `json:"programId" schema:"programId"`
-		Referrer         string    `json:"referrer" schema:"referrer"`
-		ReferrerResponse string    `json:"referrerResponse" schema:"referrerResponse"`
-		SessionID        string    `json:"sessionId" schema:"sessionId"`
-		StartDateTime    time.Time `json:"startDateTime,omitempty" schema:"startDateTime"`
-		Token            string    `json:"token" schema:"token"`
+		LocationType     string `json:"locationType" schema:"locationType"`
+		JoinCode         string `json:"joinCode,omitempty"`
+		NameFirst        string `json:"nameFirst" schema:"nameFirst"`
+		NameLast         string `json:"nameLast" schema:"nameLast"`
+		ProgramID        string `json:"programId" schema:"programId"`
+		Referrer         string `json:"referrer" schema:"referrer"`
+		ReferrerResponse string `json:"referrerResponse" schema:"referrerResponse"`
+		SessionID        string `json:"sessionId" schema:"sessionId"`
+		// If the user has opted-in to receiving text messages.
+		SMSOptIn      bool      `json:"smsOptIn"`
+		StartDateTime time.Time `json:"startDateTime,omitempty" schema:"startDateTime"`
+		Token         string    `json:"token" schema:"token"`
 		// State or country where the person resides.
 		UserLocation string `json:"userLocation" schema:"userLocation"`
 
@@ -81,6 +83,8 @@ type (
 		run(ctx context.Context, signup Signup) error
 		// Name Returns the name of the task.
 		name() string
+		// IsRequired determines if the signup request fails when this task fails. If the task is not required and fails, the signup can still succeed.
+		isRequired() bool
 	}
 
 	mutationTask interface {
@@ -327,7 +331,10 @@ func (sc *SignupService) register(ctx context.Context, su Signup) error {
 			g.Go(func() error {
 				err := t.run(ctx, su)
 				if err != nil {
-					return fmt.Errorf("task failed: %q: %v", t.name(), err)
+					if t.isRequired() {
+						return fmt.Errorf("task failed: %q: %w", t.name(), err)
+					}
+					fmt.Printf("task failed: %q: %v", t.name(), err)
 				}
 				return nil
 			})

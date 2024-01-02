@@ -32,6 +32,7 @@ func prettyPrint(i interface{}) string {
 }
 
 func mustMakeTime(t *testing.T, layout, value string) time.Time {
+	t.Helper()
 	tiempo, err := time.Parse(layout, value)
 	if err != nil {
 		t.Fatal("could not make time.Time", err)

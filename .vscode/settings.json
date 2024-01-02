@@ -1,3 +1,7 @@
 {
-  "go.testEnvFile": "${workspaceFolder}/.env.smoke"
+  "go.testEnvFile": "${workspaceFolder}/.env.smoke",
+  "cSpell.words": [
+    "Emptyf",
+    "stretchr"
+  ]
 }

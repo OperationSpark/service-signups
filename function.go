@@ -179,6 +179,8 @@ func NewSignupServer() *signupServer {
 	}
 
 	gldbService := mongodb.New(dbName, mongoClient)
+	snapMailURL := os.Getenv("SNAP_MAIL_URL")
+	snapMailSvc := NewSnapMail(snapMailURL, WithSigningSecret(os.Getenv("SIGNING_SECRET")))
 
 	registrationService := newSignupService(
 		signupServiceOptions{
@@ -200,6 +202,8 @@ func NewSignupServer() *signupServer {
 				slackSvc,
 				// sending an SMS confirmation message to the user.
 				twilioSvc,
+				// sending Signup message to SNAP mail application
+				snapMailSvc,
 			},
 		},
 	)
