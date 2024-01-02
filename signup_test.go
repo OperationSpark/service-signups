@@ -746,7 +746,7 @@ func TestCreateMessageURL(t *testing.T) {
 
 		// Decode the base64 encoded data from the generated URL
 		encoded := strings.TrimPrefix(u.Path, "/m/")
-		d := base64.NewDecoder(base64.StdEncoding, strings.NewReader(encoded))
+		d := base64.NewDecoder(base64.URLEncoding, strings.NewReader(encoded))
 		jsonBytes, err := io.ReadAll(d)
 		require.NoError(t, err)
 
