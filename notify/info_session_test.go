@@ -122,7 +122,7 @@ func TestGetUpcomingSessions(t *testing.T) {
 			"state": "LA",
 			"zip": "70119",
 			"contact": "Admissions"
-			}`, randID())
+			}`, mustRandID(t))
 
 		// JSON Doc to BSON doc
 		d := json.NewDecoder(strings.NewReader(badLocationJSON))
@@ -140,7 +140,7 @@ func TestGetUpcomingSessions(t *testing.T) {
 
 		// Insert Session with associated with bad Location
 		s := greenlight.Session{
-			ID:           randID(),
+			ID:           mustRandID(t),
 			ProgramID:    INFO_SESSION_PROGRAM_ID,
 			CreatedAt:    time.Now(),
 			LocationType: "VIRTUAL",
@@ -206,7 +206,7 @@ func TestServer(t *testing.T) {
 		toPhone := attendee.Contact.Phone
 		fakeSignup := greenlight.Signup{
 			CreatedAt:   time.Now(),
-			ID:          randID(),
+			ID:          mustRandID(t),
 			SessionID:   sessionID,
 			Email:       attendee.Contact.Email,
 			NameFirst:   attendee.FirstName,
@@ -268,7 +268,7 @@ func TestReminderMsg(t *testing.T) {
 // ** Test Helpers ** //
 func insertFutureSession(t *testing.T, m *MongoService, inFuture time.Duration) string {
 	location := greenlight.Location{
-		ID: randID(),
+		ID: mustRandID(t),
 	}
 	location.GooglePlace = greenlight.GooglePlace{
 		PlaceID: "ChIJ7YchCHSmIIYRYsAEPZN_E0o",
@@ -290,7 +290,7 @@ func insertFutureSession(t *testing.T, m *MongoService, inFuture time.Duration) 
 	locationID, ok := locRes.InsertedID.(string)
 	require.True(t, ok)
 	s := greenlight.Session{
-		ID:           randID(),
+		ID:           mustRandID(t),
 		ProgramID:    INFO_SESSION_PROGRAM_ID,
 		CreatedAt:    time.Now(),
 		LocationType: "HYBRID",
@@ -316,7 +316,7 @@ func insertRandSignups(t *testing.T, m *MongoService, infoSessionID string, n in
 		attendee := gofakeit.Person()
 		signups = append(signups, greenlight.Signup{
 			CreatedAt:   time.Now(),
-			ID:          randID(),
+			ID:          mustRandID(t),
 			SessionID:   infoSessionID,
 			Email:       attendee.Contact.Email,
 			NameFirst:   attendee.FirstName,
