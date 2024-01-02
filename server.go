@@ -38,14 +38,16 @@ func (ss *signupServer) HandleSignUp(w http.ResponseWriter, r *http.Request) {
 		err := handleJson(&su, r.Body)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
-			panic(err)
+			fmt.Fprintf(os.Stderr, "handleJson: %v", err)
+			return
 		}
 
 	case "application/x-www-form-urlencoded":
 		err := handleForm(&su, r)
 		if err != nil {
 			http.Error(w, "Error reading Form Body", http.StatusBadRequest)
-			panic(err)
+			fmt.Fprintf(os.Stderr, "handleForm: %v", err)
+			return
 		}
 
 	default:

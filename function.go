@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
+	"github.com/operationspark/service-signup/mongodb"
 	"github.com/operationspark/service-signup/notify"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -80,6 +81,18 @@ func checkEnvVars(skip bool) error {
 		}
 	}
 	return nil
+}
+
+func getMongoClient() (*mongo.Client, string, error) {
+	mongoURI := os.Getenv("MONGO_URI")
+	isCI := os.Getenv("CI") == "true"
+	parsed, err := url.Parse(mongoURI)
+	if isCI || (mongoURI == "" || err != nil) {
+		return nil, "", fmt.Errorf("invalid 'MONGO_URI' environmental variable: %q", mongoURI)
+	}
+	dbName := strings.TrimPrefix(parsed.Path, "/")
+	m, err := mongo.Connect(context.Background(), options.Client().ApplyURI(mongoURI))
+	return m, dbName, err
 }
 
 func NewNotifyServer() *notify.Server {
@@ -160,6 +173,12 @@ func NewSignupServer() *signupServer {
 		conversationsSid:           twilioConversationsSid,
 	})
 
+	mongoClient, dbName, err := getMongoClient()
+	if err != nil {
+		log.Printf("Could not connect to MongoDB: %v\n", err)
+	}
+
+	gldbService := mongodb.New(dbName, mongoClient)
 	snapMailURL := os.Getenv("SNAP_MAIL_URL")
 	snapMailSvc := NewSnapMail(snapMailURL, WithSigningSecret(os.Getenv("SIGNING_SECRET")))
 
@@ -171,6 +190,7 @@ func NewSignupServer() *signupServer {
 			},
 			// registering the user for the Zoom meeting,
 			zoomService: zoomSvc,
+			gldbService: gldbService,
 			// Registration tasks:
 			// (executed concurrently)
 			tasks: []Task{

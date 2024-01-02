@@ -37,7 +37,9 @@ type (
 		StartDateTime time.Time `json:"startDateTime,omitempty" schema:"startDateTime"`
 		Token         string    `json:"token" schema:"token"`
 		// State or country where the person resides.
-		UserLocation   string `json:"userLocation" schema:"userLocation"`
+		UserLocation string `json:"userLocation" schema:"userLocation"`
+
+		userJoinCode   string
 		zoomMeetingID  int64
 		zoomMeetingURL string
 	}
@@ -67,6 +69,12 @@ type (
 		meetings    map[int]string
 		tasks       []Task
 		zoomService mutationTask
+		gldbService codeCreator
+	}
+
+	// codeCreator creates a Session join code for a user.
+	codeCreator interface {
+		CreateUserJoinCode(ctx context.Context, sessionID string) (string, string, error)
 	}
 
 	Task interface {
@@ -91,6 +99,7 @@ type (
 		tasks    []Task
 		// The Zoom Service needs to mutate the Signup struct with a meeting join URL. Due to this mutation, we need to pull the zoom service out of the task flow and use it before running the tasks.
 		zoomService mutationTask
+		gldbService codeCreator
 	}
 
 	Location struct {
@@ -102,13 +111,15 @@ type (
 
 	// Request params for the Operation Spark Message Template Renderer service.
 	rendererReqParams struct {
-		Template     osRendererTemplate `json:"template"`
-		ZoomLink     string             `json:"zoomLink"`
-		Date         time.Time          `json:"date"`
-		Name         string             `json:"name"`
-		LocationType string             `json:"locationType"`
-		Location     Location           `json:"location"`
-		JoinCode     string             `json:"joinCode,omitempty"`
+		Template      osRendererTemplate `json:"template"`
+		ZoomLink      string             `json:"zoomLink"`
+		Date          time.Time          `json:"date"`
+		Name          string             `json:"name"`
+		LocationType  string             `json:"locationType"`
+		Location      Location           `json:"location"`
+		JoinCode      string             `json:"joinCode,omitempty"`
+		IsGmail       bool               `json:"isGmail"`
+		GreenlightURL string             `json:"greenlightUrl"`
 	}
 
 	osRenderer struct {
@@ -241,16 +252,18 @@ func (su Signup) shortMessage(infoURL string) (string, error) {
 
 // ShortMessagingURL produces a custom URL for use on Operation Spark's SMS Messaging Preview service.
 // https://github.com/OperationSpark/sms.opspark.org
-func (su Signup) shortMessagingURL() (string, error) {
+func (su Signup) shortMessagingURL(greenlightHost, baseURL string) (string, error) {
 	line1, cityStateZip := greenlight.ParseAddress(su.GooglePlace.Address)
 
 	p := rendererReqParams{
-		Template:     INFO_SESSION_TEMPLATE,
-		ZoomLink:     su.zoomMeetingURL,
-		Date:         su.StartDateTime,
-		Name:         su.NameFirst,
-		LocationType: su.LocationType,
-		JoinCode:     su.JoinCode,
+		Template:      INFO_SESSION_TEMPLATE,
+		ZoomLink:      su.zoomMeetingURL,
+		Date:          su.StartDateTime,
+		Name:          su.NameFirst,
+		LocationType:  su.LocationType,
+		JoinCode:      su.JoinCode,
+		IsGmail:       strings.HasSuffix(su.Email, "gmail.com"),
+		GreenlightURL: fmt.Sprintf("%s/sessions/%s/?subview=overview&userJoinCode=%s&joinCode=%s", greenlightHost, su.SessionID, su.userJoinCode, su.JoinCode),
 		Location: Location{
 			Name:         su.GooglePlace.Name,
 			Line1:        line1,
@@ -264,7 +277,6 @@ func (su Signup) shortMessagingURL() (string, error) {
 		return "", fmt.Errorf("structToBase64: %w", err)
 	}
 
-	baseURL := "https://sms.operationspark.org"
 	return fmt.Sprintf("%s/m/%s", baseURL, encoded), nil
 }
 
@@ -286,6 +298,7 @@ func newSignupService(o signupServiceOptions) *SignupService {
 		meetings:    o.meetings,
 		tasks:       o.tasks,
 		zoomService: o.zoomService,
+		gldbService: o.gldbService,
 	}
 }
 
@@ -299,6 +312,16 @@ func (sc *SignupService) register(ctx context.Context, su Signup) error {
 	err = sc.zoomService.run(ctx, &su)
 	if err != nil {
 		return fmt.Errorf("zoomService.run: %w", err)
+	}
+
+	if su.SessionID != "" {
+		joinCodeID, sessionJoinCode, err := sc.gldbService.CreateUserJoinCode(ctx, su.SessionID)
+		if err != nil {
+			return fmt.Errorf("userJoinCode Create: %w", err)
+		}
+
+		su.userJoinCode = joinCodeID
+		su.JoinCode = sessionJoinCode
 	}
 
 	// Run each task in a go routine for concurrent execution
