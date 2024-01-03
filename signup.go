@@ -370,6 +370,7 @@ func (sc *SignupService) attachZoomMeetingID(su *Signup) error {
 	return nil
 }
 
+// CreateMessageURL creates a custom URL for use on Operation Spark's SMS Messaging Preview service.
 func (osm *osRenderer) CreateMessageURL(p notify.Participant) (string, error) {
 	params := rendererReqParams{
 		Template:     INFO_SESSION_TEMPLATE,
