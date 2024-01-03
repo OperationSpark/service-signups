@@ -1,9 +1,6 @@
 name: GCP Cloud Functions Deploy (Testing)
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - "testing"
 
 jobs:
   build-deploy-cloud-function:
@@ -35,6 +32,7 @@ jobs:
             MAIL_DOMAIN=${{secrets.MAIL_DOMAIN}},
             MAILGUN_API_KEY=${{secrets.MAILGUN_API_KEY}},
             GREENLIGHT_WEBHOOK_URL=${{secrets.GREENLIGHT_WEBHOOK_URL}},
+            GREENLIGHT_HOST=${{secrets.GREENLIGHT_HOST}},
             GREENLIGHT_API_KEY=${{secrets.GREENLIGHT_API_KEY}},
             ZOOM_ACCOUNT_ID=${{secrets.ZOOM_ACCOUNT_ID}},
             ZOOM_CLIENT_ID=${{secrets.ZOOM_CLIENT_ID}},
