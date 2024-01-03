@@ -35,15 +35,16 @@ type (
 	}
 
 	Session struct {
-		ID           string    `bson:"_id"`
-		CreatedAt    time.Time `bson:"createdAt"`
-		Cohort       string    `bson:"cohort"`
-		LocationID   string    `bson:"locationId"`
-		LocationType string    `bson:"locationType"` // TODO: Use enum?
-		ProgramID    string    `bson:"programId"`
-		Name         string    `bson:"name"`
-		Students     []string  `bson:"students"`
-		Times        Times     `bson:"times"` // TODO: Check out "inline" struct tag
+		ID           string   `bson:"_id"`
+		CreatedAt    UnixTime `bson:"createdAt"`
+		Cohort       string   `bson:"cohort"`
+		LocationID   string   `bson:"locationId"`
+		LocationType string   `bson:"locationType"` // TODO: Use enum?
+		ProgramID    string   `bson:"programId"`
+		Name         string   `bson:"name"`
+		Students     []string `bson:"students"`
+		Times        Times    `bson:"times"` // TODO: Check out "inline" struct tag
+		JoinCode     string   `bson:"code"`
 	}
 
 	Signup struct {
@@ -64,7 +65,23 @@ type (
 			DateTime time.Time `bson:"dateTime"`
 		} `bson:"start"`
 	}
+
+	UserJoinCode struct {
+		ExpiresAt time.Time `bson:"expiresAt"` // 8 hours after start of session"
+		UsedAt    string    `bson:"usedAt"`    // "null | Date used"
+		UserID    string    `bson:"userId"`    // set when user join code is used in greenlight
+		SessionID string    `bson:"sessionId"` // Greenlight session ID
+	}
+
+	UnixTime time.Time
 )
+// UnmarshalBSONValue unmarshals a Unix time (seconds after Jan 1, 1970 00:00 UTC) to `time.Time`. Fields using the UnixTime type were not serialized with the default Mongo ISODate so need custom marshaling/unmarshaling.
+func (ut *UnixTime) UnmarshalBSONValue(t bsontype.Type, data []byte) error {
+	rv := bson.RawValue{Type: t, Value: data}
+	*ut = UnixTime(time.Unix(rv.AsInt64(), 0))
+
+	return nil
+}
 
 // UnmarshalJSON safely handles a GooglePlaces with an empty string value.
 func (g *GooglePlace) UnmarshalJSON(b []byte) error {

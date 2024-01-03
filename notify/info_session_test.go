@@ -142,7 +142,6 @@ func TestGetUpcomingSessions(t *testing.T) {
 		s := greenlight.Session{
 			ID:           mustRandID(t),
 			ProgramID:    INFO_SESSION_PROGRAM_ID,
-			CreatedAt:    time.Now(),
 			LocationType: "VIRTUAL",
 			LocationID:   locationID,
 		}
@@ -292,7 +291,6 @@ func insertFutureSession(t *testing.T, m *MongoService, inFuture time.Duration) 
 	s := greenlight.Session{
 		ID:           mustRandID(t),
 		ProgramID:    INFO_SESSION_PROGRAM_ID,
-		CreatedAt:    time.Now(),
 		LocationType: "HYBRID",
 		LocationID:   locationID,
 	}
