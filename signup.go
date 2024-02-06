@@ -52,15 +52,17 @@ type (
 	}
 
 	welcomeVariables struct {
-		FirstName            string `json:"firstName"`
-		LastName             string `json:"lastName"`
-		SessionTime          string `json:"sessionTime"`
-		SessionDate          string `json:"sessionDate"`
-		ZoomURL              string `json:"zoomURL"`
-		LocationLine1        string `json:"locationLine1"`
-		LocationCityStateZip string `json:"locationCityStateZip"`
-		LocationMapURL       string `json:"locationMapUrl"`
-		JoinCode             string `json:"joinCode,omitempty"`
+		FirstName            string `json:"firstName"`            // Person's first name.
+		LastName             string `json:"lastName"`             // Person's last name.
+		SessionTime          string `json:"sessionTime"`          // Greenlight session start time. Ex: "12:00 PM CDT"
+		SessionDate          string `json:"sessionDate"`          // Greenlight session start Date. Ex: "Monday, Mar 14"
+		ZoomURL              string `json:"zoomURL"`              // Zoom meeting URL.
+		LocationLine1        string `json:"locationLine1"`        // Greenlight session location address line.
+		LocationCityStateZip string `json:"locationCityStateZip"` // Greenlight session location city, state, and postal code.
+		LocationMapURL       string `json:"locationMapUrl"`       // Google Maps location URL.
+		JoinCode             string `json:"joinCode,omitempty"`   // Greenlight session join code.
+		IsGmail              bool   `json:"isGmail,omitempty"`    // True if the person used a Gmail email address.
+		GreenlightEnrollURL  string `json:"greenlightEnrollUrl"`  // Greenlight auto-enrollment URL.
 	}
 
 	SignupService struct {
@@ -182,10 +184,12 @@ func (s *Signup) welcomeData() (welcomeVariables, error) {
 		SessionTime:          s.StartDateTime.In(ctz).Format("3:04 PM MST"),
 		SessionDate:          s.StartDateTime.In(ctz).Format("Monday, Jan 02"),
 		ZoomURL:              s.ZoomMeetingURL(),
-		JoinCode:             s.JoinCode,
 		LocationLine1:        line1,
 		LocationCityStateZip: cityStateZip,
 		LocationMapURL:       greenlight.GoogleLocationLink(s.GooglePlace.Address),
+		JoinCode:             s.JoinCode,
+		IsGmail:              s.isGmail(),
+		GreenlightEnrollURL:  s.greenlightAutoEnrollURL("https://greenlight.operationspark.org"),
 	}, nil
 }
 
@@ -250,6 +254,19 @@ func (su Signup) shortMessage(infoURL string) (string, error) {
 
 }
 
+// GreenlightAutoEnrollURL returns a URL that auto-enrolls a user into a Greenlight session.
+func (su Signup) greenlightAutoEnrollURL(greenlightHost string) string {
+	if len(su.SessionID) == 0 {
+		return ""
+	}
+	return fmt.Sprintf("%s/sessions/%s/?subview=overview&userJoinCode=%s&joinCode=%s", greenlightHost, su.SessionID, su.userJoinCode, su.JoinCode)
+}
+
+// IsGmail returns true if the user's email is a Gmail address.
+func (su Signup) isGmail() bool {
+	return strings.HasSuffix(su.Email, "gmail.com")
+}
+
 // ShortMessagingURL produces a custom URL for use on Operation Spark's SMS Messaging Preview service.
 // https://github.com/OperationSpark/sms.opspark.org
 func (su Signup) shortMessagingURL(greenlightHost, baseURL string) (string, error) {
@@ -262,8 +279,8 @@ func (su Signup) shortMessagingURL(greenlightHost, baseURL string) (string, erro
 		Name:          su.NameFirst,
 		LocationType:  su.LocationType,
 		JoinCode:      su.JoinCode,
-		IsGmail:       strings.HasSuffix(su.Email, "gmail.com"),
-		GreenlightURL: fmt.Sprintf("%s/sessions/%s/?subview=overview&userJoinCode=%s&joinCode=%s", greenlightHost, su.SessionID, su.userJoinCode, su.JoinCode),
+		IsGmail:       su.isGmail(),
+		GreenlightURL: su.greenlightAutoEnrollURL(greenlightHost),
 		Location: Location{
 			Name:         su.GooglePlace.Name,
 			Line1:        line1,

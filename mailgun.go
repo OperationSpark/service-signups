@@ -52,7 +52,7 @@ func (m MailgunService) sendWelcome(ctx context.Context, su Signup) error {
 
 	t := mgTemplate{
 		name: m.defaultTemplate,
-		variables: map[string]string{
+		variables: map[string]interface{}{
 			"firstName":            vars.FirstName,
 			"lastName":             vars.LastName,
 			"sessionTime":          vars.SessionTime,
@@ -62,6 +62,8 @@ func (m MailgunService) sendWelcome(ctx context.Context, su Signup) error {
 			"locationLine1":        vars.LocationLine1,
 			"locationCityStateZip": vars.LocationCityStateZip,
 			"locationMapUrl":       vars.LocationMapURL,
+			"isGmail":              vars.IsGmail,
+			"greenlightEnrollUrl":  vars.GreenlightEnrollURL,
 		},
 	}
 
@@ -77,9 +79,9 @@ func (m MailgunService) sendWelcome(ctx context.Context, su Signup) error {
 }
 
 type mgTemplate struct {
-	name      string            // Name of mailgun template.
-	variables map[string]string // KV pairs of variables used in the email template.
-	version   string            // Mailgun template version. If not set, the active version is used.
+	name      string                 // Name of mailgun template.
+	variables map[string]interface{} // KV pairs of variables used in the email template.
+	version   string                 // Mailgun template version. If not set, the active version is used.
 }
 
 func (m MailgunService) sendWithTemplate(ctx context.Context, t mgTemplate, recipient string) error {

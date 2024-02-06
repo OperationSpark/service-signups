@@ -18,13 +18,15 @@ func TestSendWelcome(t *testing.T) {
 		form := Signup{
 			NameFirst:        "Henri",
 			NameLast:         "Testaroni",
-			Email:            "henri@email.com",
+			Email:            "henri@gmail.com",
 			Cell:             "555-123-4567",
 			Referrer:         "instagram",
 			ReferrerResponse: "",
 			StartDateTime:    sessionStartDate,
+			SessionID:        "this-is-a-session-id",
 			Cohort:           "is-mar-14-22-12pm",
 			JoinCode:         "tlav",
+			userJoinCode:     "user-join-code-here",
 		}
 
 		domain := "test.notarealdomain.org"
@@ -62,15 +64,18 @@ func TestSendWelcome(t *testing.T) {
 
 			assertEqual(t, gotVars.FirstName, form.NameFirst)
 			assertEqual(t, gotVars.LastName, form.NameLast)
-			assertEqual(t, gotVars.JoinCode, form.JoinCode)
 			assertEqual(t, gotVars.SessionDate, "Monday, Mar 14")
 			assertEqual(t, gotVars.SessionTime, "12:00 PM CDT")
+			assertEqual(t, gotVars.JoinCode, form.JoinCode)
+			assertEqual(t, gotVars.IsGmail, true)
+			assertEqual(t, gotVars.GreenlightEnrollURL, "https://greenlight.operationspark.org/sessions/this-is-a-session-id/?subview=overview&userJoinCode=user-join-code-here&joinCode=tlav")
 			// TODO: ZoomURL
 			// assertEqual(t, gotVars.ZoomURL, "TODO")
 
 			_, err = w.Write([]byte("{}"))
 			assertNilError(t, err)
 		}))
+
 		defer mockMailgunAPI.Close()
 
 		mgSvc := NewMailgunService(domain, apiKey, mockMailgunAPI.URL+"/v4")
