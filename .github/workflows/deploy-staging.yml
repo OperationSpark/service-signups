@@ -13,15 +13,15 @@ jobs:
     environment: staging
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - id: "auth"
-        uses: "google-github-actions/auth@v0"
+        uses: "google-github-actions/auth@v2"
         with:
           credentials_json: "${{ secrets.GCP_SA_CREDS_JSON }}"
 
       - id: "deploy"
-        uses: "google-github-actions/deploy-cloud-functions@v0"
+        uses: "google-github-actions/deploy-cloud-functions@v2"
         with:
           name: "session-signups-dev"
           entry_point: "HandleSignUp"
