@@ -121,9 +121,9 @@ func TestInvalidNumErr(t *testing.T) {
 		}
 
 		service := &MockSignupService{
-			RegisterFunc: func(context.Context, Signup) error {
+			RegisterFunc: func(ctx context.Context, su Signup) (Signup, error) {
 				// return invalid number error
-				return ErrInvalidNumber{err: fmt.Errorf("invalid number: %s", signup.Cell)}
+				return su, ErrInvalidNumber{err: fmt.Errorf("invalid number: %s", signup.Cell)}
 			},
 		}
 

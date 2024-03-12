@@ -137,23 +137,12 @@ func (t *smsService) run(ctx context.Context, su Signup) error {
 		return fmt.Errorf("optInConfirmation: %w", err)
 	}
 
-	// create user-specific info session details URL
-	msgngURL, err := su.shortMessagingURL(os.Getenv("GREENLIGHT_HOST"), os.Getenv("OS_RENDERING_SERVICE_URL"))
-	if err != nil {
-		return fmt.Errorf("shortMessagingURL: %w", err)
+	if su.ShortLink == "" {
+		// This should never happen
+		return fmt.Errorf("shortLink is empty")
 	}
-
-	shorty := NewURLShortener(ShortenerOpts{apiKey: os.Getenv("URL_SHORTENER_API_KEY")})
-
-	shortLink, err := shorty.ShortenURL(ctx, msgngURL)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "shortenURL ERROR: %v", err)
-		// Don't early return. ShortenURL returns the original URL if there is a failure
-		// Fallback to long URL if shortener fails
-	}
-
 	// Create the SMS message body
-	msg, err := su.shortMessage(shortLink)
+	msg, err := su.shortMessage(su.ShortLink)
 	if err != nil {
 		return fmt.Errorf("shortMessage: %w", err)
 	}
@@ -246,7 +235,7 @@ func (t *smsService) FormatCell(cell string) string {
 func (t *smsService) sendConvoWebhook(ctx context.Context, convoID string) error {
 	url := fmt.Sprintf("%s/api/webhooks/conversation/%s", t.opSparkMessagingSvcBaseURL, convoID)
 
-	req, err := http.NewRequest(http.MethodPost, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, nil)
 	if err != nil {
 		return fmt.Errorf("newRequest: %w", err)
 	}
