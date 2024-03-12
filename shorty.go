@@ -57,7 +57,12 @@ func NewURLShortener(o ShortenerOpts) *Shortener {
 	}
 }
 
-// ShortenURL POSTs a URL to Operation Spark's URL shortener service and returns the shortened URL result. Ex: "https://www.google.com/search?q=url+shortener&source=hp&ei=lwFXY7CTOOmVwbkPx6GZEA&oq=url+shortener" -> https://ospk.org/bas12d21dc
+// ShortenURL POSTs a URL to Operation Spark's URL shortener service and returns the shortened URL result.
+// Ex:
+//
+//		"https://www.google.com/search?q=url+shortener&source=hp&ei=lwFXY7CTOOmVwbkPx6GZEA&oq=url+shortener"
+//	 -> "https://ospk.org/bas12d21dc"
+//
 // If there is an error, the original URL is returned along with the error.
 func (s Shortener) ShortenURL(ctx context.Context, url string) (string, error) {
 	body, err := json.Marshal(ShortLink{OriginalUrl: url})

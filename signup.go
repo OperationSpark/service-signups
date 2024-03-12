@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -18,13 +19,18 @@ type (
 	Signup struct {
 		// Wether the person is attending "IN_PERSON" | "VIRTUAL"ly.
 		// This field is selected by the user on the website Sign Up form.
-		AttendingLocation string                 `json:"attendingLocation" schema:"attendingLocation"`
-		Cell              string                 `json:"cell" schema:"cell"`
-		Cohort            string                 `json:"cohort" schema:"cohort"`
-		Email             string                 `json:"email" schema:"email"`
-		GooglePlace       greenlight.GooglePlace `json:"googlePlace" schema:"googlePlace"`
+		AttendingLocation string `json:"attendingLocation" schema:"attendingLocation"`
+		// The person's phone number.
+		Cell string `json:"cell" schema:"cell"`
+		// The session cohort the person is signing up for. Ex: "is-feb-28-22-12pm".
+		Cohort string `json:"cohort" schema:"cohort"`
+		// The person's email address.
+		Email string `json:"email" schema:"email"`
+		// The session's location's Google Place details.
+		GooglePlace greenlight.GooglePlace `json:"googlePlace" schema:"googlePlace"`
 		// Session's set location type. One of "IN_PERSON" | "VIRTUAL" | "IN_PERSON". If the session's location type is "HYBRID", a student can attend "IN_PERSON" or "VIRTUAL"ly.
-		LocationType     string `json:"locationType" schema:"locationType"`
+		LocationType string `json:"locationType" schema:"locationType"`
+		// A legacy 4-character join code for a Greenlight session.
 		JoinCode         string `json:"joinCode,omitempty"`
 		NameFirst        string `json:"nameFirst" schema:"nameFirst"`
 		NameLast         string `json:"nameLast" schema:"nameLast"`
@@ -39,6 +45,9 @@ type (
 		// State or country where the person resides.
 		UserLocation string `json:"userLocation" schema:"userLocation"`
 
+		// URL linking the user to an post-signup information page.
+		ShortLink string
+		// A user specific join code for a Greenlight session.
 		userJoinCode   string
 		zoomMeetingID  int64
 		zoomMeetingURL string
@@ -320,26 +329,42 @@ func newSignupService(o signupServiceOptions) *SignupService {
 }
 
 // Register concurrently executes a list of tasks. Completion of tasks are not dependent on each other.
-func (sc *SignupService) register(ctx context.Context, su Signup) error {
+func (sc *SignupService) register(ctx context.Context, su Signup) (Signup, error) {
 	// TODO: Create specific errors for each handler
 	err := sc.attachZoomMeetingID(&su)
 	if err != nil {
-		return fmt.Errorf("attachZoomMeetingID: %w", err)
+		return su, fmt.Errorf("attachZoomMeetingID: %w", err)
 	}
 	err = sc.zoomService.run(ctx, &su)
 	if err != nil {
-		return fmt.Errorf("zoomService.run: %w", err)
+		return su, fmt.Errorf("zoomService.run: %w", err)
 	}
 
 	if su.SessionID != "" {
 		joinCodeID, sessionJoinCode, err := sc.gldbService.CreateUserJoinCode(ctx, su.SessionID)
 		if err != nil {
-			return fmt.Errorf("userJoinCode Create: %w", err)
+			return su, fmt.Errorf("userJoinCode Create: %w", err)
 		}
 
 		su.userJoinCode = joinCodeID
 		su.JoinCode = sessionJoinCode
 	}
+
+	// create user-specific info session details URL
+	msgngURL, err := su.shortMessagingURL(os.Getenv("GREENLIGHT_HOST"), os.Getenv("OS_RENDERING_SERVICE_URL"))
+	if err != nil {
+		return su, fmt.Errorf("shortMessagingURL: %w", err)
+	}
+
+	shorty := NewURLShortener(ShortenerOpts{apiKey: os.Getenv("URL_SHORTENER_API_KEY")})
+	shortLink, err := shorty.ShortenURL(ctx, msgngURL)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "shortenURL ERROR: %v", err)
+		// Don't early return. ShortenURL returns the original URL if there is a failure
+		// Fallback to long URL if shortener fails
+	}
+
+	su.ShortLink = shortLink
 
 	// Run each task in a go routine for concurrent execution
 	g, ctx := errgroup.WithContext(ctx)
@@ -358,9 +383,9 @@ func (sc *SignupService) register(ctx context.Context, su Signup) error {
 		}(task)
 	}
 	if err := g.Wait(); err != nil {
-		return err
+		return su, err
 	}
-	return nil
+	return su, nil
 }
 
 // AttachZoomMeetingID sets the Zoom meeting ID on the Signup based on the Signup's StartDateTime and the SignService's Zoom sessions.
