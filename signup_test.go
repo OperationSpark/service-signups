@@ -99,7 +99,7 @@ func TestRegister(t *testing.T) {
 			gldbService: &MockGreenlightDBService{},
 		})
 
-		err := signupService.register(context.Background(), signup)
+		_, err := signupService.register(context.Background(), signup)
 		if err != nil {
 			t.Fatalf("register: %v", err)
 		}
@@ -134,7 +134,7 @@ func TestRegister(t *testing.T) {
 			gldbService: &MockGreenlightDBService{},
 		})
 
-		err := signupService.register(context.Background(), signup)
+		_, err := signupService.register(context.Background(), signup)
 		if err != nil {
 			t.Fatalf("register: %v", err)
 		}
@@ -160,7 +160,7 @@ func TestRegister(t *testing.T) {
 			zoomService: &MockZoomService{},
 		})
 
-		err := signupService.register(context.Background(), signup)
+		_, err := signupService.register(context.Background(), signup)
 		if err != nil {
 			t.Fatalf("register: %v", err)
 		}

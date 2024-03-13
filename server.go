@@ -15,7 +15,7 @@ import (
 )
 
 type registerer interface {
-	register(ctx context.Context, signup Signup) error
+	register(ctx context.Context, signup Signup) (Signup, error)
 }
 
 type signupServer struct {
@@ -25,6 +25,10 @@ type signupServer struct {
 type errResp struct {
 	Message string `json:"message"`
 	Field   string `json:"field"`
+}
+
+type response struct {
+	URL string `json:"url"`
 }
 
 func (ss *signupServer) HandleSignUp(w http.ResponseWriter, r *http.Request) {
@@ -55,10 +59,11 @@ func (ss *signupServer) HandleSignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := ss.service.register(r.Context(), su)
+	w.Header().Set("Content-Type", "application/json")
+
+	postRegistration, err := ss.service.register(r.Context(), su)
 	// depending on what we get back, respond accordingly
 	if err != nil {
-		// TODO: handle different kinds of errors differently
 		// handle invalid phone number error
 		if strings.Contains(err.Error(), "invalid number") {
 			// marshall error response
@@ -67,7 +72,6 @@ func (ss *signupServer) HandleSignUp(w http.ResponseWriter, r *http.Request) {
 				Field:   "phone",
 			}
 
-			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusBadRequest)
 			if err = json.NewEncoder(w).Encode(errResp); err != nil {
 				fmt.Fprintf(os.Stderr, "problem marshalling error response: %v", err)
@@ -82,6 +86,11 @@ func (ss *signupServer) HandleSignUp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
+	if err := json.NewEncoder(w).Encode(response{URL: postRegistration.ShortLink}); err != nil {
+		fmt.Fprintf(os.Stderr, "problem marshalling response: %v", err)
+		http.Error(w, "problem marshalling response", http.StatusInternalServerError)
+	}
+
 }
 
 // handleJson unmarshalls a JSON payload from a signUp request into a Signup.
