@@ -64,7 +64,6 @@ func (ss *signupServer) HandleSignUp(w http.ResponseWriter, r *http.Request) {
 	postRegistration, err := ss.service.register(r.Context(), su)
 	// depending on what we get back, respond accordingly
 	if err != nil {
-		// TODO: handle different kinds of errors differently
 		// handle invalid phone number error
 		if strings.Contains(err.Error(), "invalid number") {
 			// marshall error response
