@@ -22,15 +22,15 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - id: "auth"
-        uses: "google-github-actions/auth@v0"
+        uses: "google-github-actions/auth@v2"
         with:
           credentials_json: "${{ secrets.GCP_SA_CREDS_JSON }}"
 
       - name: "Set up Cloud SDK"
-        uses: "google-github-actions/setup-gcloud@v0"
+        uses: "google-github-actions/setup-gcloud@v2"
 
       # Using curl over "gcloud functions call" to specify the /notify endpoint
       - id: "cloud-function-trigger-curl"
