@@ -1,6 +1,6 @@
 module github.com/operationspark/service-signup
 
-go 1.21
+go 1.22
 
 require (
 	github.com/GoogleCloudPlatform/functions-framework-go v1.8.0

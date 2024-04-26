@@ -26,7 +26,7 @@ jobs:
           https_trigger_security_level: "secure-always"
           project_id: "operationspark-org"
           region: "us-central1"
-          runtime: "go121"
+          runtime: "go122"
           env_vars: >-
             SLACK_WEBHOOK_URL=${{secrets.SLACK_WEBHOOK_URL}},
             MAIL_DOMAIN=${{secrets.MAIL_DOMAIN}},
