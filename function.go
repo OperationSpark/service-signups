@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
+	"github.com/operationspark/service-signup/conversations"
 	"github.com/operationspark/service-signup/mongodb"
 	"github.com/operationspark/service-signup/notify"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -205,6 +206,7 @@ func NewSignupServer() *signupServer {
 				// sending Signup message to SNAP mail application
 				snapMailSvc,
 			},
+			postSignupTasks: []Runner{conversations.Service{}},
 		},
 	)
 

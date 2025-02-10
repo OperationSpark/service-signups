@@ -77,10 +77,11 @@ type (
 	SignupService struct {
 		// Key-value map with the Central Time meeting start hour (int) as the keys, and Zoom Meeting ID as the values.
 		// Ex: {17: "86935241734"} denotes meeting with ID, "86935241734", starts at 5pm central.
-		meetings    map[int]string
-		tasks       []Task
-		zoomService mutationTask
-		gldbService codeCreator
+		meetings        map[int]string // Map of Zoom meeting IDs to Central Time meeting start hours.
+		tasks           []Task         // List of tasks to run on submission of a signup.
+		postSignupTasks []Runner       // List of tasks to run after a successful signup.
+		zoomService     mutationTask   // Zoom service.
+		gldbService     codeCreator    // Greenlight service.
 	}
 
 	// codeCreator creates a Session join code for a user.
@@ -98,6 +99,10 @@ type (
 		isRequired() bool
 	}
 
+	Runner interface {
+		Run(ctx context.Context, signupID string, conversationID string) error
+	}
+
 	mutationTask interface {
 		run(ctx context.Context, signup *Signup) error
 		name() string
@@ -106,8 +111,9 @@ type (
 	signupServiceOptions struct {
 		// Key-value map with the Central Time meeting start hour (int) as the keys, and Zoom Meeting ID as the values.
 		// Ex: {17: "86935241734"} denotes meeting with ID, "86935241734", starts at 5pm central.
-		meetings map[int]string
-		tasks    []Task
+		meetings        map[int]string
+		tasks           []Task
+		postSignupTasks []Runner
 		// The Zoom Service needs to mutate the Signup struct with a meeting join URL. Due to this mutation, we need to pull the zoom service out of the task flow and use it before running the tasks.
 		zoomService mutationTask
 		gldbService codeCreator
@@ -321,10 +327,11 @@ func (su Signup) String() string {
 
 func newSignupService(o signupServiceOptions) *SignupService {
 	return &SignupService{
-		meetings:    o.meetings,
-		tasks:       o.tasks,
-		zoomService: o.zoomService,
-		gldbService: o.gldbService,
+		meetings:        o.meetings,
+		tasks:           o.tasks,
+		zoomService:     o.zoomService,
+		gldbService:     o.gldbService,
+		postSignupTasks: o.postSignupTasks,
 	}
 }
 
