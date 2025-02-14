@@ -50,6 +50,10 @@ func (s Service) Run(ctx context.Context, conversationID, signupID string) error
 	return s.linkConversation(ctx, conversationID, signupID)
 }
 
+func (s Service) Name() string {
+	return "link-signup-conversation"
+}
+
 func (s Service) signPayload(payload []byte) ([]byte, error) {
 	return signing.Sign(payload, s.signingSecret, crypto.SHA512)
 }

@@ -62,7 +62,7 @@ func (sm *SnapMail) isRequired() bool {
 	return false
 }
 
-func (sm *SnapMail) run(ctx context.Context, signup Signup) error {
+func (sm *SnapMail) run(ctx context.Context, signup *Signup) error {
 	event := signupEvent{
 		EventType: "SESSION_SIGNUP",
 		Payload: Payload{

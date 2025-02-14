@@ -201,7 +201,7 @@ func NewSignupServer() *signupServer {
 			gldbService: gldbService,
 			// Registration tasks:
 			// (executed concurrently)
-			tasks: []Task{
+			tasks: []mutationTask{
 				// posting a WebHook to Greenlight,
 				glSvc,
 				// sending a "Welcome Email",
