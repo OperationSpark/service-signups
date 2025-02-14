@@ -104,6 +104,7 @@ func TestTwilioRun(t *testing.T) {
 		err := tSvc.run(context.Background(), &su)
 		require.NoError(t, err)
 
+		require.NotEmpty(t, su.conversationID)
 	})
 
 }
