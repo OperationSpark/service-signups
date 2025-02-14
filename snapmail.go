@@ -3,12 +3,15 @@ package signup
 import (
 	"bytes"
 	"context"
+	"crypto"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"net/url"
 	"time"
+
+	"github.com/operationspark/service-signup/signing"
 )
 
 type SnapMail struct {
@@ -78,7 +81,7 @@ func (sm *SnapMail) run(ctx context.Context, signup Signup) error {
 		return err
 	}
 
-	signature, err := createSignature(payload, sm.signingSecret)
+	signature, err := signing.Sign(payload, sm.signingSecret, crypto.SHA224)
 	if err != nil {
 		return fmt.Errorf("createSignature: %w", err)
 	}

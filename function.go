@@ -62,6 +62,7 @@ func checkEnvVars(skip bool) error {
 		"MAILGUN_API_KEY",
 		"MONGO_URI",
 		"OS_MESSAGING_SERVICE_URL",
+		"OS_MESSAGING_SIGNING_SECRET",
 		"OS_RENDERING_SERVICE_URL",
 		"SLACK_WEBHOOK_URL",
 		"TWILIO_ACCOUNT_SID",
@@ -165,6 +166,7 @@ func NewSignupServer() *signupServer {
 	twilioConversationsSid := os.Getenv("TWILIO_CONVERSATIONS_SID")
 
 	osMessagingSvcURL := os.Getenv("OS_MESSAGING_SERVICE_URL")
+	osMessagingSigningSecret := os.Getenv("OS_MESSAGING_SIGNING_SECRET")
 
 	twilioSvc := NewTwilioService(twilioServiceOptions{
 		accountSID:                 twilioAcctSID,
@@ -182,6 +184,11 @@ func NewSignupServer() *signupServer {
 	gldbService := mongodb.New(dbName, mongoClient)
 	snapMailURL := os.Getenv("SNAP_MAIL_URL")
 	snapMailSvc := NewSnapMail(snapMailURL, WithSigningSecret(os.Getenv("SIGNING_SECRET")))
+
+	convoLinkSvc := conversations.NewService(
+		conversations.WithMessengerAPIBase(osMessagingSvcURL+"/api/v0"),
+		conversations.WithSigningSecret(osMessagingSigningSecret),
+	)
 
 	registrationService := newSignupService(
 		signupServiceOptions{
@@ -206,7 +213,7 @@ func NewSignupServer() *signupServer {
 				// sending Signup message to SNAP mail application
 				snapMailSvc,
 			},
-			postSignupTasks: []Runner{conversations.Service{}},
+			postSignupTasks: []Runner{convoLinkSvc},
 		},
 	)
 

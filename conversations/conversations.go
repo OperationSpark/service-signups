@@ -3,11 +3,12 @@ package conversations
 import (
 	"bytes"
 	"context"
-	"crypto/hmac"
-	"crypto/sha512"
+	"crypto"
 	"encoding/json"
 	"fmt"
 	"net/http"
+
+	"github.com/operationspark/service-signup/signing"
 )
 
 type Service struct {
@@ -31,7 +32,7 @@ func NewService(opts ...Option) *Service {
 // WithMessengerAPIBase sets the base URL for the Messenger API.
 // Ex:
 //
-//	WithMessengerAPIBase("http://localhost:8080/api")
+//	WithMessengerAPIBase("http://localhost:8080/api/v0")
 func WithMessengerAPIBase(base string) Option {
 	return func(s *Service) {
 		s.messengerAPIBase = base
@@ -50,12 +51,7 @@ func (s Service) Run(ctx context.Context, conversationID, signupID string) error
 }
 
 func (s Service) signPayload(payload []byte) ([]byte, error) {
-	mac := hmac.New(sha512.New, s.signingSecret)
-	_, err := mac.Write(payload)
-	if err != nil {
-		return nil, fmt.Errorf("hmac write: %w", err)
-	}
-	return mac.Sum(nil), nil
+	return signing.Sign(payload, s.signingSecret, crypto.SHA512)
 }
 
 type linkRequest struct {
@@ -82,7 +78,7 @@ func (s Service) linkConversation(ctx context.Context, conversationID string, si
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("x-auth-signature-512", fmt.Sprintf("sha512=%x", signature))
+	req.Header.Set("x-auth-signature-512", string(signature))
 
 	resp, err := s.client.Do(req)
 	if err != nil {
