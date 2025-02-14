@@ -20,7 +20,7 @@ func NewGreenlightService(url, apiKey string) *greenlightService {
 	}
 }
 
-func (g greenlightService) run(ctx context.Context, su Signup) error {
+func (g greenlightService) run(ctx context.Context, su *Signup) error {
 	return g.postWebhook(ctx, su)
 }
 
@@ -33,9 +33,14 @@ func (g greenlightService) name() string {
 	return "greenlight service"
 }
 
+type signupResp struct {
+	Status   string `json:"status"`
+	SignupID string `json:"signupId"`
+}
+
 // PostWebhook sends a webhook to Greenlight (POST /signup).
 // The webhook creates a Info Session Signup record in the Greenlight database.
-func (g greenlightService) postWebhook(ctx context.Context, su Signup) error {
+func (g greenlightService) postWebhook(ctx context.Context, su *Signup) error {
 	reqBody, err := json.Marshal(su)
 	if err != nil {
 		return fmt.Errorf("marshal: %w", err)
@@ -62,5 +67,12 @@ func (g greenlightService) postWebhook(ctx context.Context, su Signup) error {
 	if resp.StatusCode >= 300 {
 		return handleHTTPError(resp)
 	}
+
+	suResp := &signupResp{}
+	if err := json.NewDecoder(resp.Body).Decode(suResp); err != nil {
+		return fmt.Errorf("decode response: %w", err)
+	}
+
+	su.id = &suResp.SignupID
 	return nil
 }

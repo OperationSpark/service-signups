@@ -7,10 +7,11 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestPostWebhook(t *testing.T) {
-
 	t.Run("POSTs a webhook to Greenlight with the signup payload", func(t *testing.T) {
 		apiKey := "test-api-key"
 
@@ -30,20 +31,32 @@ func TestPostWebhook(t *testing.T) {
 		}
 		mockGreenlightSvr := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Sends API Key header
-			assertEqual(t, r.Header.Get("X-Greenlight-Signup-Api-Key"), apiKey)
+			require.Equal(t, apiKey, r.Header.Get("X-Greenlight-Signup-Api-Key"))
 
 			// POSTs correct JSON body
 			var glReq Signup
 			d := json.NewDecoder(r.Body)
 			err := d.Decode(&glReq)
-			assertNilError(t, err)
+			require.NoError(t, err)
 
-			assertDeepEqual(t, glReq, su)
+			require.Equal(t, su, glReq)
+
+			// Responds with a signup ID
+			resp := signupResp{
+				Status:   "success",
+				SignupID: "a-new-signup-id-from-greenlight",
+			}
+
+			w.WriteHeader(http.StatusOK)
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(resp)
 		}))
 
 		glSvc := NewGreenlightService(mockGreenlightSvr.URL, apiKey)
 
-		err := glSvc.postWebhook(context.Background(), su)
-		assertNilError(t, err)
+		err := glSvc.postWebhook(context.Background(), &su)
+		require.NoError(t, err)
+
+		require.Equal(t, "a-new-signup-id-from-greenlight", *su.id)
 	})
 }
