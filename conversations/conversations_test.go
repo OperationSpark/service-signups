@@ -58,7 +58,7 @@ func TestLinkConversation(t *testing.T) {
 				}
 
 				w.WriteHeader(http.StatusOK)
-				w.Write([]byte(`
+				_, _ = w.Write([]byte(`
 { "id": "a-user-id", "image": "DEFAULT_PROFILE_IMAGE", "signupId": "123", "name": "Jean Deaux" }
 `[1:]))
 			})
