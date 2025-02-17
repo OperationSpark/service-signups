@@ -85,7 +85,7 @@ func (sm *SnapMail) run(ctx context.Context, signup *Signup) error {
 		return err
 	}
 
-	signature, err := signing.Sign(payload, sm.signingSecret, crypto.SHA256)
+	signature, err := signing.Sign(payload, sm.signingSecret, crypto.SHA256, signing.EncodingHex)
 	if err != nil {
 		return fmt.Errorf("createSignature: %w", err)
 	}

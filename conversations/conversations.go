@@ -58,7 +58,7 @@ func (s Service) Name() string {
 }
 
 func (s Service) signPayload(payload []byte) ([]byte, error) {
-	return signing.Sign(payload, s.signingSecret, crypto.SHA512)
+	return signing.Sign(payload, s.signingSecret, crypto.SHA512, signing.EncodingBase64)
 }
 
 type linkRequest struct {
