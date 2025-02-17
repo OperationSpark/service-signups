@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
+	"github.com/operationspark/service-signup/conversations"
 	"github.com/operationspark/service-signup/mongodb"
 	"github.com/operationspark/service-signup/notify"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -61,6 +62,7 @@ func checkEnvVars(skip bool) error {
 		"MAILGUN_API_KEY",
 		"MONGO_URI",
 		"OS_MESSAGING_SERVICE_URL",
+		"OS_MESSAGING_SIGNING_SECRET",
 		"OS_RENDERING_SERVICE_URL",
 		"SLACK_WEBHOOK_URL",
 		"TWILIO_ACCOUNT_SID",
@@ -164,6 +166,7 @@ func NewSignupServer() *signupServer {
 	twilioConversationsSid := os.Getenv("TWILIO_CONVERSATIONS_SID")
 
 	osMessagingSvcURL := os.Getenv("OS_MESSAGING_SERVICE_URL")
+	osMessagingSigningSecret := os.Getenv("OS_MESSAGING_SIGNING_SECRET")
 
 	twilioSvc := NewTwilioService(twilioServiceOptions{
 		accountSID:                 twilioAcctSID,
@@ -182,6 +185,11 @@ func NewSignupServer() *signupServer {
 	snapMailURL := os.Getenv("SNAP_MAIL_URL")
 	snapMailSvc := NewSnapMail(snapMailURL, WithSigningSecret(os.Getenv("SIGNING_SECRET")))
 
+	convoLinkSvc := conversations.NewService(
+		conversations.WithMessengerAPIBase(osMessagingSvcURL+"/api/v0"),
+		conversations.WithSigningSecret(osMessagingSigningSecret),
+	)
+
 	registrationService := newSignupService(
 		signupServiceOptions{
 			meetings: map[int]string{
@@ -193,7 +201,7 @@ func NewSignupServer() *signupServer {
 			gldbService: gldbService,
 			// Registration tasks:
 			// (executed concurrently)
-			tasks: []Task{
+			tasks: []mutationTask{
 				// posting a WebHook to Greenlight,
 				glSvc,
 				// sending a "Welcome Email",
@@ -205,6 +213,7 @@ func NewSignupServer() *signupServer {
 				// sending Signup message to SNAP mail application
 				snapMailSvc,
 			},
+			postSignupTasks: []Runner{convoLinkSvc},
 		},
 	)
 

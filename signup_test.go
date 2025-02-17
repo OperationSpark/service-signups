@@ -32,9 +32,9 @@ func (m *MockMailgunService) isRequired() bool {
 	return true
 }
 
-func (ms *MockMailgunService) run(ctx context.Context, su Signup) error {
+func (ms *MockMailgunService) run(ctx context.Context, su *Signup) error {
 	ms.called = true
-	return ms.WelcomeFunc(ctx, su)
+	return ms.WelcomeFunc(ctx, *su)
 }
 
 func (ms *MockMailgunService) name() string {
@@ -53,6 +53,10 @@ func (*MockZoomService) name() string {
 	return "mock zoom service"
 }
 
+func (*MockZoomService) isRequired() bool {
+	return true
+}
+
 type MockGreenlightDBService struct{}
 
 func (m *MockGreenlightDBService) CreateUserJoinCode(ctx context.Context, sessionID string) (string, string, error) {
@@ -61,7 +65,7 @@ func (m *MockGreenlightDBService) CreateUserJoinCode(ctx context.Context, sessio
 
 type notRequiredTask struct{}
 
-func (n notRequiredTask) run(ctx context.Context, su Signup) error {
+func (n notRequiredTask) run(ctx context.Context, su *Signup) error {
 	return fmt.Errorf("non-required task failed")
 }
 
@@ -92,7 +96,7 @@ func TestRegister(t *testing.T) {
 		}
 
 		signupService := newSignupService(signupServiceOptions{
-			tasks:       []Task{mailService},
+			tasks:       []mutationTask{mailService},
 			zoomService: &MockZoomService{},
 			// zoom meeting id for 12 central
 			meetings:    map[int]string{12: "983782"},
@@ -129,7 +133,7 @@ func TestRegister(t *testing.T) {
 		zoomService := &MockZoomService{}
 
 		signupService := newSignupService(signupServiceOptions{
-			tasks:       []Task{mailService},
+			tasks:       []mutationTask{mailService},
 			zoomService: zoomService,
 			gldbService: &MockGreenlightDBService{},
 		})
@@ -156,7 +160,7 @@ func TestRegister(t *testing.T) {
 		}
 
 		signupService := newSignupService(signupServiceOptions{
-			tasks:       []Task{notRequiredTask{}},
+			tasks:       []mutationTask{notRequiredTask{}},
 			zoomService: &MockZoomService{},
 		})
 
@@ -781,7 +785,7 @@ func TestSnapMail(t *testing.T) {
 
 		signingKey := "testkey"
 
-		err := NewSnapMail(mockSnapServer.URL, WithSigningSecret(signingKey)).run(context.Background(), su)
+		err := NewSnapMail(mockSnapServer.URL, WithSigningSecret(signingKey)).run(context.Background(), &su)
 
 		assertNilError(t, err)
 

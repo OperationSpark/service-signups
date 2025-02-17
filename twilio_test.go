@@ -101,9 +101,10 @@ func TestTwilioRun(t *testing.T) {
 			StartDateTime: mustMakeTime(t, time.RFC3339, "2022-10-17T22:30:00.000Z"),
 		}
 
-		err := tSvc.run(context.Background(), su)
+		err := tSvc.run(context.Background(), &su)
 		require.NoError(t, err)
 
+		require.NotEmpty(t, su.conversationID)
 	})
 
 }

@@ -47,6 +47,10 @@ type (
 
 		// URL linking the user to an post-signup information page.
 		ShortLink string
+		// Unique identifier for the signup record. Created by the Greenlight service.
+		id *string
+		// Unique identifier for Twilio SMS messaging conversation. Set by the Twilio service.
+		conversationID *string
 		// A user specific join code for a Greenlight session.
 		userJoinCode   string
 		zoomMeetingID  int64
@@ -77,10 +81,11 @@ type (
 	SignupService struct {
 		// Key-value map with the Central Time meeting start hour (int) as the keys, and Zoom Meeting ID as the values.
 		// Ex: {17: "86935241734"} denotes meeting with ID, "86935241734", starts at 5pm central.
-		meetings    map[int]string
-		tasks       []Task
-		zoomService mutationTask
-		gldbService codeCreator
+		meetings        map[int]string // Map of Zoom meeting IDs to Central Time meeting start hours.
+		tasks           []mutationTask // List of tasks to run on submission of a signup.
+		postSignupTasks []Runner       // List of tasks to run after a successful signup.
+		zoomService     mutationTask   // Zoom service.
+		gldbService     codeCreator    // Greenlight service.
 	}
 
 	// codeCreator creates a Session join code for a user.
@@ -98,16 +103,25 @@ type (
 		isRequired() bool
 	}
 
+	Runner interface {
+		Run(ctx context.Context, signupID string, conversationID string) error
+		// Name Returns the name of the task.
+		Name() string
+	}
+
 	mutationTask interface {
 		run(ctx context.Context, signup *Signup) error
 		name() string
+		// IsRequired determines if the signup request fails when this task fails. If the task is not required and fails, the signup can still succeed.
+		isRequired() bool
 	}
 
 	signupServiceOptions struct {
 		// Key-value map with the Central Time meeting start hour (int) as the keys, and Zoom Meeting ID as the values.
 		// Ex: {17: "86935241734"} denotes meeting with ID, "86935241734", starts at 5pm central.
-		meetings map[int]string
-		tasks    []Task
+		meetings        map[int]string
+		tasks           []mutationTask
+		postSignupTasks []Runner
 		// The Zoom Service needs to mutate the Signup struct with a meeting join URL. Due to this mutation, we need to pull the zoom service out of the task flow and use it before running the tasks.
 		zoomService mutationTask
 		gldbService codeCreator
@@ -321,10 +335,11 @@ func (su Signup) String() string {
 
 func newSignupService(o signupServiceOptions) *SignupService {
 	return &SignupService{
-		meetings:    o.meetings,
-		tasks:       o.tasks,
-		zoomService: o.zoomService,
-		gldbService: o.gldbService,
+		meetings:        o.meetings,
+		tasks:           o.tasks,
+		zoomService:     o.zoomService,
+		gldbService:     o.gldbService,
+		postSignupTasks: o.postSignupTasks,
 	}
 }
 
@@ -369,9 +384,9 @@ func (sc *SignupService) register(ctx context.Context, su Signup) (Signup, error
 	// Run each task in a go routine for concurrent execution
 	g, ctx := errgroup.WithContext(ctx)
 	for _, task := range sc.tasks {
-		func(t Task) {
+		func(t mutationTask) {
 			g.Go(func() error {
-				err := t.run(ctx, su)
+				err := t.run(ctx, &su)
 				if err != nil {
 					if t.isRequired() {
 						return fmt.Errorf("task failed: %q: %w", t.name(), err)
@@ -385,7 +400,25 @@ func (sc *SignupService) register(ctx context.Context, su Signup) (Signup, error
 	if err := g.Wait(); err != nil {
 		return su, err
 	}
+
+	// Run the post-signup tasks in a go routine
+	// so we can respond to the user before the tasks are complete.
+	go sc.runPostSignupTasks(ctx, su)
 	return su, nil
+}
+
+func (sc *SignupService) runPostSignupTasks(ctx context.Context, su Signup) {
+	for _, task := range sc.postSignupTasks {
+		if ctx.Err() != nil {
+			return
+		}
+
+		err := task.Run(ctx, *su.id, *su.conversationID)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "post-signup task %q failed: %v", task.Name(), err)
+			continue
+		}
+	}
 }
 
 // AttachZoomMeetingID sets the Zoom meeting ID on the Signup based on the Signup's StartDateTime and the SignService's Zoom sessions.
