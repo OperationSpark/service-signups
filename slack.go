@@ -17,6 +17,9 @@ type slackService struct {
 }
 
 func (sl slackService) run(ctx context.Context, su *Signup) error {
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 	return sendWebhook(ctx, sl.webhookURL, message{Text: su.Summary()})
 }
 

@@ -63,6 +63,10 @@ func (sm *SnapMail) isRequired() bool {
 }
 
 func (sm *SnapMail) run(ctx context.Context, signup *Signup) error {
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
 	event := signupEvent{
 		EventType: "SESSION_SIGNUP",
 		Payload: Payload{

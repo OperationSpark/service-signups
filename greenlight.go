@@ -21,6 +21,9 @@ func NewGreenlightService(url, apiKey string) *greenlightService {
 }
 
 func (g greenlightService) run(ctx context.Context, su *Signup) error {
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 	return g.postWebhook(ctx, su)
 }
 

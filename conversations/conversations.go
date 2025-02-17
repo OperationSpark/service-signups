@@ -47,6 +47,9 @@ func WithSigningSecret(token string) Option {
 }
 
 func (s Service) Run(ctx context.Context, conversationID, signupID string) error {
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 	return s.linkConversation(ctx, conversationID, signupID)
 }
 

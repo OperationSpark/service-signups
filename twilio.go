@@ -102,6 +102,10 @@ func (s smsService) isRequired() bool {
 //
 // Note: Twilio has a free Link Shortening service, but it is only available with the Messaging API, not Conversations.
 func (t *smsService) run(ctx context.Context, su *Signup) error {
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
 	if !su.SMSOptIn {
 		fmt.Printf("User opted-out from SMS messages: %s\n", su.String())
 		return nil

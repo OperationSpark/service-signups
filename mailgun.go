@@ -35,6 +35,9 @@ func (m MailgunService) isRequired() bool {
 }
 
 func (m MailgunService) run(ctx context.Context, su *Signup) error {
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
 	return m.sendWelcome(ctx, *su)
 }
 
