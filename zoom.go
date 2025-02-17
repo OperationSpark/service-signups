@@ -80,6 +80,10 @@ func (z *zoomService) name() string {
 	return "zoom service"
 }
 
+func (z *zoomService) isRequired() bool {
+	return true
+}
+
 // RegisterUser creates and submits a user's registration to a meeting. The specific meeting is decided from the Signup's startDateTime.
 func (z *zoomService) registerUser(ctx context.Context, su *Signup) error {
 	// Authenticate client

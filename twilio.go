@@ -101,7 +101,11 @@ func (s smsService) isRequired() bool {
 // The confirmation SMS contains a link that when clicked generates a custom page containing information on the upcoming Info Session. This signup-specific link is shortened before sent.
 //
 // Note: Twilio has a free Link Shortening service, but it is only available with the Messaging API, not Conversations.
-func (t *smsService) run(ctx context.Context, su Signup) error {
+func (t *smsService) run(ctx context.Context, su *Signup) error {
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
 	if !su.SMSOptIn {
 		fmt.Printf("User opted-out from SMS messages: %s\n", su.String())
 		return nil
@@ -157,6 +161,10 @@ func (t *smsService) run(ctx context.Context, su Signup) error {
 		fmt.Fprintf(os.Stderr, "sendConvoWebhook (messenger API): %v", err)
 	}
 	// Carry on even if the Messenger API webhook fails
+
+	// Set the conversation ID on the signup record
+	su.conversationID = &convoId
+
 	return nil
 }
 
