@@ -74,6 +74,9 @@ func (s Service) linkConversation(ctx context.Context, conversationID string, si
 	}
 
 	endpoint := fmt.Sprintf("%s/conversations/%s/link", s.messengerAPIBase, conversationID)
+	fmt.Println("Link conversations endpoint:", endpoint)
+	fmt.Println("Link conversations conversationID:", conversationID)
+	fmt.Println("Link conversations signupID:", signupID)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(body))
 	if err != nil {
 		return fmt.Errorf("create link request: %w", err)
