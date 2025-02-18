@@ -382,9 +382,8 @@ func (s *SignupService) register(ctx context.Context, su Signup) (Signup, error)
 
 	su.ShortLink = shortLink
 
-	// Run each task in a go routine for concurrent execution
-	// Creating a new context because the errgroup will cancel the context when
-	// Wait() is returns.
+	// Creating a new context because the errgroup will cancel the context when Wait() is returned,
+	// even with a nil error.
 	var cancel context.CancelCauseFunc
 	ctx, cancel = context.WithCancelCause(ctx)
 	g, gCtx := errgroup.WithContext(ctx)
