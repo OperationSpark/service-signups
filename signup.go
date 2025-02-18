@@ -382,11 +382,15 @@ func (s *SignupService) register(ctx context.Context, su Signup) (Signup, error)
 	su.ShortLink = shortLink
 
 	// Run each task in a go routine for concurrent execution
-	g, ctx := errgroup.WithContext(ctx)
+	// Creating a new context because the errgroup will cancel the context when
+	// Wait() is returns.
+	var cancel context.CancelCauseFunc
+	ctx, cancel = context.WithCancelCause(ctx)
+	g, gCtx := errgroup.WithContext(ctx)
 	for _, task := range s.tasks {
 		func(t mutationTask) {
 			g.Go(func() error {
-				err := t.run(ctx, &su)
+				err := t.run(gCtx, &su)
 				if err != nil {
 					if t.isRequired() {
 						return fmt.Errorf("task failed: %q: %w", t.name(), err)
@@ -398,12 +402,14 @@ func (s *SignupService) register(ctx context.Context, su Signup) (Signup, error)
 		}(task)
 	}
 	if err := g.Wait(); err != nil {
+		cancel(err)
 		return su, err
 	}
 
 	// Run the post-signup tasks in a go routine
 	// so we can respond to the user before the tasks are complete.
 	s.runPostSignupTasks(ctx, su)
+	cancel(nil)
 	return su, nil
 }
 
