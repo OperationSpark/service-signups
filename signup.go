@@ -104,7 +104,7 @@ type (
 	}
 
 	Runner interface {
-		Run(ctx context.Context, signupID string, conversationID string) error
+		Run(ctx context.Context, conversationID, signupID string) error
 		// Name Returns the name of the task.
 		Name() string
 	}
@@ -421,7 +421,7 @@ func (s *SignupService) runPostSignupTasks(ctx context.Context, su Signup) {
 			return
 		}
 
-		err := task.Run(ctx, *su.id, *su.conversationID)
+		err := task.Run(ctx, *su.conversationID, *su.id)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "post-signup task %q failed: %v", task.Name(), err)
 			continue
