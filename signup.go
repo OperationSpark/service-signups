@@ -425,6 +425,11 @@ func (s *SignupService) runPostSignupTasks(ctx context.Context, su Signup) {
 			fmt.Fprintf(os.Stderr, "context error: %v", ctx.Err())
 			return
 		}
+		if su.conversationID == nil || su.id == nil {
+			fmt.Fprintf(os.Stderr, "conversationID (%v) or signup ID (%v) is nil\n", su.conversationID, su.id)
+			return
+		}
+
 		fmt.Printf("%+v\n", su)
 		err := task.Run(ctx, *su.conversationID, *su.id)
 		if err != nil {
