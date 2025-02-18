@@ -414,13 +414,17 @@ func (s *SignupService) register(ctx context.Context, su Signup) (Signup, error)
 }
 
 func (s *SignupService) runPostSignupTasks(ctx context.Context, su Signup) {
+	if !su.SMSOptIn {
+		fmt.Println("SMS Opt-in not selected. Skipping post-signup tasks.")
+		return
+	}
+
 	fmt.Printf("Running post-signup %d tasks", len(s.postSignupTasks))
 	for _, task := range s.postSignupTasks {
 		if ctx.Err() != nil {
 			fmt.Fprintf(os.Stderr, "context error: %v", ctx.Err())
 			return
 		}
-
 		err := task.Run(ctx, *su.conversationID, *su.id)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "post-signup task %q failed: %v", task.Name(), err)
