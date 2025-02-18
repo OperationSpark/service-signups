@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -406,37 +407,34 @@ func (s *SignupService) register(ctx context.Context, su Signup) (Signup, error)
 		return su, err
 	}
 
-	// Run the post-signup tasks in a go routine
-	// so we can respond to the user before the tasks are complete.
-	s.runPostSignupTasks(ctx, su)
+	if err := s.runPostSignupTasks(ctx, su); err != nil {
+		fmt.Fprintf(os.Stderr, "post-signup tasks failed: %v\n", err)
+		// Don't return early. Continue with the signup process.
+	}
 	cancel(nil)
 	return su, nil
 }
 
-func (s *SignupService) runPostSignupTasks(ctx context.Context, su Signup) {
+func (s *SignupService) runPostSignupTasks(ctx context.Context, su Signup) error {
 	if !su.SMSOptIn {
-		fmt.Println("SMS Opt-in not selected. Skipping post-signup tasks.")
-		return
+		return errors.New("user opt-out")
 	}
 
 	fmt.Printf("Running post-signup %d tasks", len(s.postSignupTasks))
 	for _, task := range s.postSignupTasks {
 		if ctx.Err() != nil {
-			fmt.Fprintf(os.Stderr, "context error: %v", ctx.Err())
-			return
+			return ctx.Err()
 		}
 		if su.conversationID == nil || su.id == nil {
-			fmt.Fprintf(os.Stderr, "conversationID (%v) or signup ID (%v) is nil\n", su.conversationID, su.id)
-			return
+			return fmt.Errorf("conversationID (%v) or signup ID (%v) is nil", su.conversationID, su.id)
 		}
 
-		fmt.Printf("%+v\n", su)
 		err := task.Run(ctx, *su.conversationID, *su.id)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "post-signup task %q failed: %v", task.Name(), err)
-			continue
+			return fmt.Errorf("task %q: %v", task.Name(), err)
 		}
 	}
+	return nil
 }
 
 // AttachZoomMeetingID sets the Zoom meeting ID on the Signup based on the Signup's StartDateTime and the SignService's Zoom sessions.
