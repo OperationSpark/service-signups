@@ -403,7 +403,7 @@ func (sc *SignupService) register(ctx context.Context, su Signup) (Signup, error
 
 	// Run the post-signup tasks in a go routine
 	// so we can respond to the user before the tasks are complete.
-	go sc.runPostSignupTasks(ctx, su)
+	sc.runPostSignupTasks(ctx, su)
 	return su, nil
 }
 
