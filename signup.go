@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -104,7 +105,7 @@ type (
 	}
 
 	Runner interface {
-		Run(ctx context.Context, signupID string, conversationID string) error
+		Run(ctx context.Context, conversationID, signupID string) error
 		// Name Returns the name of the task.
 		Name() string
 	}
@@ -344,19 +345,19 @@ func newSignupService(o signupServiceOptions) *SignupService {
 }
 
 // Register concurrently executes a list of tasks. Completion of tasks are not dependent on each other.
-func (sc *SignupService) register(ctx context.Context, su Signup) (Signup, error) {
+func (s *SignupService) register(ctx context.Context, su Signup) (Signup, error) {
 	// TODO: Create specific errors for each handler
-	err := sc.attachZoomMeetingID(&su)
+	err := s.attachZoomMeetingID(&su)
 	if err != nil {
 		return su, fmt.Errorf("attachZoomMeetingID: %w", err)
 	}
-	err = sc.zoomService.run(ctx, &su)
+	err = s.zoomService.run(ctx, &su)
 	if err != nil {
 		return su, fmt.Errorf("zoomService.run: %w", err)
 	}
 
 	if su.SessionID != "" {
-		joinCodeID, sessionJoinCode, err := sc.gldbService.CreateUserJoinCode(ctx, su.SessionID)
+		joinCodeID, sessionJoinCode, err := s.gldbService.CreateUserJoinCode(ctx, su.SessionID)
 		if err != nil {
 			return su, fmt.Errorf("userJoinCode Create: %w", err)
 		}
@@ -381,12 +382,15 @@ func (sc *SignupService) register(ctx context.Context, su Signup) (Signup, error
 
 	su.ShortLink = shortLink
 
-	// Run each task in a go routine for concurrent execution
-	g, ctx := errgroup.WithContext(ctx)
-	for _, task := range sc.tasks {
+	// Creating a new context because the errgroup will cancel the context when Wait() is returned,
+	// even with a nil error.
+	var cancel context.CancelCauseFunc
+	ctx, cancel = context.WithCancelCause(ctx)
+	g, gCtx := errgroup.WithContext(ctx)
+	for _, task := range s.tasks {
 		func(t mutationTask) {
 			g.Go(func() error {
-				err := t.run(ctx, &su)
+				err := t.run(gCtx, &su)
 				if err != nil {
 					if t.isRequired() {
 						return fmt.Errorf("task failed: %q: %w", t.name(), err)
@@ -398,27 +402,38 @@ func (sc *SignupService) register(ctx context.Context, su Signup) (Signup, error
 		}(task)
 	}
 	if err := g.Wait(); err != nil {
+		cancel(err)
 		return su, err
 	}
 
-	// Run the post-signup tasks in a go routine
-	// so we can respond to the user before the tasks are complete.
-	go sc.runPostSignupTasks(ctx, su)
+	if err := s.runPostSignupTasks(ctx, su); err != nil {
+		fmt.Fprintf(os.Stderr, "post-signup tasks failed: %v\n", err)
+		// Don't return early. Continue with the signup process.
+	}
+	cancel(nil)
 	return su, nil
 }
 
-func (sc *SignupService) runPostSignupTasks(ctx context.Context, su Signup) {
-	for _, task := range sc.postSignupTasks {
+func (s *SignupService) runPostSignupTasks(ctx context.Context, su Signup) error {
+	if !su.SMSOptIn {
+		return errors.New("user opt-out")
+	}
+
+	fmt.Printf("Running post-signup %d tasks", len(s.postSignupTasks))
+	for _, task := range s.postSignupTasks {
 		if ctx.Err() != nil {
-			return
+			return ctx.Err()
+		}
+		if su.conversationID == nil || su.id == nil {
+			return fmt.Errorf("conversationID (%v) or signup ID (%v) is nil", su.conversationID, su.id)
 		}
 
-		err := task.Run(ctx, *su.id, *su.conversationID)
+		err := task.Run(ctx, *su.conversationID, *su.id)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "post-signup task %q failed: %v", task.Name(), err)
-			continue
+			return fmt.Errorf("task %q: %v", task.Name(), err)
 		}
 	}
+	return nil
 }
 
 // AttachZoomMeetingID sets the Zoom meeting ID on the Signup based on the Signup's StartDateTime and the SignService's Zoom sessions.
