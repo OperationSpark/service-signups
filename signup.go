@@ -344,19 +344,19 @@ func newSignupService(o signupServiceOptions) *SignupService {
 }
 
 // Register concurrently executes a list of tasks. Completion of tasks are not dependent on each other.
-func (sc *SignupService) register(ctx context.Context, su Signup) (Signup, error) {
+func (s *SignupService) register(ctx context.Context, su Signup) (Signup, error) {
 	// TODO: Create specific errors for each handler
-	err := sc.attachZoomMeetingID(&su)
+	err := s.attachZoomMeetingID(&su)
 	if err != nil {
 		return su, fmt.Errorf("attachZoomMeetingID: %w", err)
 	}
-	err = sc.zoomService.run(ctx, &su)
+	err = s.zoomService.run(ctx, &su)
 	if err != nil {
 		return su, fmt.Errorf("zoomService.run: %w", err)
 	}
 
 	if su.SessionID != "" {
-		joinCodeID, sessionJoinCode, err := sc.gldbService.CreateUserJoinCode(ctx, su.SessionID)
+		joinCodeID, sessionJoinCode, err := s.gldbService.CreateUserJoinCode(ctx, su.SessionID)
 		if err != nil {
 			return su, fmt.Errorf("userJoinCode Create: %w", err)
 		}
@@ -383,7 +383,7 @@ func (sc *SignupService) register(ctx context.Context, su Signup) (Signup, error
 
 	// Run each task in a go routine for concurrent execution
 	g, ctx := errgroup.WithContext(ctx)
-	for _, task := range sc.tasks {
+	for _, task := range s.tasks {
 		func(t mutationTask) {
 			g.Go(func() error {
 				err := t.run(ctx, &su)
@@ -403,13 +403,15 @@ func (sc *SignupService) register(ctx context.Context, su Signup) (Signup, error
 
 	// Run the post-signup tasks in a go routine
 	// so we can respond to the user before the tasks are complete.
-	sc.runPostSignupTasks(ctx, su)
+	s.runPostSignupTasks(ctx, su)
 	return su, nil
 }
 
-func (sc *SignupService) runPostSignupTasks(ctx context.Context, su Signup) {
-	for _, task := range sc.postSignupTasks {
+func (s *SignupService) runPostSignupTasks(ctx context.Context, su Signup) {
+	fmt.Printf("Running post-signup %d tasks", len(s.postSignupTasks))
+	for _, task := range s.postSignupTasks {
 		if ctx.Err() != nil {
+			fmt.Fprintf(os.Stderr, "context error: %v", ctx.Err())
 			return
 		}
 
