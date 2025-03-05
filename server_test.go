@@ -37,7 +37,10 @@ func TestHandleSignup(t *testing.T) {
 			},
 		}
 
-		server := &signupServer{service}
+		server := &signupServer{
+			service: service,
+			logger:  nil,
+		}
 
 		req := httptest.NewRequest(http.MethodPost, "/", signupToJson(t, signup))
 		req.Header.Set("Content-Type", "application/json")
@@ -65,7 +68,7 @@ func TestHandleSignup(t *testing.T) {
 			},
 		}
 
-		server := &signupServer{service}
+		server := &signupServer{service: service, logger: nil}
 
 		req := httptest.NewRequest(http.MethodPost, "/", signupToJson(t, signup))
 		req.Header.Set("Content-Type", "application/json")

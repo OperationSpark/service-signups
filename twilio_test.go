@@ -128,7 +128,7 @@ func TestInvalidNumErr(t *testing.T) {
 			},
 		}
 
-		server := &signupServer{service}
+		server := &signupServer{service: service, logger: nil}
 
 		req := httptest.NewRequest(http.MethodPost, "/", signupToJson(t, signup))
 		req.Header.Set("Content-Type", "application/json")
@@ -139,7 +139,7 @@ func TestInvalidNumErr(t *testing.T) {
 		// check that the response is a 400
 		require.Equal(t, http.StatusBadRequest, res.Code)
 		// check that the response body is the expected error
-		var errResp errResp
+		var errResp badReqBodyResp
 
 		err := json.Unmarshal([]byte(res.Body.Bytes()), &errResp)
 		require.NoError(t, err)
