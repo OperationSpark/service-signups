@@ -3,6 +3,7 @@ package signup
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"time"
 
@@ -34,7 +35,7 @@ func (m MailgunService) isRequired() bool {
 	return true
 }
 
-func (m MailgunService) run(ctx context.Context, su *Signup) error {
+func (m MailgunService) run(ctx context.Context, su *Signup, logger *slog.Logger) error {
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}

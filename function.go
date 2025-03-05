@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -190,6 +191,8 @@ func NewSignupServer() *signupServer {
 		conversations.WithSigningSecret(osMessagingSigningSecret),
 	)
 
+	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
+
 	registrationService := newSignupService(
 		signupServiceOptions{
 			meetings: map[int]string{
@@ -214,8 +217,12 @@ func NewSignupServer() *signupServer {
 				snapMailSvc,
 			},
 			postSignupTasks: []Runner{convoLinkSvc},
+			logger:          logger,
 		},
 	)
 
-	return &signupServer{registrationService}
+	return &signupServer{
+		service: registrationService,
+		logger:  logger,
+	}
 }
