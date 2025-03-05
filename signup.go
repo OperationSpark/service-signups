@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"strconv"
 	"strings"
@@ -79,6 +80,11 @@ type (
 		GreenlightEnrollURL  string `json:"greenlightEnrollUrl"`  // Greenlight auto-enrollment URL.
 	}
 
+	logger interface {
+		logError(ctx context.Context, err error)
+		logInfo(ctx context.Context, msg string, args ...any)
+	}
+
 	SignupService struct {
 		// Key-value map with the Central Time meeting start hour (int) as the keys, and Zoom Meeting ID as the values.
 		// Ex: {17: "86935241734"} denotes meeting with ID, "86935241734", starts at 5pm central.
@@ -87,6 +93,7 @@ type (
 		postSignupTasks []Runner       // List of tasks to run after a successful signup.
 		zoomService     mutationTask   // Zoom service.
 		gldbService     codeCreator    // Greenlight service.
+		logger          logger
 	}
 
 	// codeCreator creates a Session join code for a user.
@@ -111,7 +118,7 @@ type (
 	}
 
 	mutationTask interface {
-		run(ctx context.Context, signup *Signup) error
+		run(ctx context.Context, signup *Signup, logger logger) error
 		name() string
 		// IsRequired determines if the signup request fails when this task fails. If the task is not required and fails, the signup can still succeed.
 		isRequired() bool
@@ -351,7 +358,7 @@ func (s *SignupService) register(ctx context.Context, su Signup) (Signup, error)
 	if err != nil {
 		return su, fmt.Errorf("attachZoomMeetingID: %w", err)
 	}
-	err = s.zoomService.run(ctx, &su)
+	err = s.zoomService.run(ctx, &su, s.logger)
 	if err != nil {
 		return su, fmt.Errorf("zoomService.run: %w", err)
 	}
@@ -375,7 +382,7 @@ func (s *SignupService) register(ctx context.Context, su Signup) (Signup, error)
 	shorty := NewURLShortener(ShortenerOpts{apiKey: os.Getenv("URL_SHORTENER_API_KEY")})
 	shortLink, err := shorty.ShortenURL(ctx, msgngURL)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "shortenURL ERROR: %v", err)
+		s.logger.logError(ctx, fmt.Errorf("shortenURL", err))
 		// Don't early return. ShortenURL returns the original URL if there is a failure
 		// Fallback to long URL if shortener fails
 	}
@@ -390,12 +397,15 @@ func (s *SignupService) register(ctx context.Context, su Signup) (Signup, error)
 	for _, task := range s.tasks {
 		func(t mutationTask) {
 			g.Go(func() error {
-				err := t.run(gCtx, &su)
+				err := t.run(gCtx, &su, s.logger)
 				if err != nil {
 					if t.isRequired() {
 						return fmt.Errorf("task failed: %q: %w", t.name(), err)
 					}
-					fmt.Printf("task failed: %q: %v", t.name(), err)
+					s.logger.logInfo(ctx,
+						"non-mandatory task failed",
+						slog.String("task", t.name()),
+						slog.String("error", err.Error()))
 				}
 				return nil
 			})
@@ -407,7 +417,7 @@ func (s *SignupService) register(ctx context.Context, su Signup) (Signup, error)
 	}
 
 	if err := s.runPostSignupTasks(ctx, su); err != nil {
-		fmt.Fprintf(os.Stderr, "post-signup tasks failed: %v\n", err)
+		s.logger.logError(ctx, fmt.Errorf("required post-signup tasks failed: %w", err))
 		// Don't return early. Continue with the signup process.
 	}
 	cancel(nil)
@@ -419,7 +429,11 @@ func (s *SignupService) runPostSignupTasks(ctx context.Context, su Signup) error
 		return errors.New("user opt-out")
 	}
 
-	fmt.Printf("Running post-signup %d tasks", len(s.postSignupTasks))
+	s.logger.logInfo(
+		ctx,
+		"Running post-signup tasks",
+		slog.Int("numTasks", len(s.postSignupTasks)))
+
 	for _, task := range s.postSignupTasks {
 		if ctx.Err() != nil {
 			return ctx.Err()

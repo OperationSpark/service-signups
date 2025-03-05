@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 )
@@ -49,13 +50,14 @@ func handleHTTPError(resp *http.Response) error {
 }
 
 func (ss *signupServer) logError(ctx context.Context, r *http.Request, err error) {
-	if ctx.Err() != nil {
-		return
-	}
 	method := r.Method
 	url := r.URL.String()
 
-	ss.logger.Error(err.Error(), "method", method, "url", url)
+	ss.logger.ErrorContext(
+		ctx,
+		err.Error(),
+		slog.String("method", method),
+		slog.String("url", url))
 }
 
 // errorResponse writes an error response to the client. The msg is sent as the error message in the response body,

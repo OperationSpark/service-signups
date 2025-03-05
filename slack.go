@@ -16,7 +16,7 @@ type slackService struct {
 	webhookURL string
 }
 
-func (sl slackService) run(ctx context.Context, su *Signup) error {
+func (sl slackService) run(ctx context.Context, su *Signup, logger logger) error {
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}

@@ -62,7 +62,7 @@ func (sm *SnapMail) isRequired() bool {
 	return false
 }
 
-func (sm *SnapMail) run(ctx context.Context, signup *Signup) error {
+func (sm *SnapMail) run(ctx context.Context, signup *Signup, logger logger) error {
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}

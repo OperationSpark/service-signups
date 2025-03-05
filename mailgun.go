@@ -34,7 +34,7 @@ func (m MailgunService) isRequired() bool {
 	return true
 }
 
-func (m MailgunService) run(ctx context.Context, su *Signup) error {
+func (m MailgunService) run(ctx context.Context, su *Signup, logger logger) error {
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}

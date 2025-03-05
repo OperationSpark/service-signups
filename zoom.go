@@ -68,7 +68,7 @@ func NewZoomService(o ZoomOptions) *zoomService {
 	}
 }
 
-func (z *zoomService) run(ctx context.Context, su *Signup) error {
+func (z *zoomService) run(ctx context.Context, su *Signup, logger logger) error {
 	// Do nothing if the user has not signed up for a specific session
 	if su.StartDateTime.IsZero() {
 		return nil

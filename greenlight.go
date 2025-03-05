@@ -20,7 +20,7 @@ func NewGreenlightService(url, apiKey string) *greenlightService {
 	}
 }
 
-func (g greenlightService) run(ctx context.Context, su *Signup) error {
+func (g greenlightService) run(ctx context.Context, su *Signup, logger logger) error {
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}
