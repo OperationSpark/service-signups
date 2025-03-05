@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -217,5 +218,10 @@ func NewSignupServer() *signupServer {
 		},
 	)
 
-	return &signupServer{registrationService}
+	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
+
+	return &signupServer{
+		service: registrationService,
+		logger:  logger,
+	}
 }

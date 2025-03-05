@@ -1,15 +1,22 @@
 package signup
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
 )
 
-type InvalidFieldError struct {
-	Field string
-}
+type (
+	errorResponse struct {
+		Error any `json:"error"`
+	}
+
+	InvalidFieldError struct {
+		Field string
+	}
+)
 
 func (e *InvalidFieldError) Error() string {
 	return fmt.Sprintf("invalid value for field: '%s'", e.Field)
@@ -39,4 +46,37 @@ func handleHTTPError(resp *http.Response) error {
 	}
 
 	return fmt.Errorf("%s\n%s", errMsg, body)
+}
+
+func (ss *signupServer) logError(ctx context.Context, r *http.Request, err error) {
+	if ctx.Err() != nil {
+		return
+	}
+	method := r.Method
+	url := r.URL.String()
+
+	ss.logger.Error(err.Error(), "method", method, "url", url)
+}
+
+// errorResponse writes an error response to the client. The msg is sent as the error message in the response body,
+// so it should be a human-readable message and not leak any sensitive information.
+func (ss *signupServer) errorResponse(w http.ResponseWriter, r *http.Request, status int, msg any) {
+	respData := errorResponse{Error: msg}
+	err := ss.writeJSON(w, status, respData)
+	if err != nil {
+		ss.logError(r.Context(), r, err)
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+}
+
+// serverErrorResponse logs the error and sends a generic 500 Internal Server Error response to the client.
+func (ss *signupServer) serverErrorResponse(w http.ResponseWriter, r *http.Request, err error) {
+	ss.logError(r.Context(), r, err)
+	msg := "internal server error"
+	ss.errorResponse(w, r, http.StatusInternalServerError, msg)
+}
+
+func (ss *signupServer) badRequestResponse(w http.ResponseWriter, r *http.Request, msg string) {
+	ss.logError(r.Context(), r, fmt.Errorf("bad request: %s", msg))
+	ss.errorResponse(w, r, http.StatusBadRequest, msg)
 }
