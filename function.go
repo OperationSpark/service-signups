@@ -191,6 +191,8 @@ func NewSignupServer() *signupServer {
 		conversations.WithSigningSecret(osMessagingSigningSecret),
 	)
 
+	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
+
 	registrationService := newSignupService(
 		signupServiceOptions{
 			meetings: map[int]string{
@@ -215,10 +217,9 @@ func NewSignupServer() *signupServer {
 				snapMailSvc,
 			},
 			postSignupTasks: []Runner{convoLinkSvc},
+			logger:          logger,
 		},
 	)
-
-	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
 
 	return &signupServer{
 		service: registrationService,

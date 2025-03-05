@@ -15,7 +15,7 @@ import (
 )
 
 type registerer interface {
-	register(ctx context.Context, signup Signup) (Signup, error)
+	register(ctx context.Context, signup Signup, logger *slog.Logger) (Signup, error)
 }
 
 type signupServer struct {
@@ -60,7 +60,32 @@ func (ss *signupServer) HandleSignUp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	postRegistration, err := ss.service.register(r.Context(), su)
+
+	var signupID string
+	var conversationID string
+	if su.id != nil {
+		signupID = *su.id
+	}
+	if su.conversationID != nil {
+		conversationID = *su.conversationID
+	}
+
+	signupLogger := ss.logger.With(
+		slog.Group("signup",
+			slog.String("nameFirst", su.NameFirst),
+			slog.String("nameLast", su.NameLast),
+			slog.String("cell", su.Cell),
+			slog.String("email", su.Email),
+			slog.String("startDateTime", su.StartDateTime.Format(time.RFC3339)),
+			slog.String("cohort", su.Cohort),
+			slog.String("id", signupID),
+			slog.String("conversationID", conversationID),
+			slog.String("sessionID", su.SessionID),
+			slog.Bool("smsOptIn", su.SMSOptIn),
+		),
+	)
+
+	postRegistration, err := ss.service.register(r.Context(), su, signupLogger)
 	// depending on what we get back, respond accordingly
 	if err != nil {
 		// handle invalid phone number error
@@ -77,7 +102,7 @@ func (ss *signupServer) HandleSignUp(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		ss.logSignup(r.Context(), su)
+		signupLogger.ErrorContext(r.Context(), "signup failed")
 		ss.serverErrorResponse(w, r, fmt.Errorf("user registration: %w", err))
 		return
 	}
@@ -131,29 +156,4 @@ func (ss *signupServer) writeJSON(w http.ResponseWriter, status int, data interf
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	return json.NewEncoder(w).Encode(data)
-}
-
-func (ss *signupServer) logSignup(ctx context.Context, signup Signup) {
-	var (
-		id             string
-		conversationID string
-	)
-	if signup.id != nil {
-		id = *signup.id
-	}
-	if signup.conversationID != nil {
-		conversationID = *signup.conversationID
-	}
-	ss.logger.ErrorContext(ctx, "signup-error-context",
-		slog.String("nameFirst", signup.NameFirst),
-		slog.String("nameLast", signup.NameLast),
-		slog.String("cell", signup.Cell),
-		slog.String("email", signup.Email),
-		slog.String("startDateTime", signup.StartDateTime.Format(time.RFC3339)),
-		slog.String("cohort", signup.Cohort),
-		slog.String("id", id),
-		slog.String("conversationID", conversationID),
-		slog.String("sessionID", signup.SessionID),
-		slog.Bool("smsOptIn", signup.SMSOptIn),
-	)
 }

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 )
 
@@ -16,7 +17,7 @@ type slackService struct {
 	webhookURL string
 }
 
-func (sl slackService) run(ctx context.Context, su *Signup, logger logger) error {
+func (sl slackService) run(ctx context.Context, su *Signup, logger *slog.Logger) error {
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}

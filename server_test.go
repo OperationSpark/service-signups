@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -16,7 +17,7 @@ type MockSignupService struct {
 	RegisterFunc func(context.Context, Signup) (Signup, error)
 }
 
-func (m *MockSignupService) register(ctx context.Context, signup Signup) (Signup, error) {
+func (m *MockSignupService) register(ctx context.Context, signup Signup, logger *slog.Logger) (Signup, error) {
 	return m.RegisterFunc(ctx, signup)
 }
 

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"time"
@@ -62,7 +63,7 @@ func (sm *SnapMail) isRequired() bool {
 	return false
 }
 
-func (sm *SnapMail) run(ctx context.Context, signup *Signup, logger logger) error {
+func (sm *SnapMail) run(ctx context.Context, signup *Signup, logger *slog.Logger) error {
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}

@@ -80,11 +80,6 @@ type (
 		GreenlightEnrollURL  string `json:"greenlightEnrollUrl"`  // Greenlight auto-enrollment URL.
 	}
 
-	logger interface {
-		logError(ctx context.Context, err error)
-		logInfo(ctx context.Context, msg string, args ...any)
-	}
-
 	SignupService struct {
 		// Key-value map with the Central Time meeting start hour (int) as the keys, and Zoom Meeting ID as the values.
 		// Ex: {17: "86935241734"} denotes meeting with ID, "86935241734", starts at 5pm central.
@@ -93,7 +88,6 @@ type (
 		postSignupTasks []Runner       // List of tasks to run after a successful signup.
 		zoomService     mutationTask   // Zoom service.
 		gldbService     codeCreator    // Greenlight service.
-		logger          logger
 	}
 
 	// codeCreator creates a Session join code for a user.
@@ -118,7 +112,7 @@ type (
 	}
 
 	mutationTask interface {
-		run(ctx context.Context, signup *Signup, logger logger) error
+		run(ctx context.Context, signup *Signup, logger *slog.Logger) error
 		name() string
 		// IsRequired determines if the signup request fails when this task fails. If the task is not required and fails, the signup can still succeed.
 		isRequired() bool
@@ -133,6 +127,7 @@ type (
 		// The Zoom Service needs to mutate the Signup struct with a meeting join URL. Due to this mutation, we need to pull the zoom service out of the task flow and use it before running the tasks.
 		zoomService mutationTask
 		gldbService codeCreator
+		logger      *slog.Logger
 	}
 
 	Location struct {
@@ -352,13 +347,13 @@ func newSignupService(o signupServiceOptions) *SignupService {
 }
 
 // Register concurrently executes a list of tasks. Completion of tasks are not dependent on each other.
-func (s *SignupService) register(ctx context.Context, su Signup) (Signup, error) {
+func (s *SignupService) register(ctx context.Context, su Signup, logger *slog.Logger) (Signup, error) {
 	// TODO: Create specific errors for each handler
 	err := s.attachZoomMeetingID(&su)
 	if err != nil {
 		return su, fmt.Errorf("attachZoomMeetingID: %w", err)
 	}
-	err = s.zoomService.run(ctx, &su, s.logger)
+	err = s.zoomService.run(ctx, &su, logger)
 	if err != nil {
 		return su, fmt.Errorf("zoomService.run: %w", err)
 	}
@@ -382,7 +377,10 @@ func (s *SignupService) register(ctx context.Context, su Signup) (Signup, error)
 	shorty := NewURLShortener(ShortenerOpts{apiKey: os.Getenv("URL_SHORTENER_API_KEY")})
 	shortLink, err := shorty.ShortenURL(ctx, msgngURL)
 	if err != nil {
-		s.logger.logError(ctx, fmt.Errorf("shortenURL", err))
+		logger.ErrorContext(ctx,
+			fmt.Errorf("shortenURL: %w", err).Error(),
+			slog.String("url", msgngURL),
+		)
 		// Don't early return. ShortenURL returns the original URL if there is a failure
 		// Fallback to long URL if shortener fails
 	}
@@ -397,12 +395,12 @@ func (s *SignupService) register(ctx context.Context, su Signup) (Signup, error)
 	for _, task := range s.tasks {
 		func(t mutationTask) {
 			g.Go(func() error {
-				err := t.run(gCtx, &su, s.logger)
+				err := t.run(gCtx, &su, logger)
 				if err != nil {
 					if t.isRequired() {
 						return fmt.Errorf("task failed: %q: %w", t.name(), err)
 					}
-					s.logger.logInfo(ctx,
+					logger.InfoContext(ctx,
 						"non-mandatory task failed",
 						slog.String("task", t.name()),
 						slog.String("error", err.Error()))
@@ -416,20 +414,22 @@ func (s *SignupService) register(ctx context.Context, su Signup) (Signup, error)
 		return su, err
 	}
 
-	if err := s.runPostSignupTasks(ctx, su); err != nil {
-		s.logger.logError(ctx, fmt.Errorf("required post-signup tasks failed: %w", err))
+	if err := s.runPostSignupTasks(ctx, su, logger); err != nil {
+		logger.ErrorContext(
+			ctx,
+			fmt.Errorf("required post-signup tasks failed: %w", err).Error())
 		// Don't return early. Continue with the signup process.
 	}
 	cancel(nil)
 	return su, nil
 }
 
-func (s *SignupService) runPostSignupTasks(ctx context.Context, su Signup) error {
+func (s *SignupService) runPostSignupTasks(ctx context.Context, su Signup, logger *slog.Logger) error {
 	if !su.SMSOptIn {
 		return errors.New("user opt-out")
 	}
 
-	s.logger.logInfo(
+	logger.InfoContext(
 		ctx,
 		"Running post-signup tasks",
 		slog.Int("numTasks", len(s.postSignupTasks)))

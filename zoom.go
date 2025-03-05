@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -68,7 +69,7 @@ func NewZoomService(o ZoomOptions) *zoomService {
 	}
 }
 
-func (z *zoomService) run(ctx context.Context, su *Signup, logger logger) error {
+func (z *zoomService) run(ctx context.Context, su *Signup, logger *slog.Logger) error {
 	// Do nothing if the user has not signed up for a specific session
 	if su.StartDateTime.IsZero() {
 		return nil
