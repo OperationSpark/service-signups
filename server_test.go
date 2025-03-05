@@ -40,7 +40,7 @@ func TestHandleSignup(t *testing.T) {
 
 		server := &signupServer{
 			service: service,
-			logger:  nil,
+			logger:  slog.Default(),
 		}
 
 		req := httptest.NewRequest(http.MethodPost, "/", signupToJson(t, signup))
@@ -69,7 +69,10 @@ func TestHandleSignup(t *testing.T) {
 			},
 		}
 
-		server := &signupServer{service: service, logger: nil}
+		server := &signupServer{
+			service: service,
+			logger:  slog.Default(),
+		}
 
 		req := httptest.NewRequest(http.MethodPost, "/", signupToJson(t, signup))
 		req.Header.Set("Content-Type", "application/json")
