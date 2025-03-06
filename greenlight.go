@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 )
 
@@ -20,7 +21,7 @@ func NewGreenlightService(url, apiKey string) *greenlightService {
 	}
 }
 
-func (g greenlightService) run(ctx context.Context, su *Signup) error {
+func (g greenlightService) run(ctx context.Context, su *Signup, logger *slog.Logger) error {
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}

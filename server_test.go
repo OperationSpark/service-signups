@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -16,7 +17,7 @@ type MockSignupService struct {
 	RegisterFunc func(context.Context, Signup) (Signup, error)
 }
 
-func (m *MockSignupService) register(ctx context.Context, signup Signup) (Signup, error) {
+func (m *MockSignupService) register(ctx context.Context, signup Signup, logger *slog.Logger) (Signup, error) {
 	return m.RegisterFunc(ctx, signup)
 }
 
@@ -37,7 +38,10 @@ func TestHandleSignup(t *testing.T) {
 			},
 		}
 
-		server := &signupServer{service}
+		server := &signupServer{
+			service: service,
+			logger:  slog.Default(),
+		}
 
 		req := httptest.NewRequest(http.MethodPost, "/", signupToJson(t, signup))
 		req.Header.Set("Content-Type", "application/json")
@@ -65,7 +69,10 @@ func TestHandleSignup(t *testing.T) {
 			},
 		}
 
-		server := &signupServer{service}
+		server := &signupServer{
+			service: service,
+			logger:  slog.Default(),
+		}
 
 		req := httptest.NewRequest(http.MethodPost, "/", signupToJson(t, signup))
 		req.Header.Set("Content-Type", "application/json")

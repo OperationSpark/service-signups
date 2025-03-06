@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -24,7 +25,7 @@ func TestRun(t *testing.T) {
 			baseAPIOverride: mockAPIServer.URL,
 		})
 
-		err := zsvc.run(context.Background(), &su)
+		err := zsvc.run(context.Background(), &su, slog.Default())
 		if err != nil {
 			t.Fatalf("run: %v", err)
 		}

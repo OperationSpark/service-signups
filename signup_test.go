@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -32,7 +33,7 @@ func (m *MockMailgunService) isRequired() bool {
 	return true
 }
 
-func (ms *MockMailgunService) run(ctx context.Context, su *Signup) error {
+func (ms *MockMailgunService) run(ctx context.Context, su *Signup, l *slog.Logger) error {
 	ms.called = true
 	return ms.WelcomeFunc(ctx, *su)
 }
@@ -43,7 +44,7 @@ func (ms *MockMailgunService) name() string {
 
 type MockZoomService struct{}
 
-func (*MockZoomService) run(ctx context.Context, su *Signup) error {
+func (*MockZoomService) run(ctx context.Context, su *Signup, logger *slog.Logger) error {
 	mockZoomJoinURL := "https://us06web.zoom.us/w/fakemeetingid?tk=faketoken"
 	su.SetZoomJoinURL(mockZoomJoinURL)
 	return nil
@@ -65,7 +66,7 @@ func (m *MockGreenlightDBService) CreateUserJoinCode(ctx context.Context, sessio
 
 type notRequiredTask struct{}
 
-func (n notRequiredTask) run(ctx context.Context, su *Signup) error {
+func (n notRequiredTask) run(ctx context.Context, su *Signup, logger *slog.Logger) error {
 	return fmt.Errorf("non-required task failed")
 }
 
@@ -103,7 +104,7 @@ func TestRegister(t *testing.T) {
 			gldbService: &MockGreenlightDBService{},
 		})
 
-		_, err := signupService.register(context.Background(), signup)
+		_, err := signupService.register(context.Background(), signup, slog.Default())
 		if err != nil {
 			t.Fatalf("register: %v", err)
 		}
@@ -138,7 +139,7 @@ func TestRegister(t *testing.T) {
 			gldbService: &MockGreenlightDBService{},
 		})
 
-		_, err := signupService.register(context.Background(), signup)
+		_, err := signupService.register(context.Background(), signup, slog.Default())
 		if err != nil {
 			t.Fatalf("register: %v", err)
 		}
@@ -164,7 +165,7 @@ func TestRegister(t *testing.T) {
 			zoomService: &MockZoomService{},
 		})
 
-		_, err := signupService.register(context.Background(), signup)
+		_, err := signupService.register(context.Background(), signup, slog.Default())
 		if err != nil {
 			t.Fatalf("register: %v", err)
 		}
@@ -785,7 +786,7 @@ func TestSnapMail(t *testing.T) {
 
 		signingKey := "testkey"
 
-		err := NewSnapMail(mockSnapServer.URL, WithSigningSecret(signingKey)).run(context.Background(), &su)
+		err := NewSnapMail(mockSnapServer.URL, WithSigningSecret(signingKey)).run(context.Background(), &su, slog.Default())
 
 		assertNilError(t, err)
 

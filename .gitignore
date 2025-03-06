@@ -1,6 +1,6 @@
 .env
 .env*
-__debug_bin
+__debug_bin*
 cover.out
 .secrets
 creds.json

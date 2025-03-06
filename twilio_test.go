@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -101,7 +102,7 @@ func TestTwilioRun(t *testing.T) {
 			StartDateTime: mustMakeTime(t, time.RFC3339, "2022-10-17T22:30:00.000Z"),
 		}
 
-		err := tSvc.run(context.Background(), &su)
+		err := tSvc.run(context.Background(), &su, slog.Default())
 		require.NoError(t, err)
 
 		require.NotEmpty(t, su.conversationID)
@@ -128,7 +129,10 @@ func TestInvalidNumErr(t *testing.T) {
 			},
 		}
 
-		server := &signupServer{service}
+		server := &signupServer{
+			service: service,
+			logger:  slog.Default(),
+		}
 
 		req := httptest.NewRequest(http.MethodPost, "/", signupToJson(t, signup))
 		req.Header.Set("Content-Type", "application/json")
@@ -139,7 +143,7 @@ func TestInvalidNumErr(t *testing.T) {
 		// check that the response is a 400
 		require.Equal(t, http.StatusBadRequest, res.Code)
 		// check that the response body is the expected error
-		var errResp errResp
+		var errResp badReqBodyResp
 
 		err := json.Unmarshal([]byte(res.Body.Bytes()), &errResp)
 		require.NoError(t, err)
