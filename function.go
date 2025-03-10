@@ -8,10 +8,13 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"runtime/debug"
 	"strings"
 	"time"
 
 	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
+	"github.com/getsentry/sentry-go"
+	sentryhttp "github.com/getsentry/sentry-go/http"
 	"github.com/operationspark/service-signup/conversations"
 	"github.com/operationspark/service-signup/mongodb"
 	"github.com/operationspark/service-signup/notify"
@@ -37,18 +40,32 @@ func init() {
 }
 
 func NewServer() *http.ServeMux {
+	sentryDSN := os.Getenv("SENTRY_DSN")
+	err := sentry.Init(sentry.ClientOptions{
+		Dsn:           sentryDSN,
+		EnableTracing: false,
+	})
+	if err != nil {
+		log.Fatalf("sentry init: %v", err)
+	}
+	defer sentry.Flush(2 * time.Second)
+
 	// Check env vars only in GCP context
 	// K_REVISION is set in GCP environment, so if it's not set, we're not running in GCP and we can skip the check
 	// https://cloud.google.com/functions/docs/configuring/env-var#newer_runtimes
 	skipEnvVarCheck := os.Getenv("K_REVISION") == ""
-	err := checkEnvVars(skipEnvVarCheck)
+	err = checkEnvVars(skipEnvVarCheck)
 	if err != nil {
 		log.Fatal(err)
 	}
-	mux := http.NewServeMux()
 
-	mux.HandleFunc("/", NewSignupServer().HandleSignUp)
-	mux.HandleFunc("/notify", NewNotifyServer().ServeHTTP)
+	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
+	logger = logger.With("git_hash", getGitRev())
+
+	mux := http.NewServeMux()
+	sentryHandler := sentryhttp.New(sentryhttp.Options{})
+	mux.HandleFunc("/", sentryHandler.HandleFunc(NewSignupServer(logger).HandleSignUp))
+	mux.HandleFunc("/notify", sentryHandler.HandleFunc(NewNotifyServer().ServeHTTP))
 	return mux
 }
 
@@ -136,7 +153,7 @@ func NewNotifyServer() *notify.Server {
 	})
 }
 
-func NewSignupServer() *signupServer {
+func NewSignupServer(logger *slog.Logger) *signupServer {
 	// Set up services/tasks to run when someone signs up for an Info Session.
 	mgDomain := os.Getenv("MAIL_DOMAIN")
 	mgAPIKey := os.Getenv("MAILGUN_API_KEY")
@@ -191,7 +208,7 @@ func NewSignupServer() *signupServer {
 		conversations.WithSigningSecret(osMessagingSigningSecret),
 	)
 
-	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
+	logger = logger.With("service", "signup")
 
 	registrationService := newSignupService(
 		signupServiceOptions{
@@ -225,4 +242,18 @@ func NewSignupServer() *signupServer {
 		service: registrationService,
 		logger:  logger,
 	}
+}
+
+func getGitRev() string {
+	if info, ok := debug.ReadBuildInfo(); ok {
+		if !ok {
+			return ""
+		}
+		for _, setting := range info.Settings {
+			if setting.Key == "vcs.revision" {
+				return setting.Value
+			}
+		}
+	}
+	return ""
 }

@@ -7,6 +7,8 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+
+	"github.com/getsentry/sentry-go"
 )
 
 type (
@@ -58,6 +60,10 @@ func (ss *signupServer) logError(ctx context.Context, r *http.Request, err error
 		err.Error(),
 		slog.String("method", method),
 		slog.String("url", url))
+
+	if hub := sentry.GetHubFromContext(ctx); hub != nil {
+		hub.CaptureException(err)
+	}
 }
 
 // errorResponse writes an error response to the client. The msg is sent as the error message in the response body,
