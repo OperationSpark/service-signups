@@ -152,7 +152,7 @@ func handleForm(s *Signup, r *http.Request) error {
 	return nil
 }
 
-func (ss *signupServer) writeJSON(w http.ResponseWriter, status int, data interface{}) error {
+func (ss *signupServer) writeJSON(w http.ResponseWriter, status int, data any) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	return json.NewEncoder(w).Encode(data)

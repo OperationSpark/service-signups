@@ -11,7 +11,8 @@ import (
 
 func main() {
 	ctx := context.Background()
-	if err := funcframework.RegisterHTTPFunctionContext(ctx, "/", signup.NewServer().ServeHTTP); err != nil {
+	err := funcframework.RegisterHTTPFunctionContext(ctx, "/", signup.NewServer().ServeHTTP)
+	if err != nil {
 		log.Fatalf("funcframework.RegisterHTTPFunctionContext: %v\n", err)
 	}
 
