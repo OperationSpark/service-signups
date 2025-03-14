@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"time"
 
@@ -41,9 +42,18 @@ func init() {
 
 func NewServer() *http.ServeMux {
 	sentryDSN := os.Getenv("SENTRY_DSN")
-	err := sentry.Init(sentry.ClientOptions{
-		Dsn:           sentryDSN,
-		EnableTracing: false,
+	rawSampleRate, ok := os.LookupEnv("SENTRY_SAMPLE_RATE")
+	if !ok {
+		rawSampleRate = "1.0"
+	}
+	sentrySampleRate, err := strconv.ParseFloat(rawSampleRate, 64)
+	if err != nil {
+		log.Fatalf("sentry sample rate: %v", err)
+	}
+	err = sentry.Init(sentry.ClientOptions{
+		Dsn:              sentryDSN,
+		EnableTracing:    true,
+		TracesSampleRate: sentrySampleRate,
 	})
 	if err != nil {
 		log.Fatalf("sentry init: %v", err)

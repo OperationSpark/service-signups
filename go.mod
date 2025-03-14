@@ -5,7 +5,6 @@ go 1.22
 require (
 	github.com/GoogleCloudPlatform/functions-framework-go v1.8.0
 	github.com/getsentry/sentry-go v0.31.1
-	github.com/getsentry/sentry-go/slog v0.31.1
 	github.com/google/go-cmp v0.6.0
 	github.com/gorilla/schema v1.2.1
 	github.com/mailgun/mailgun-go/v4 v4.12.0
