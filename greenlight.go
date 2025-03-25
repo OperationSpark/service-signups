@@ -66,7 +66,7 @@ func (g greenlightService) postWebhook(ctx context.Context, su *Signup) error {
 	if err != nil {
 		return fmt.Errorf("POST request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode >= 300 {
 		return handleHTTPError(resp)

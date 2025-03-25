@@ -102,7 +102,7 @@ func (sm *SnapMail) run(ctx context.Context, signup *Signup, logger *slog.Logger
 	if err != nil {
 		return fmt.Errorf("client.Do: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode >= 300 {
 		return handleHTTPError(resp)

@@ -129,7 +129,7 @@ func (z *zoomService) registerUser(ctx context.Context, su *Signup) error {
 	if err != nil {
 		return fmt.Errorf("client.Do: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode >= 300 {
 		return handleHTTPError(resp)
@@ -165,7 +165,7 @@ func (z *zoomService) authenticate(ctx context.Context) (tokenResponse, error) {
 	if err != nil {
 		return tokenResponse{}, fmt.Errorf("client.do: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode >= 300 {
 		return tokenResponse{}, handleHTTPError(resp)
 	}

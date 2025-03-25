@@ -40,7 +40,8 @@ Invalid API key`+"\n", mockServer.URL))
 			// Respond with HTML not found page
 			w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 			w.WriteHeader(http.StatusNotFound)
-			fmt.Fprint(w, respBody)
+			_, err := fmt.Fprint(w, respBody)
+			t.Fatal(err)
 		}))
 
 		resp, err := http.DefaultClient.Get(mockServer.URL)

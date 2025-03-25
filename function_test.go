@@ -34,13 +34,15 @@ func TestCheckEnvVars(t *testing.T) {
 			"ZOOM_MEETING_12",
 			"ZOOM_MEETING_17"}
 		for _, envVar := range requiredVars {
-			os.Setenv(envVar, "a_value")
+			err := os.Setenv(envVar, "a_value")
+			require.NoError(t, err)
 		}
 
 		err := checkEnvVars(false)
 		require.NoError(t, err)
 		for _, envVar := range requiredVars {
-			os.Setenv(envVar, "")
+			err := os.Setenv(envVar, "")
+			require.NoError(t, err)
 		}
 	})
 }

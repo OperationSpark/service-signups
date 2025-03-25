@@ -88,7 +88,8 @@ func TestSendWelcome(t *testing.T) {
 	})
 
 	t.Run("uses 'dev' info-session-signup template 'APP_ENV' == 'staging' ", func(t *testing.T) {
-		os.Setenv("APP_ENV", "staging")
+		err := os.Setenv("APP_ENV", "staging")
+		assertNilError(t, err)
 
 		mockMailgunAPI := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			err := r.ParseMultipartForm(128)
@@ -107,7 +108,7 @@ func TestSendWelcome(t *testing.T) {
 			mockMailgunAPI.URL+"/v4",
 		)
 
-		err := mgSvc.sendWelcome(context.Background(), Signup{})
+		err = mgSvc.sendWelcome(context.Background(), Signup{})
 		assertNilError(t, err)
 	})
 
