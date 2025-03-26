@@ -18,7 +18,7 @@ func TestShortenURL(t *testing.T) {
 
 		mockSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.Header.Get("key") != apiKey {
-				fmt.Fprint(w, http.StatusUnauthorized)
+				_, _ = fmt.Fprint(w, http.StatusUnauthorized)
 				return
 			}
 
