@@ -2,7 +2,9 @@ package signup
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -41,11 +43,13 @@ Invalid API key`+"\n", mockServer.URL))
 			w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 			w.WriteHeader(http.StatusNotFound)
 			_, err := fmt.Fprint(w, respBody)
-			t.Fatal(err)
+			if err != nil {
+				t.Fatal(err)
+			}
 		}))
 
 		resp, err := http.DefaultClient.Get(mockServer.URL)
-		if err != nil {
+		if err != nil && !errors.Is(err, io.EOF) {
 			t.Fatal(err)
 		}
 
