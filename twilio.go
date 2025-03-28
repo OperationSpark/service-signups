@@ -152,15 +152,17 @@ func (t *smsService) run(ctx context.Context, su *Signup, logger *slog.Logger) e
 		return fmt.Errorf("shortMessage: %w", err)
 	}
 
+	// Send the webhook to the OS Messaging Service before sending the SMS to see if the initial message is on greenlight
+	err = t.sendConvoWebhook(ctx, convoId)
+	if err != nil {
+		logger.ErrorContext(ctx, fmt.Errorf("sendConvoWebhook (messenger API): %w", err).Error())
+	}
+
 	err = t.sendSMSInConversation(msg, convoId)
 	if err != nil {
 		return fmt.Errorf("sendSMS: %w", err)
 	}
 
-	err = t.sendConvoWebhook(ctx, convoId)
-	if err != nil {
-		logger.ErrorContext(ctx, fmt.Errorf("sendConvoWebhook (messenger API): %w", err).Error())
-	}
 	// Carry on even if the Messenger API webhook fails
 
 	// Set the conversation ID on the signup record
