@@ -150,4 +150,68 @@ func TestInvalidNumErr(t *testing.T) {
 		want := fmt.Sprintln(`{"message":"Invalid Phone Number","field":"phone"}`)
 		require.Equal(t, want, res.Body.String())
 	})
+
+}
+
+func TestRunTwilioReal(t *testing.T) {
+	t.Skip("Skipping TestRunTwilioReal for now.")
+	// Ensure environment variables are set with real Twilio credentials
+	accountSID := os.Getenv("TWILIO_ACCOUNT_SID")
+	authToken := os.Getenv("TWILIO_AUTH_TOKEN")
+	fromPhoneNum := os.Getenv("TWILIO_PHONE_NUMBER")
+	conversationsSid := os.Getenv("TWILIO_CONVERSATIONS_SID")
+
+	if accountSID == "" || authToken == "" || fromPhoneNum == "" || conversationsSid == "" {
+		t.Skip("Twilio credentials are not set. Skipping real API test.")
+	}
+
+	// Set up the Twilio service with real credentials
+	tSvc := NewTwilioService(twilioServiceOptions{
+		accountSID:       accountSID,
+		authToken:        authToken,
+		fromPhoneNum:     fromPhoneNum,
+		conversationsSid: conversationsSid,
+	})
+
+	// Create a sample Signup object
+	su := returnSignup()
+
+	// Call the run method
+	err := tSvc.run(context.Background(), &su, slog.Default())
+	require.NoError(t, err)
+
+	// Verify that the conversation ID was set
+	require.NotEmpty(t, su.conversationID)
+	t.Logf("Conversation ID: %s", su.conversationID)
+}
+
+func returnSignup(phoneNumber, email, nameFirst, nameLast string) Signup {
+	// Create a sample Signup object
+	return Signup{
+		ProgramId:         "5sTmB97DzcqCwEZFR",
+		NameFirst:         nameFirst,
+		NameLast:          nameLast,
+		Email:             email,
+		Cell:              phoneNumber,
+		Referrer:          "Word of mouth",
+		ReferrerResponse:  "email blast",
+		StartDateTime:     "2025-03-24T18:00:00.000Z",
+		Cohort:            "_dev_is-sep-28-23-12pm",
+		SessionId:         "rBqAXvr8Zotw7JpSe",
+		LocationType:      "HYBRID",
+		UserLocation:      "Louisiana",
+		AttendingLocation: "VIRTUAL",
+		SMSOptIn:          true,
+		GooglePlace: GooglePlace{
+			PlaceID: "ChIJ7YchCHSmIIYRYsAEPZN_E0o",
+			Name:    "Operation Spark",
+			Address: "514 Franklin Ave, New Orleans, LA 70117, USA",
+			Phone:   "+1 504-534-8277",
+			Website: "https://www.operationspark.org/",
+			Geometry: Geometry{
+				Lat: 29.96325999999999,
+				Lng: -90.052138,
+			},
+		},
+	}
 }
