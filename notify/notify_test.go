@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
@@ -226,6 +227,7 @@ func TestServer(t *testing.T) {
 			ShortLinkService:  MockShortLinker{},
 			Store:             mongoService,
 			SMSService:        &mockTwilio,
+			Logger:            slog.Default(),
 		})
 
 		srv.ServeHTTP(resp, req)
