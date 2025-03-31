@@ -177,7 +177,7 @@ func parseSMSOriginalLink(sms string) string {
 func fetchLinkBody(link string) (io.ReadCloser, error) {
 	resp, err := http.Get(link)
 	if err != nil {
-		return resp.Body, fmt.Errorf("GET: %w", err)
+		return io.NopCloser(nil), fmt.Errorf("GET: %w", err)
 	}
 
 	err = checkHTTPError(resp)
