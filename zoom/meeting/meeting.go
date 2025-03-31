@@ -1,7 +1,9 @@
+// Package meeting provides a service for interacting with Zoom meetings.
 package meeting
 
 type (
-	// https://marketplace.zoom.us/docs/api-reference/zoom-api/methods/#operation/meetingRegistrantCreate
+	// RegistrantRequest represents a request to create a registrant for a meeting on the Zoom API.
+	// See: https://marketplace.zoom.us/docs/api-reference/zoom-api/methods/#operation/meetingRegistrantCreate
 	RegistrantRequest struct {
 		FirstName   string `json:"first_name"`
 		LastName    string `json:"last_name"`
@@ -23,7 +25,7 @@ type (
 	}
 
 	RegistrationResponse struct {
-		Id           int          `json:"id"`
+		ID           int          `json:"id"`
 		JoinURL      string       `json:"join_url"`
 		RegistrantID string       `json:"registrant_id"`
 		StartTime    string       `json:"start_time"`

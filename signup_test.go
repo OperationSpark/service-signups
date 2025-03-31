@@ -29,7 +29,7 @@ type MockMailgunService struct {
 }
 
 // IsRequired returns true because the welcome email is should be sent after a student signs up.
-func (m *MockMailgunService) isRequired() bool {
+func (ms *MockMailgunService) isRequired() bool {
 	return true
 }
 
@@ -91,7 +91,7 @@ func TestRegister(t *testing.T) {
 		}
 
 		mailService := &MockMailgunService{
-			WelcomeFunc: func(ctx context.Context, s Signup) error {
+			WelcomeFunc: func(ctx context.Context, su Signup) error {
 				return nil
 			},
 		}
@@ -126,7 +126,7 @@ func TestRegister(t *testing.T) {
 		}
 
 		mailService := &MockMailgunService{
-			WelcomeFunc: func(ctx context.Context, s Signup) error {
+			WelcomeFunc: func(ctx context.Context, su Signup) error {
 				return nil
 			},
 		}
@@ -208,7 +208,7 @@ func TestHandleJson(t *testing.T) {
 
 	for _, test := range tests {
 		got := Signup{}
-		err := handleJson(&got, bytes.NewReader(test.json))
+		err := handleJSON(&got, bytes.NewReader(test.json))
 		if err != nil && test.err == nil {
 			t.Errorf("Unexpected error for \n%s\nerror: %s", string(test.json), err)
 		}
@@ -535,7 +535,7 @@ func TestFromBase64(t *testing.T) {
 		}
 
 		assertEqual(t, params.Name, "FirstName")
-		assertEqual(t, params.Template, INFO_SESSION_TEMPLATE)
+		assertEqual(t, params.Template, InfoSessionTemplate)
 		assertEqual(t, params.Date.Format(time.RFC3339), "2022-10-05T17:00:00Z")
 		assertEqual(t, params.ZoomLink, "https://us06web.zoom.us/j/12345678910")
 	})
@@ -665,7 +665,7 @@ func TestShortMessagingURL(t *testing.T) {
 		assertEqual(t, gotParams.Name, s.NameFirst)
 		assertEqual(t, gotParams.Date.Equal(s.StartDateTime), true)
 		assertEqual(t, gotParams.ZoomLink, s.zoomMeetingURL)
-		assertEqual(t, gotParams.Template, INFO_SESSION_TEMPLATE)
+		assertEqual(t, gotParams.Template, InfoSessionTemplate)
 		assertEqual(t, gotParams.LocationType, "HYBRID")
 		assertEqual(t, gotParams.Location.Name, "Some Place")
 		assertEqual(t, gotParams.Location.Line1, "2723 Guess Rd")
@@ -711,12 +711,12 @@ func TestCreateMessageURL(t *testing.T) {
 
 		// Decode the base64 encoded data from the generated URL
 		encoded := strings.TrimPrefix(u.Path, "/m/")
-		decodedJson, err := base64.URLEncoding.DecodeString(encoded)
+		decodedJSON, err := base64.URLEncoding.DecodeString(encoded)
 		require.NoError(t, err)
 
 		// Unmarshal the decoded JSON into a messaging request params struct
 		var params rendererReqParams
-		err = json.NewDecoder(bytes.NewReader(decodedJson)).Decode(&params)
+		err = json.NewDecoder(bytes.NewReader(decodedJSON)).Decode(&params)
 		require.NoError(t, err)
 
 		// Verify the location data matches the input from the Participant

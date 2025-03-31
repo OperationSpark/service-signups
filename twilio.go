@@ -33,7 +33,7 @@ type (
 		conversationsIdentity string
 	}
 
-	// error type for invalid phone numbers
+	// ErrInvalidNumber is an error type for invalid phone numbers.
 	ErrInvalidNumber struct {
 		err error
 	}
@@ -94,7 +94,7 @@ func NewTwilioService(o twilioServiceOptions) *smsService {
 }
 
 // IsRequired returns false because we're now going to send the information URL back to the client in the response body. So if the SMS message fails to send, the user will still have the information URL.
-func (s smsService) isRequired() bool {
+func (t smsService) isRequired() bool {
 	return false
 }
 
@@ -114,7 +114,7 @@ func (t *smsService) run(ctx context.Context, su *Signup, logger *slog.Logger) e
 
 	toNum := t.FormatCell(su.Cell)
 	convoName := fmt.Sprintf("%s %s", su.NameFirst, su.NameLast[0:1])
-	convoId := ""
+	convoID := ""
 	existing, err := t.findConversationsByNumber(toNum)
 	if err != nil {
 		return fmt.Errorf("findConversationsByNumber: %w", err)
@@ -122,7 +122,7 @@ func (t *smsService) run(ctx context.Context, su *Signup, logger *slog.Logger) e
 
 	// Create a new conversation if none exists
 	if len(existing) == 0 {
-		convoId, err = t.addNumberToConversation(toNum, convoName)
+		convoID, err = t.addNumberToConversation(toNum, convoName)
 		if err != nil {
 			twilioInvalidPhoneCode := "50407"
 			// check if error is due to number being invalid, if so use the errInvalidNumber type
@@ -134,7 +134,7 @@ func (t *smsService) run(ctx context.Context, su *Signup, logger *slog.Logger) e
 		}
 	} else {
 		// TODO: Fix this potentially faulty logic if picking the first existing conversation
-		convoId = *existing[0].ConversationSid
+		convoID = *existing[0].ConversationSid
 	}
 
 	// Send Opt-in confirmation
@@ -152,19 +152,19 @@ func (t *smsService) run(ctx context.Context, su *Signup, logger *slog.Logger) e
 		return fmt.Errorf("shortMessage: %w", err)
 	}
 
-	err = t.sendSMSInConversation(msg, convoId)
+	err = t.sendSMSInConversation(msg, convoID)
 	if err != nil {
 		return fmt.Errorf("sendSMS: %w", err)
 	}
 
-	err = t.sendConvoWebhook(ctx, convoId)
+	err = t.sendConvoWebhook(ctx, convoID)
 	if err != nil {
 		logger.ErrorContext(ctx, fmt.Errorf("sendConvoWebhook (messenger API): %w", err).Error())
 	}
 	// Carry on even if the Messenger API webhook fails
 
 	// Set the conversation ID on the signup record
-	su.conversationID = &convoId
+	su.conversationID = &convoID
 
 	return nil
 }
@@ -174,13 +174,13 @@ func (t *smsService) name() string {
 }
 
 // SendSMSInConversation uses the Twilio Conversations API to send a message to a specific Conversation. Twilio will then broadcast the message to the Conversation participants. In our case, this is two SMS-capable phone numbers.
-func (t *smsService) sendSMSInConversation(body string, convoId string) error {
+func (t *smsService) sendSMSInConversation(body string, convoID string) error {
 	params := &conversations.CreateServiceConversationMessageParams{
 		Body:   &body,
 		Author: &t.conversationsIdentity,
 	}
 
-	_, err := t.client.ConversationsV1.CreateServiceConversationMessage(t.conversationsSid, convoId, params)
+	_, err := t.client.ConversationsV1.CreateServiceConversationMessage(t.conversationsSid, convoID, params)
 	if err != nil {
 		return fmt.Errorf("createServiceConversationMessage: %w", err)
 	}
@@ -268,7 +268,7 @@ func (t *smsService) optInConfirmation(ctx context.Context, toNum string) error 
 // Send sends an SMS message to the given toNum and returns an error.
 func (t *smsService) Send(ctx context.Context, toNum string, msg string) error {
 	// TODO: Maybe consolidate this code with some of the run() code
-	convoId := ""
+	convoID := ""
 	existing, err := t.findConversationsByNumber(toNum)
 	if err != nil {
 		return fmt.Errorf("findConversationsByNumber: %w", err)
@@ -277,7 +277,7 @@ func (t *smsService) Send(ctx context.Context, toNum string, msg string) error {
 	// Create a new conversation if none exists
 	// I think we should always already have an existing conversation
 	if len(existing) == 0 {
-		convoId, err = t.addNumberToConversation(toNum, toNum)
+		convoID, err = t.addNumberToConversation(toNum, toNum)
 		if err != nil {
 			return fmt.Errorf("addNumberToConversation: %w", err)
 		}
@@ -286,9 +286,9 @@ func (t *smsService) Send(ctx context.Context, toNum string, msg string) error {
 			return fmt.Errorf("found more than one existing conversation for cell: %q. %+v", toNum, existing)
 		}
 		// There can only be one..
-		convoId = *existing[0].ConversationSid
+		convoID = *existing[0].ConversationSid
 	}
-	err = t.sendSMSInConversation(msg, convoId)
+	err = t.sendSMSInConversation(msg, convoID)
 	if err != nil {
 		return fmt.Errorf("sendSMS: %w", err)
 	}

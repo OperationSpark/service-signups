@@ -1,4 +1,7 @@
+// Package notify provides a service for sending notifications to participants.
 package notify
+
+//lint:file-ignore SA1029 Our string context keys are unique to this package.
 
 import (
 	"context"
@@ -6,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -69,6 +73,7 @@ type (
 		ShortLinkService  Shortener
 		SMSService        SMSSender
 		Store             Store
+		Logger            *slog.Logger
 	}
 
 	SMSSender interface {
@@ -81,6 +86,7 @@ type (
 		shortySrv     Shortener
 		store         Store
 		twilioService SMSSender
+		logger        *slog.Logger
 	}
 
 	Request struct {
@@ -95,17 +101,21 @@ type (
 
 	Period string
 
-	contextKey int
+	contextKey string
 )
 
 const (
-	RECIPIENT_TZ contextKey = iota
+	contextKeyRecipientTZ contextKey = "recipient_tz"
 )
 
 const (
-	INFO_SESSION_PROGRAM_ID = "5sTmB97DzcqCwEZFR"
-	CENTRAL_TZ_NAME         = "America/Chicago"
+	InfoSessionProgramID = "5sTmB97DzcqCwEZFR"
+	CentralTZName        = "America/Chicago"
 )
+
+func (c contextKey) String() string {
+	return "notify__" + string(c)
+}
 
 func NewServer(o ServerOpts) *Server {
 	return &Server{
@@ -113,6 +123,7 @@ func NewServer(o ServerOpts) *Server {
 		shortySrv:     o.ShortLinkService,
 		store:         o.Store,
 		twilioService: o.SMSService,
+		logger:        o.Logger,
 	}
 }
 
@@ -121,20 +132,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 	}
 
-	// Add timezone to the request context.
-	// TODO: Base the TZ on some location information somewhere
-	tz, err := time.LoadLocation(CENTRAL_TZ_NAME)
-	if err != nil {
-		fmt.Printf("loadLocation: %v, ", err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-	ctx := context.WithValue(r.Context(), RECIPIENT_TZ, tz)
 	var reqBody Request
-	err = reqBody.fromJSON(r.Body)
+	err := reqBody.fromJSON(r.Body)
 	if err != nil {
-		fmt.Printf("fromJSON: %v, bodyL%+v\n", err, reqBody)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		s.logRequestError(r.Context(), r, fmt.Errorf("request.fromJSON: %w", err))
+		s.badRequestResponse(w, r, err.Error())
 		return
 	}
 
@@ -142,33 +144,40 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// (1 hour, 2 days, etc)
 	inFuture, err := reqBody.JobArgs.Period.Parse()
 	if err != nil {
-		fmt.Printf("parse: %v, bodyL%+v\n", err, reqBody)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		s.logRequestError(r.Context(), r, fmt.Errorf("parse: %v, bodyL%+v", err, reqBody))
+		s.badRequestResponse(w, r, err.Error())
 		return
 	}
 
+	// Add timezone to the request context.
+	// TODO: Base the TZ on some location information somewhere
+	tz, err := time.LoadLocation(CentralTZName)
+	if err != nil {
+		s.serverErrorResponse(w, r, fmt.Errorf("loadLocation: %v", err))
+		return
+	}
+	ctx := context.WithValue(r.Context(), contextKeyRecipientTZ.String(), tz)
 	sessions, err := s.store.GetUpcomingSessions(ctx, inFuture)
 	if err != nil {
-		fmt.Printf("getUpcomingSessions: %v", err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		s.serverErrorResponse(w, r, fmt.Errorf("store.GetUpcomingSessions: %v", err))
 		return
 	}
 
 	if len(sessions) == 0 {
-		fmt.Printf("No upcoming sessions in the next %s\n", reqBody.JobArgs.Period)
+		s.notFoundResponse(w, r, fmt.Sprintf("no upcoming sessions in the next %s", reqBody.JobArgs.Period))
 		return
 	}
 
 	for _, sess := range sessions {
-		fmt.Printf("upcoming info session:\nSessionID: %s, Time: %s\n",
-			sess.ID,
-			sess.Times.Start.DateTime.Format(time.RubyDate))
+		s.logger.InfoContext(r.Context(), "upcoming info session",
+			slog.String("sessionId", sess.ID),
+			slog.String("sessionTime", sess.Times.Start.DateTime.Format(time.RubyDate)),
+		)
 	}
 
 	err = s.sendSMSReminders(ctx, sessions, reqBody.JobArgs.DryRun)
 	if err != nil {
-		fmt.Println("One or more messages failed to send", err)
-		http.Error(w, "One or more messages failed to send", http.StatusInternalServerError)
+		s.serverErrorResponse(w, r, fmt.Errorf("sendSMSReminders: %v", err))
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -255,20 +264,22 @@ func (s *Server) sendSMSReminders(ctx context.Context, sessions []*UpcomingSessi
 
 					infoURL, err := s.osMsSvc.CreateMessageURL(p)
 					if err != nil {
-						return err
+						return fmt.Errorf("osMsSvc.CreateMessageURL: %w", err)
 					}
 
 					// The link will be a long URL even if there is an error
 					link, err := s.shortySrv.ShortenURL(ctx, infoURL)
 					if err != nil {
-						fmt.Printf("Failed to shorten URL: %q\nError: %v\n", infoURL, err)
+						s.logError(ctx, fmt.Errorf("shortenURL %q: %w", infoURL, err))
 					}
 
 					msg = fmt.Sprintf("%s\nMore details: %s", msg, link)
 					toNum := s.twilioService.FormatCell(p.Cell)
 					if dryRun {
-						fmt.Printf("Dry Run Mode: (not sending SMS)\ntoNum: %s\n,msg: %s\n", toNum, msg)
-						return nil
+						s.logger.InfoContext(ctx, "Dry Run Mode: (not sending SMS)",
+							slog.String("toNum", toNum),
+							slog.String("smsBody", msg),
+						)
 					}
 					return s.twilioService.Send(ctx, toNum, msg)
 				}
@@ -278,8 +289,14 @@ func (s *Server) sendSMSReminders(ctx context.Context, sessions []*UpcomingSessi
 	return errs.Wait()
 }
 
+func (s *Server) writeJSON(w http.ResponseWriter, status int, data any) error {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	return json.NewEncoder(w).Encode(data)
+}
+
 func reminderMsg(ctx context.Context, session UpcomingSession) (string, error) {
-	tz, ok := ctx.Value(RECIPIENT_TZ).(*time.Location)
+	tz, ok := ctx.Value(contextKeyRecipientTZ.String()).(*time.Location)
 	if !ok {
 		return "", errors.New("could not retrieve local timezone from context")
 	}

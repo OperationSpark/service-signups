@@ -1,3 +1,4 @@
+// Package signup provides a service for handling Info Session signups.
 package signup
 
 import (
@@ -160,7 +161,7 @@ type (
 )
 
 const (
-	INFO_SESSION_TEMPLATE osRendererTemplate = "InfoSession"
+	InfoSessionTemplate osRendererTemplate = "InfoSession"
 )
 
 // StructToBase64 marshals a struct to JSON then encodes the string to base64.
@@ -183,19 +184,19 @@ func (m *rendererReqParams) fromBase64(encoded string) error {
 	return json.Unmarshal(jsonBytes, m)
 }
 
-func (s Signup) MarshalJSON() ([]byte, error) {
+func (su Signup) MarshalJSON() ([]byte, error) {
 	return json.Marshal(SignupJSON{
-		SignupAlias(s),
-		s.ZoomMeetingURL(),
+		SignupAlias(su),
+		su.ZoomMeetingURL(),
 	})
 }
 
 // WelcomeData takes a Signup and prepares template variables for use in the Welcome email template.
-func (s *Signup) welcomeData() (welcomeVariables, error) {
-	if s.StartDateTime.IsZero() {
+func (su *Signup) welcomeData() (welcomeVariables, error) {
+	if su.StartDateTime.IsZero() {
 		return welcomeVariables{
-			FirstName: s.NameFirst,
-			LastName:  s.NameLast,
+			FirstName: su.NameFirst,
+			LastName:  su.NameLast,
 		}, nil
 	}
 	ctz, err := time.LoadLocation("America/Chicago")
@@ -203,32 +204,32 @@ func (s *Signup) welcomeData() (welcomeVariables, error) {
 		return welcomeVariables{}, err
 	}
 
-	line1, cityStateZip := greenlight.ParseAddress(s.GooglePlace.Address)
+	line1, cityStateZip := greenlight.ParseAddress(su.GooglePlace.Address)
 	return welcomeVariables{
-		FirstName:            s.NameFirst,
-		LastName:             s.NameLast,
-		SessionTime:          s.StartDateTime.In(ctz).Format("3:04 PM MST"),
-		SessionDate:          s.StartDateTime.In(ctz).Format("Monday, Jan 02"),
-		ZoomURL:              s.ZoomMeetingURL(),
+		FirstName:            su.NameFirst,
+		LastName:             su.NameLast,
+		SessionTime:          su.StartDateTime.In(ctz).Format("3:04 PM MST"),
+		SessionDate:          su.StartDateTime.In(ctz).Format("Monday, Jan 02"),
+		ZoomURL:              su.ZoomMeetingURL(),
 		LocationLine1:        line1,
 		LocationCityStateZip: cityStateZip,
-		LocationMapURL:       greenlight.GoogleLocationLink(s.GooglePlace.Address),
-		JoinCode:             s.JoinCode,
-		IsGmail:              s.isGmail(),
-		GreenlightEnrollURL:  s.greenlightAutoEnrollURL("https://greenlight.operationspark.org"),
+		LocationMapURL:       greenlight.GoogleLocationLink(su.GooglePlace.Address),
+		JoinCode:             su.JoinCode,
+		IsGmail:              su.isGmail(),
+		GreenlightEnrollURL:  su.greenlightAutoEnrollURL("https://greenlight.operationspark.org"),
 	}, nil
 }
 
 // Summary creates a string, summarizing a signup event.
-func (s *Signup) Summary() string {
-	sessionNote := fmt.Sprintf("%s %s has signed up for %s.", s.NameFirst, s.NameLast, s.Cohort)
-	if s.StartDateTime.IsZero() {
-		sessionNote = fmt.Sprintf("%s %s requested information on upcoming session times.", s.NameFirst, s.NameLast)
+func (su *Signup) Summary() string {
+	sessionNote := fmt.Sprintf("%s %s has signed up for %s.", su.NameFirst, su.NameLast, su.Cohort)
+	if su.StartDateTime.IsZero() {
+		sessionNote = fmt.Sprintf("%s %s requested information on upcoming session times.", su.NameFirst, su.NameLast)
 	}
 	msg := strings.Join([]string{
 		sessionNote,
-		fmt.Sprintf("Ph: %s", s.Cell),
-		fmt.Sprintf("email: %s", s.Email),
+		fmt.Sprintf("Ph: %s", su.Cell),
+		fmt.Sprintf("email: %s", su.Email),
 	}, "\n")
 	return msg
 }
@@ -299,7 +300,7 @@ func (su Signup) shortMessagingURL(greenlightHost, baseURL string) (string, erro
 	line1, cityStateZip := greenlight.ParseAddress(su.GooglePlace.Address)
 
 	p := rendererReqParams{
-		Template:      INFO_SESSION_TEMPLATE,
+		Template:      InfoSessionTemplate,
 		ZoomLink:      su.zoomMeetingURL,
 		Date:          su.StartDateTime,
 		Name:          su.NameFirst,
@@ -451,7 +452,7 @@ func (s *SignupService) runPostSignupTasks(ctx context.Context, su Signup, logge
 }
 
 // AttachZoomMeetingID sets the Zoom meeting ID on the Signup based on the Signup's StartDateTime and the SignService's Zoom sessions.
-func (sc *SignupService) attachZoomMeetingID(su *Signup) error {
+func (s *SignupService) attachZoomMeetingID(su *Signup) error {
 	// Do nothing if the user has not signed up for a specific session
 	if su.StartDateTime.IsZero() {
 		return nil
@@ -463,10 +464,10 @@ func (sc *SignupService) attachZoomMeetingID(su *Signup) error {
 	sessionStart := su.StartDateTime
 	centralStart := sessionStart.In(loc)
 
-	if _, ok := sc.meetings[centralStart.Hour()]; !ok {
+	if _, ok := s.meetings[centralStart.Hour()]; !ok {
 		return fmt.Errorf("no zoom meeting found with start hour: %d", centralStart.Hour())
 	}
-	id, err := strconv.Atoi(sc.meetings[centralStart.Hour()])
+	id, err := strconv.Atoi(s.meetings[centralStart.Hour()])
 	if err != nil {
 		return fmt.Errorf("convert string to int: %w", err)
 	}
@@ -477,7 +478,7 @@ func (sc *SignupService) attachZoomMeetingID(su *Signup) error {
 // CreateMessageURL creates a custom URL for use on Operation Spark's SMS Messaging Preview service.
 func (osm *osRenderer) CreateMessageURL(p notify.Participant) (string, error) {
 	params := rendererReqParams{
-		Template:     INFO_SESSION_TEMPLATE,
+		Template:     InfoSessionTemplate,
 		ZoomLink:     p.ZoomJoinURL,
 		Name:         p.NameFirst,
 		Date:         p.SessionDate,

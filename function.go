@@ -24,11 +24,12 @@ import (
 )
 
 type (
+	// StubStore is a no-op implementation of the Store interface.
 	// GCP Cloud Function requires the dreaded init() call to register the handler with the functions-framework. Init() is also unnecessarily called in test mode. Init() in turns calls NewServer() which needs to connect to MongoDB. To avoid that, I have this StubStore that implements the Store interface, but does nothing. It is only used in test mode to prevent the MongoDB connection error.
 	StubStore struct{}
 )
 
-// Implement the Store interface
+// GetUpcomingSessions implements the Store interface.
 func (s *StubStore) GetUpcomingSessions(context.Context, time.Duration) ([]*notify.UpcomingSession, error) {
 	return []*notify.UpcomingSession{}, nil
 }
@@ -50,10 +51,16 @@ func NewServer() *http.ServeMux {
 	if err != nil {
 		log.Fatalf("sentry sample rate: %v", err)
 	}
+	sentryEnv := "development"
+	if os.Getenv("SENTRY_ENV") != "" {
+		sentryEnv = os.Getenv("SENTRY_ENV")
+	}
+
 	err = sentry.Init(sentry.ClientOptions{
 		Dsn:              sentryDSN,
 		EnableTracing:    true,
 		TracesSampleRate: sentrySampleRate,
+		Environment:      sentryEnv,
 	})
 	if err != nil {
 		log.Fatalf("sentry init: %v", err)
@@ -75,7 +82,7 @@ func NewServer() *http.ServeMux {
 	mux := http.NewServeMux()
 	sentryHandler := sentryhttp.New(sentryhttp.Options{})
 	mux.HandleFunc("/", sentryHandler.HandleFunc(NewSignupServer(logger).HandleSignUp))
-	mux.HandleFunc("/notify", sentryHandler.HandleFunc(NewNotifyServer().ServeHTTP))
+	mux.HandleFunc("/notify", sentryHandler.HandleFunc(NewNotifyServer(logger).ServeHTTP))
 	return mux
 }
 
@@ -125,7 +132,7 @@ func getMongoClient() (*mongo.Client, string, error) {
 	return m, dbName, err
 }
 
-func NewNotifyServer() *notify.Server {
+func NewNotifyServer(logger *slog.Logger) *notify.Server {
 	mongoURI := os.Getenv("MONGO_URI")
 	isCI := os.Getenv("CI") == "true"
 	parsed, err := url.Parse(mongoURI)
@@ -133,9 +140,9 @@ func NewNotifyServer() *notify.Server {
 		fmt.Printf("Invalid 'MONGO_URI' environmental variable: %q\n", mongoURI)
 		fmt.Printf("If you're running tests, you can ignore this message.\n\n")
 		// See StubStore comment above
-		// **  This server is never used ** //
 		return notify.NewServer(notify.ServerOpts{
-			Store: &StubStore{},
+			Store:  &StubStore{},
+			Logger: slog.Default(),
 		})
 	}
 
@@ -160,6 +167,7 @@ func NewNotifyServer() *notify.Server {
 		Store:             mongoService,
 		SMSService:        twilioSvc,
 		ShortLinkService:  NewURLShortener(ShortenerOpts{apiKey: os.Getenv("URL_SHORTENER_API_KEY")}),
+		Logger:            logger,
 	})
 }
 

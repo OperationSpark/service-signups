@@ -14,3 +14,8 @@ cover:
 tidy:
 	go mod tidy
 	go mod verify
+
+## lint: Run linting
+.PHONY: lint
+lint:
+	golangci-lint run

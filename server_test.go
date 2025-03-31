@@ -43,7 +43,7 @@ func TestHandleSignup(t *testing.T) {
 			logger:  slog.Default(),
 		}
 
-		req := httptest.NewRequest(http.MethodPost, "/", signupToJson(t, signup))
+		req := httptest.NewRequest(http.MethodPost, "/", signupToJSON(t, signup))
 		req.Header.Set("Content-Type", "application/json")
 		res := httptest.NewRecorder()
 
@@ -74,7 +74,7 @@ func TestHandleSignup(t *testing.T) {
 			logger:  slog.Default(),
 		}
 
-		req := httptest.NewRequest(http.MethodPost, "/", signupToJson(t, signup))
+		req := httptest.NewRequest(http.MethodPost, "/", signupToJSON(t, signup))
 		req.Header.Set("Content-Type", "application/json")
 		res := httptest.NewRecorder()
 
@@ -85,7 +85,7 @@ func TestHandleSignup(t *testing.T) {
 	})
 }
 
-func signupToJson(t *testing.T, signup Signup) io.Reader {
+func signupToJSON(t *testing.T, signup Signup) io.Reader {
 	b, err := json.Marshal(signup)
 	if err != nil {
 		t.Fatalf("marshall json: %v", err)

@@ -147,7 +147,7 @@ func TestInvalidNumErr(t *testing.T) {
 			logger:  slog.Default(),
 		}
 
-		req := httptest.NewRequest(http.MethodPost, "/", signupToJson(t, signup))
+		req := httptest.NewRequest(http.MethodPost, "/", signupToJSON(t, signup))
 		req.Header.Set("Content-Type", "application/json")
 		res := httptest.NewRecorder()
 
