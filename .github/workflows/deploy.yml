@@ -54,6 +54,7 @@ jobs:
             MONGO_URI=${{secrets.MONGO_URI}},
             SENTRY_DSN=${{vars.SENTRY_DSN}},
             SENTRY_SAMPLE_RATE=${{vars.SENTRY_SAMPLE_RATE}},
+            SENTRY_ENV=production,
             SIGNING_SECRET=${{secrets.SIGNING_SECRET}}
       - id: "trigger-url"
         run: 'echo "${{ steps.deploy.outputs.url }}"'

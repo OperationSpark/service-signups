@@ -50,6 +50,7 @@ jobs:
             MONGO_URI=${{secrets.MONGO_URI}},
             SIGNING_SECRET=${{secrets.SIGNING_SECRET}},
             OS_MESSAGING_SIGNING_SECRET=${{secrets.OS_MESSAGING_SIGNING_SECRET}},
-            APP_ENV=testing
+            APP_ENV=testing,
+            SENTRY_ENV=testing
       - id: "trigger-url"
         run: 'echo "${{ steps.deploy.outputs.url }}"'

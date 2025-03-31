@@ -51,10 +51,16 @@ func NewServer() *http.ServeMux {
 	if err != nil {
 		log.Fatalf("sentry sample rate: %v", err)
 	}
+	sentryEnv := "development"
+	if os.Getenv("SENTRY_ENV") != "" {
+		sentryEnv = os.Getenv("SENTRY_ENV")
+	}
+
 	err = sentry.Init(sentry.ClientOptions{
 		Dsn:              sentryDSN,
 		EnableTracing:    true,
 		TracesSampleRate: sentrySampleRate,
+		Environment:      sentryEnv,
 	})
 	if err != nil {
 		log.Fatalf("sentry init: %v", err)
