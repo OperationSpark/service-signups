@@ -1,3 +1,4 @@
+// Package signing provides a service for signing and verifying messages.
 package signing
 
 import (

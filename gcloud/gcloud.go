@@ -1,3 +1,4 @@
+// Package gcloud provides a service for making authenticated requests to Google Cloud APIs.
 package gcloud
 
 import (

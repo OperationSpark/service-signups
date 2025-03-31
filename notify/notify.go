@@ -1,5 +1,7 @@
-//lint:file-ignore SA1029 Our string context keys are unique to this package.
+// Package notify provides a service for sending notifications to participants.
 package notify
+
+//lint:file-ignore SA1029 Our string context keys are unique to this package.
 
 import (
 	"context"
@@ -107,8 +109,8 @@ const (
 )
 
 const (
-	INFO_SESSION_PROGRAM_ID = "5sTmB97DzcqCwEZFR"
-	CENTRAL_TZ_NAME         = "America/Chicago"
+	InfoSessionProgramID = "5sTmB97DzcqCwEZFR"
+	CentralTZName        = "America/Chicago"
 )
 
 func (c contextKey) String() string {
@@ -149,7 +151,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Add timezone to the request context.
 	// TODO: Base the TZ on some location information somewhere
-	tz, err := time.LoadLocation(CENTRAL_TZ_NAME)
+	tz, err := time.LoadLocation(CentralTZName)
 	if err != nil {
 		s.serverErrorResponse(w, r, fmt.Errorf("loadLocation: %v", err))
 		return

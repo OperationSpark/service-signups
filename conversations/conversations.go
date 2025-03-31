@@ -1,3 +1,4 @@
+// Package conversations provides a service for linking a signup to a Twilio conversation.
 package conversations
 
 import (

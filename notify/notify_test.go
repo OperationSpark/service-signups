@@ -143,7 +143,7 @@ func TestGetUpcomingSessions(t *testing.T) {
 		// Insert Session with associated with bad Location
 		s := greenlight.Session{
 			ID:           mustRandID(t),
-			ProgramID:    INFO_SESSION_PROGRAM_ID,
+			ProgramID:    InfoSessionProgramID,
 			LocationType: "VIRTUAL",
 			LocationID:   locationID,
 		}
@@ -292,7 +292,7 @@ func insertFutureSession(t *testing.T, m *MongoService, inFuture time.Duration) 
 	require.True(t, ok)
 	s := greenlight.Session{
 		ID:           mustRandID(t),
-		ProgramID:    INFO_SESSION_PROGRAM_ID,
+		ProgramID:    InfoSessionProgramID,
 		LocationType: "HYBRID",
 		LocationID:   locationID,
 	}

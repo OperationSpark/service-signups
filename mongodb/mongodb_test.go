@@ -31,13 +31,13 @@ func TestCreate(t *testing.T) {
 	_, err = dbClient.Database(dbName).Collection("sessions").InsertOne(context.Background(), session)
 	require.NoError(t, err)
 
-	joinCodeId, sessionJoinCode, err := srv.CreateUserJoinCode(context.Background(), session.ID)
+	joinCodeID, sessionJoinCode, err := srv.CreateUserJoinCode(context.Background(), session.ID)
 	require.NoError(t, err)
-	require.NotEmpty(t, joinCodeId)
+	require.NotEmpty(t, joinCodeID)
 
 	userJoinCodeColl := dbClient.Database(dbName).Collection("userJoinCodes")
 
-	objID, err := primitive.ObjectIDFromHex(joinCodeId) // change string ID to Mongo ObjectID
+	objID, err := primitive.ObjectIDFromHex(joinCodeID) // change string ID to Mongo ObjectID
 	require.NoError(t, err)
 
 	joinCodeDoc := userJoinCodeColl.FindOne(context.Background(), bson.M{"_id": objID})

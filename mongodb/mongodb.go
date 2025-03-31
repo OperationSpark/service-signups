@@ -1,3 +1,4 @@
+// Package mongodb provides a service for interacting with MongoDB.
 package mongodb
 
 import (
