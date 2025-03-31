@@ -1,3 +1,4 @@
+//lint:file-ignore SA1029 Our string context keys are unique to this package.
 package notify
 
 import (
@@ -238,7 +239,7 @@ func TestServer(t *testing.T) {
 
 func TestReminderMsg(t *testing.T) {
 	t.Run(`Reminder message includes "today" if the session is today`, func(t *testing.T) {
-		ctx := context.WithValue(context.Background(), RECIPIENT_TZ, time.UTC)
+		ctx := context.WithValue(context.Background(), contextKeyRecipientTZ.String(), time.UTC)
 		session := UpcomingSession{}
 		session.Times.Start.DateTime = time.Now().Add(time.Hour * 5)
 		got, err := reminderMsg(ctx, session)
@@ -248,7 +249,7 @@ func TestReminderMsg(t *testing.T) {
 	})
 
 	t.Run("Reminder message includes the day of the week if the session is not today", func(t *testing.T) {
-		ctx := context.WithValue(context.Background(), RECIPIENT_TZ, time.UTC)
+		ctx := context.WithValue(context.Background(), contextKeyRecipientTZ.String(), time.UTC)
 		session := UpcomingSession{}
 		mardiGras, err := time.Parse("Jan 02, 2006", "Feb 21, 2023") // Mardi Gras
 		require.NoError(t, err)
@@ -260,7 +261,6 @@ func TestReminderMsg(t *testing.T) {
 
 		want := "Tuesday 2/21 at "
 		require.Contains(t, got, want)
-
 	})
 }
 
