@@ -14,7 +14,7 @@ func TestShortenURL(t *testing.T) {
 		apiKey := "TEST_API_KEY"
 		shortCode := "ahd2dh1xg2j"
 		wantURL := "https://ospk.org/" + shortCode
-		originalUrl := "http://thisisalongurl.gov/q?x=1&morestuff=everything"
+		originalURL := "http://thisisalongurl.gov/q?x=1&morestuff=everything"
 
 		mockSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if r.Header.Get("key") != apiKey {
@@ -29,9 +29,9 @@ func TestShortenURL(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			assertEqual(t, reqBody.OriginalUrl, originalUrl)
+			assertEqual(t, reqBody.OriginalURL, originalURL)
 
-			resp := ShortLink{ShortURL: wantURL, Code: shortCode, OriginalUrl: reqBody.OriginalUrl}
+			resp := ShortLink{ShortURL: wantURL, Code: shortCode, OriginalURL: reqBody.OriginalURL}
 			e := json.NewEncoder(w)
 			err = e.Encode(resp)
 			assertNilError(t, err)
@@ -39,7 +39,7 @@ func TestShortenURL(t *testing.T) {
 
 		shorty := NewURLShortener(ShortenerOpts{mockSrv.URL, apiKey})
 
-		got, err := shorty.ShortenURL(context.Background(), originalUrl)
+		got, err := shorty.ShortenURL(context.Background(), originalURL)
 
 		if err != nil {
 			t.Fatal(err)

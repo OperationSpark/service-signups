@@ -24,11 +24,12 @@ import (
 )
 
 type (
+	// StubStore is a no-op implementation of the Store interface.
 	// GCP Cloud Function requires the dreaded init() call to register the handler with the functions-framework. Init() is also unnecessarily called in test mode. Init() in turns calls NewServer() which needs to connect to MongoDB. To avoid that, I have this StubStore that implements the Store interface, but does nothing. It is only used in test mode to prevent the MongoDB connection error.
 	StubStore struct{}
 )
 
-// Implement the Store interface
+// GetUpcomingSessions implements the Store interface.
 func (s *StubStore) GetUpcomingSessions(context.Context, time.Duration) ([]*notify.UpcomingSession, error) {
 	return []*notify.UpcomingSession{}, nil
 }

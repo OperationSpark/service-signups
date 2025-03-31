@@ -11,7 +11,7 @@ import (
 
 type (
 	Shortener struct {
-		baseApiEndpoint string
+		baseAPIEndpoint string
 		client          http.Client
 		apiKey          string
 	}
@@ -24,7 +24,7 @@ type (
 		// Optional custom short code passed when creating or updating the short URL.
 		CustomCode string `json:"customCode"`
 		// The URL where the short URL redirects.
-		OriginalUrl string `json:"originalUrl"`
+		OriginalURL string `json:"originalUrl"`
 		// Count of times the short URL has been used.
 		TotalClicks int `json:"totalClicks"`
 		// Identifier of the entity that created the short URL.
@@ -45,13 +45,13 @@ type (
 
 // NewURLShortener creates a new Shortener service.
 func NewURLShortener(o ShortenerOpts) *Shortener {
-	baseApiEndpoint := "https://ospk.org/api/urls"
+	baseAPIEndpoint := "https://ospk.org/api/urls"
 	if len(o.apiOverride) > 0 {
-		baseApiEndpoint = o.apiOverride
+		baseAPIEndpoint = o.apiOverride
 	}
 
 	return &Shortener{
-		baseApiEndpoint: baseApiEndpoint,
+		baseAPIEndpoint: baseAPIEndpoint,
 		client:          *http.DefaultClient,
 		apiKey:          o.apiKey,
 	}
@@ -65,12 +65,12 @@ func NewURLShortener(o ShortenerOpts) *Shortener {
 //
 // If there is an error, the original URL is returned along with the error.
 func (s Shortener) ShortenURL(ctx context.Context, url string) (string, error) {
-	body, err := json.Marshal(ShortLink{OriginalUrl: url})
+	body, err := json.Marshal(ShortLink{OriginalURL: url})
 	if err != nil {
 		return url, fmt.Errorf("marshall: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.baseApiEndpoint, bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.baseAPIEndpoint, bytes.NewReader(body))
 	if err != nil {
 		return url, fmt.Errorf("newRequestWithContext: %w", err)
 	}

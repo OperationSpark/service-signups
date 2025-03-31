@@ -41,7 +41,7 @@ func (ss *signupServer) HandleSignUp(w http.ResponseWriter, r *http.Request) {
 	// Parse JSON or URL Encoded Signup Form
 	switch r.Header.Get("Content-Type") {
 	case "application/json":
-		err := handleJson(&su, r.Body)
+		err := handleJSON(&su, r.Body)
 		if err != nil {
 			ss.badRequestResponse(w, r, fmt.Errorf("invalid JSON body: %w", err).Error())
 			return
@@ -115,8 +115,8 @@ func (ss *signupServer) HandleSignUp(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// handleJson unmarshalls a JSON payload from a signUp request into a Signup.
-func handleJson(s *Signup, body io.Reader) error {
+// handleJSON unmarshalls a JSON payload from a signUp request into a Signup.
+func handleJSON(su *Signup, body io.Reader) error {
 	var timeParseError *time.ParseError
 
 	b, err := io.ReadAll(body)
@@ -124,7 +124,7 @@ func handleJson(s *Signup, body io.Reader) error {
 		return err
 	}
 
-	err = json.Unmarshal(b, s)
+	err = json.Unmarshal(b, su)
 	if errors.As(err, &timeParseError) {
 		return &InvalidFieldError{Field: "startDateTime"}
 	}
@@ -136,7 +136,7 @@ func handleJson(s *Signup, body io.Reader) error {
 }
 
 // handleForm unmarshalls a FormData payload from a signUp request into a Signup
-func handleForm(s *Signup, r *http.Request) error {
+func handleForm(su *Signup, r *http.Request) error {
 	decoder := schema.NewDecoder()
 
 	err := r.ParseForm()
@@ -144,7 +144,7 @@ func handleForm(s *Signup, r *http.Request) error {
 		return err
 	}
 
-	err = decoder.Decode(s, r.PostForm)
+	err = decoder.Decode(su, r.PostForm)
 	if err != nil {
 		return err
 	}
