@@ -34,7 +34,7 @@ type response struct {
 }
 
 func (ss *signupServer) HandleSignUp(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
+	defer func() { _ = r.Body.Close() }()
 
 	var su Signup
 

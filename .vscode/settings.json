@@ -7,5 +7,6 @@
     "Emptyf",
     "gldb",
     "stretchr"
-  ]
+  ],
+ "editor.formatOnSave": true
 }

@@ -18,11 +18,20 @@ import (
 // Magic Test Numbers
 // https://www.twilio.com/docs/iam/test-credentials#magic-input
 
-func setEnv() {
-	os.Setenv("TWILIO_ACCOUNT_SID", "testAccountSID")
-	os.Setenv("TWILIO_AUTH_TOKEN", "testAuthToken")
-	os.Setenv("TWILIO_PHONE_NUMBER", "+15005550006")
-	os.Setenv("TWILIO_CONVERSATIONS_SID", "CHXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX")
+func mustSetEnv(t *testing.T) {
+	t.Helper()
+	if err := os.Setenv("TWILIO_ACCOUNT_SID", "testAccountSID"); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Setenv("TWILIO_AUTH_TOKEN", "testAuthToken"); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Setenv("TWILIO_PHONE_NUMBER", "+15005550006"); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Setenv("TWILIO_CONVERSATIONS_SID", "CHXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestSendSMSInConversation(t *testing.T) {
@@ -39,14 +48,18 @@ func TestSendSMSInConversation(t *testing.T) {
 			require.NoError(t, err)
 
 			w.Header().Set("Content-Type", "application/json")
-			fmt.Fprint(w, http.StatusBadRequest)
-			fmt.Fprint(w, bytes.NewBufferString(`{
+			_, err = fmt.Fprint(w, http.StatusBadRequest)
+			require.NoError(t, err)
+			_, err = fmt.Fprint(w, bytes.NewBufferString(`
+{
     "code": 50407,
     "message": "Invalid messaging binding address",
     "more_info": "https://www.twilio.com/docs/errors/50407",
     "status": 400
-}`))
-
+}
+`[1:],
+			))
+			require.NoError(t, err)
 		}))
 
 		tSvc := NewTwilioService(twilioServiceOptions{
@@ -68,7 +81,7 @@ func TestFindConversationsByNumber(t *testing.T) {
 	t.Skip("TODO")
 
 	t.Run("finds all the conversation for the given phone number", func(t *testing.T) {
-		setEnv()
+		mustSetEnv(t)
 
 		tSvc := NewTwilioService(twilioServiceOptions{
 			accountSID:   os.Getenv("TWILIO_ACCOUNT_SID"),

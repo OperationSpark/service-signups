@@ -23,22 +23,38 @@ func TestMain(m *testing.M) {
 		log.Fatalf("Could not connect to docker: %s", err)
 	}
 
-	// pull mongodb docker image for version 5.0
-	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
+	// Get Docker Hub credentials from environment variables
+	dockerUsername := os.Getenv("DOCKER_USERNAME")
+	dockerPassword := os.Getenv("DOCKER_PASSWORD")
+
+	// pull mongodb docker image with authentication if credentials are provided
+	runOptions := &dockertest.RunOptions{
 		Repository: "mongo",
-		Tag:        "5.0",
+		Tag:        "7.0.18",
 		Env: []string{
 			// username and password for mongodb superuser
 			"MONGO_INITDB_ROOT_USERNAME=root",
 			"MONGO_INITDB_ROOT_PASSWORD=password",
 		},
-	}, func(config *docker.HostConfig) {
-		// set AutoRemove to true so that stopped container goes away by itself
-		config.AutoRemove = true
-		config.RestartPolicy = docker.RestartPolicy{
-			Name: "no",
+	}
+
+	// Add Docker Hub authentication if credentials are provided
+	if dockerUsername != "" && dockerPassword != "" {
+		runOptions.Auth = docker.AuthConfiguration{
+			Username: dockerUsername,
+			Password: dockerPassword,
 		}
-	})
+	}
+
+	resource, err := pool.RunWithOptions(
+		runOptions,
+		func(config *docker.HostConfig) {
+			// set AutoRemove to true so that stopped container goes away by itself
+			config.AutoRemove = true
+			config.RestartPolicy = docker.RestartPolicy{
+				Name: "no",
+			}
+		})
 	if err != nil {
 		log.Fatalf("Could not start resource: %s", err)
 	}
