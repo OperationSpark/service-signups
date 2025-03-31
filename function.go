@@ -75,7 +75,7 @@ func NewServer() *http.ServeMux {
 	mux := http.NewServeMux()
 	sentryHandler := sentryhttp.New(sentryhttp.Options{})
 	mux.HandleFunc("/", sentryHandler.HandleFunc(NewSignupServer(logger).HandleSignUp))
-	mux.HandleFunc("/notify", sentryHandler.HandleFunc(NewNotifyServer().ServeHTTP))
+	mux.HandleFunc("/notify", sentryHandler.HandleFunc(NewNotifyServer(logger).ServeHTTP))
 	return mux
 }
 
@@ -125,7 +125,7 @@ func getMongoClient() (*mongo.Client, string, error) {
 	return m, dbName, err
 }
 
-func NewNotifyServer() *notify.Server {
+func NewNotifyServer(logger *slog.Logger) *notify.Server {
 	mongoURI := os.Getenv("MONGO_URI")
 	isCI := os.Getenv("CI") == "true"
 	parsed, err := url.Parse(mongoURI)
@@ -133,9 +133,9 @@ func NewNotifyServer() *notify.Server {
 		fmt.Printf("Invalid 'MONGO_URI' environmental variable: %q\n", mongoURI)
 		fmt.Printf("If you're running tests, you can ignore this message.\n\n")
 		// See StubStore comment above
-		// **  This server is never used ** //
 		return notify.NewServer(notify.ServerOpts{
-			Store: &StubStore{},
+			Store:  &StubStore{},
+			Logger: slog.Default(),
 		})
 	}
 
@@ -160,6 +160,7 @@ func NewNotifyServer() *notify.Server {
 		Store:             mongoService,
 		SMSService:        twilioSvc,
 		ShortLinkService:  NewURLShortener(ShortenerOpts{apiKey: os.Getenv("URL_SHORTENER_API_KEY")}),
+		Logger:            logger,
 	})
 }
 
