@@ -235,7 +235,7 @@ func TestServer(t *testing.T) {
 		require.Equal(t, resp.Result().StatusCode, http.StatusOK)
 		require.True(t, mockTwilio.called)
 		require.Contains(t, mockTwilio.calledWith, mockTwilio.FormatCell(toPhone))
-		require.Contains(t, mockTwilio.calledWith[1], "Hi from Operation Spark! A friendly reminder that you have an Info Session")
+		require.Contains(t, mockTwilio.calledWith[1], "Hi from Operation Spark! A friendly reminder that you have an Intro to Coding Info Session")
 	})
 }
 
@@ -246,7 +246,7 @@ func TestReminderMsg(t *testing.T) {
 		session.Times.Start.DateTime = time.Now().Add(time.Hour * 5)
 		got, err := reminderMsg(ctx, session)
 		require.NoError(t, err)
-		want := "Hi from Operation Spark! A friendly reminder that you have an Info Session today at "
+		want := "Hi from Operation Spark! A friendly reminder that you have an Intro to Coding Info Session today at "
 		require.Contains(t, got, want)
 	})
 
