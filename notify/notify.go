@@ -251,12 +251,21 @@ func (m *MongoService) GetUpcomingSessions(ctx context.Context, inFuture time.Du
 
 // SendSMSReminders sends an SMS message to each of the attendees in each of the given sessions. Each SMS is sent in it's own goroutine.
 func (s *Server) sendSMSReminders(ctx context.Context, sessions []*UpcomingSession, dryRun bool) error {
-	errs, ctx := errgroup.WithContext(ctx)
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
+	// Pass in a background context to allow individual goroutines to use a new context with a timeout
+	errs, _ := errgroup.WithContext(context.Background())
 	for _, session := range sessions {
 		for _, p := range session.Participants {
 			// https://stackoverflow.com/questions/40326723/go-vet-range-variable-captured-by-func-literal-when-using-go-routine-inside-of-f
 			errs.Go(func(p Participant) func() error {
 				return func() error {
+					// Create a new context for each goroutine
+					ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+					defer cancel()
+
 					msg, err := reminderMsg(ctx, *session)
 					if err != nil {
 						return fmt.Errorf("reminderMsg: %w", err)
