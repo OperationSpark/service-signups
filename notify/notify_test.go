@@ -246,7 +246,7 @@ func TestReminderMsg(t *testing.T) {
 		session.Times.Start.DateTime = time.Now().Add(time.Hour * 5)
 		got, err := reminderMsg(ctx, session)
 		require.NoError(t, err)
-		want := "Hi from Operation Spark! A friendly reminder that you have an Info Session today at "
+		want := "Hi from Operation Spark! A friendly reminder that you have an Intro to Coding Info Session today at "
 		require.Contains(t, got, want)
 	})
 
