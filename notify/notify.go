@@ -108,14 +108,14 @@ const (
 	contextKeyRecipientTZ contextKey = "recipient_tz"
 )
 
+func (c contextKey) String() string {
+	return "notify__" + string(c)
+}
+
 const (
 	InfoSessionProgramID = "5sTmB97DzcqCwEZFR"
 	CentralTZName        = "America/Chicago"
 )
-
-func (c contextKey) String() string {
-	return "notify__" + string(c)
-}
 
 func NewServer(o ServerOpts) *Server {
 	return &Server{
@@ -309,7 +309,7 @@ func reminderMsg(ctx context.Context, session UpcomingSession) (string, error) {
 		date = ""
 	}
 
-	return fmt.Sprintf("Hi from Operation Spark! A friendly reminder that you have an Info Session %s%s at %s.", day, date, time), nil
+	return fmt.Sprintf("Hi from Operation Spark! A friendly reminder that you have an Intro to Coding Info Session %s%s at %s.", day, date, time), nil
 }
 
 // IsToday is checks if the given time is today.
