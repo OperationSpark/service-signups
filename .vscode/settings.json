@@ -1,5 +1,6 @@
 {
   "go.testEnvFile": "${workspaceFolder}/.env.smoke",
+  "go.lintTool": "golangci-lint",
   "cSpell.words": [
     "cmpopts",
     "convo",
@@ -8,5 +9,5 @@
     "gldb",
     "stretchr"
   ],
- "editor.formatOnSave": true
+  "editor.formatOnSave": true
 }
