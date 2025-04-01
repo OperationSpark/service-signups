@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/operationspark/service-signup/greenlight"
 	"github.com/stretchr/testify/require"
 )
 
@@ -174,7 +175,9 @@ func TestRunTwilioReal(t *testing.T) {
 	})
 
 	// Create a sample Signup object
-	su := returnSignup()
+	// input the phone number, email, first name, and last name as needed for your test
+	// For example, you can use a real phone number and email for testing
+	su := returnSignup("", "", "", "", t)
 
 	// Call the run method
 	err := tSvc.run(context.Background(), &su, slog.Default())
@@ -182,33 +185,33 @@ func TestRunTwilioReal(t *testing.T) {
 
 	// Verify that the conversation ID was set
 	require.NotEmpty(t, su.conversationID)
-	t.Logf("Conversation ID: %s", su.conversationID)
+	t.Logf("Conversation ID: %s", *su.conversationID)
 }
 
-func returnSignup(phoneNumber, email, nameFirst, nameLast string) Signup {
+func returnSignup(phoneNumber, email, nameFirst, nameLast string, t *testing.T) Signup {
 	// Create a sample Signup object
 	return Signup{
-		ProgramId:         "5sTmB97DzcqCwEZFR",
+		ProgramID:         "5sTmB97DzcqCwEZFR",
 		NameFirst:         nameFirst,
 		NameLast:          nameLast,
 		Email:             email,
 		Cell:              phoneNumber,
 		Referrer:          "Word of mouth",
 		ReferrerResponse:  "email blast",
-		StartDateTime:     "2025-03-24T18:00:00.000Z",
+		StartDateTime:     mustMakeTime(t, time.RFC3339, "2025-03-24T18:00:00.000Z"),
 		Cohort:            "_dev_is-sep-28-23-12pm",
-		SessionId:         "rBqAXvr8Zotw7JpSe",
+		SessionID:         "rBqAXvr8Zotw7JpSe",
 		LocationType:      "HYBRID",
 		UserLocation:      "Louisiana",
 		AttendingLocation: "VIRTUAL",
 		SMSOptIn:          true,
-		GooglePlace: GooglePlace{
+		GooglePlace: greenlight.GooglePlace{
 			PlaceID: "ChIJ7YchCHSmIIYRYsAEPZN_E0o",
 			Name:    "Operation Spark",
 			Address: "514 Franklin Ave, New Orleans, LA 70117, USA",
 			Phone:   "+1 504-534-8277",
 			Website: "https://www.operationspark.org/",
-			Geometry: Geometry{
+			Geometry: greenlight.Geometry{
 				Lat: 29.96325999999999,
 				Lng: -90.052138,
 			},
