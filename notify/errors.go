@@ -76,6 +76,5 @@ func (s *Server) badRequestResponse(w http.ResponseWriter, r *http.Request, msg 
 // notFoundResponse logs the error and sends a 404 Not Found response to the client.
 // The msg is sent as the error message in the response body, so it should be a human-readable message and not leak any sensitive information.
 func (s *Server) notFoundResponse(w http.ResponseWriter, r *http.Request, msg string) {
-	s.logRequestError(r.Context(), r, fmt.Errorf("not found: %s", msg))
 	s.errorResponse(w, r, http.StatusNotFound, msg)
 }
