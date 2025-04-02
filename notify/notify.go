@@ -6,7 +6,6 @@ package notify
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -87,6 +86,7 @@ type (
 		store         Store
 		twilioService SMSSender
 		logger        *slog.Logger
+		centralTZ     *time.Location
 	}
 
 	Request struct {
@@ -100,30 +100,27 @@ type (
 	}
 
 	Period string
-
-	contextKey string
 )
-
-const (
-	contextKeyRecipientTZ contextKey = "recipient_tz"
-)
-
-func (c contextKey) String() string {
-	return "notify__" + string(c)
-}
 
 const (
 	InfoSessionProgramID = "5sTmB97DzcqCwEZFR"
-	CentralTZName        = "America/Chicago"
 )
 
 func NewServer(o ServerOpts) *Server {
+	// TODO: Base the TZ on some location information somewhere in the incoming requests.
+	centralTZ, err := time.LoadLocation("America/Chicago")
+	if err != nil {
+		o.Logger.Error("loadLocation", slog.String("location", "America/Chicago"), slog.Any("error", err))
+		centralTZ = time.FixedZone("CST", -6*60*60)
+	}
+
 	return &Server{
 		osMsSvc:       o.OSRendererService,
 		shortySrv:     o.ShortLinkService,
 		store:         o.Store,
 		twilioService: o.SMSService,
 		logger:        o.Logger,
+		centralTZ:     centralTZ,
 	}
 }
 
@@ -149,22 +146,20 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Add timezone to the request context.
-	// TODO: Base the TZ on some location information somewhere
-	tz, err := time.LoadLocation(CentralTZName)
-	if err != nil {
-		s.serverErrorResponse(w, r, fmt.Errorf("loadLocation: %v", err))
-		return
-	}
-	ctx := context.WithValue(r.Context(), contextKeyRecipientTZ.String(), tz)
-	sessions, err := s.store.GetUpcomingSessions(ctx, inFuture)
+	sessions, err := s.store.GetUpcomingSessions(r.Context(), inFuture)
 	if err != nil {
 		s.serverErrorResponse(w, r, fmt.Errorf("store.GetUpcomingSessions: %v", err))
 		return
 	}
 
 	if len(sessions) == 0 {
-		s.notFoundResponse(w, r, fmt.Sprintf("no upcoming sessions in the next %s", reqBody.JobArgs.Period))
+		// return an OK, log an info message, and return
+		s.logger.InfoContext(r.Context(), "no upcoming sessions",
+			slog.String("period", string(reqBody.JobArgs.Period)),
+			slog.String("jobName", reqBody.JobName),
+			slog.String("jobArgs", fmt.Sprintf("%+v", reqBody.JobArgs)),
+		)
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 
@@ -175,12 +170,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		)
 	}
 
-	err = s.sendSMSReminders(ctx, sessions, reqBody.JobArgs.DryRun)
+	err = s.sendSMSReminders(r.Context(), sessions, reqBody.JobArgs.DryRun)
 	if err != nil {
 		s.serverErrorResponse(w, r, fmt.Errorf("sendSMSReminders: %v", err))
 		return
 	}
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusAccepted)
 }
 
 func NewMongoService(dbClient *mongo.Client, dbName string) *MongoService {
@@ -251,13 +246,22 @@ func (m *MongoService) GetUpcomingSessions(ctx context.Context, inFuture time.Du
 
 // SendSMSReminders sends an SMS message to each of the attendees in each of the given sessions. Each SMS is sent in it's own goroutine.
 func (s *Server) sendSMSReminders(ctx context.Context, sessions []*UpcomingSession, dryRun bool) error {
-	errs, ctx := errgroup.WithContext(ctx)
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
+	// Pass in a background context to allow individual goroutines to use a new context with a timeout
+	errs, _ := errgroup.WithContext(context.Background())
 	for _, session := range sessions {
 		for _, p := range session.Participants {
 			// https://stackoverflow.com/questions/40326723/go-vet-range-variable-captured-by-func-literal-when-using-go-routine-inside-of-f
 			errs.Go(func(p Participant) func() error {
 				return func() error {
-					msg, err := reminderMsg(ctx, *session)
+					// Create a new context for each goroutine
+					ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+					defer cancel()
+
+					msg, err := reminderMsg(ctx, *session, s.centralTZ)
 					if err != nil {
 						return fmt.Errorf("reminderMsg: %w", err)
 					}
@@ -280,6 +284,7 @@ func (s *Server) sendSMSReminders(ctx context.Context, sessions []*UpcomingSessi
 							slog.String("toNum", toNum),
 							slog.String("smsBody", msg),
 						)
+						return nil
 					}
 					return s.twilioService.Send(ctx, toNum, msg)
 				}
@@ -295,12 +300,7 @@ func (s *Server) writeJSON(w http.ResponseWriter, status int, data any) error {
 	return json.NewEncoder(w).Encode(data)
 }
 
-func reminderMsg(ctx context.Context, session UpcomingSession) (string, error) {
-	tz, ok := ctx.Value(contextKeyRecipientTZ.String()).(*time.Location)
-	if !ok {
-		return "", errors.New("could not retrieve local timezone from context")
-	}
-
+func reminderMsg(ctx context.Context, session UpcomingSession, tz *time.Location) (string, error) {
 	day := session.Times.Start.DateTime.In(tz).Format("Monday")
 	time := session.Times.Start.DateTime.In(tz).Format("3:04PM MST")
 	date := session.Times.Start.DateTime.In(tz).Format(" 1/2")

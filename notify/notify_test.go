@@ -232,7 +232,7 @@ func TestServer(t *testing.T) {
 
 		srv.ServeHTTP(resp, req)
 
-		require.Equal(t, resp.Result().StatusCode, http.StatusOK)
+		require.Equal(t, http.StatusOK, resp.Result().StatusCode)
 		require.True(t, mockTwilio.called)
 		require.Contains(t, mockTwilio.calledWith, mockTwilio.FormatCell(toPhone))
 		require.Contains(t, mockTwilio.calledWith[1], "Hi from Operation Spark! A friendly reminder that you have an Intro to Coding Info Session")
@@ -240,29 +240,57 @@ func TestServer(t *testing.T) {
 }
 
 func TestReminderMsg(t *testing.T) {
+	ctz, err := time.LoadLocation("America/Chicago")
+	require.NoError(t, err)
+
 	t.Run(`Reminder message includes "today" if the session is today`, func(t *testing.T) {
-		ctx := context.WithValue(context.Background(), contextKeyRecipientTZ.String(), time.UTC)
 		session := UpcomingSession{}
-		session.Times.Start.DateTime = time.Now().Add(time.Hour * 5)
-		got, err := reminderMsg(ctx, session)
+		session.Times.Start.DateTime = time.Now().Add(time.Hour * 5).In(ctz)
+		got, err := reminderMsg(context.Background(), session, ctz)
 		require.NoError(t, err)
 		want := "Hi from Operation Spark! A friendly reminder that you have an Intro to Coding Info Session today at "
 		require.Contains(t, got, want)
 	})
 
 	t.Run("Reminder message includes the day of the week if the session is not today", func(t *testing.T) {
-		ctx := context.WithValue(context.Background(), contextKeyRecipientTZ.String(), time.UTC)
-		session := UpcomingSession{}
-		mardiGras, err := time.Parse("Jan 02, 2006", "Feb 21, 2023") // Mardi Gras
+		mardiGras, err := time.Parse("Jan 02, 2006 03:04 PM -0700", "Feb 21, 2023 05:30 PM -0600")
 		require.NoError(t, err)
 
+		mardiGras = mardiGras.In(ctz)
+
+		session := UpcomingSession{}
 		session.Times.Start.DateTime = mardiGras
 
-		got, err := reminderMsg(ctx, session)
+		got, err := reminderMsg(context.Background(), session, ctz)
 		require.NoError(t, err)
 
-		want := "Tuesday 2/21 at "
+		want := "Tuesday 2/21 at 5:30PM"
 		require.Contains(t, got, want)
+	})
+}
+
+func TestSendSMSReminders(t *testing.T) {
+	t.Run("should not send SMS if running in dry run mode", func(t *testing.T) {
+		mockTwilio := MockSMSService{}
+		srv := NewServer(ServerOpts{
+			OSRendererService: MockOSRenderer{},
+			ShortLinkService:  MockShortLinker{},
+			Logger:            slog.Default(),
+			SMSService:        &mockTwilio,
+		})
+		sessions := []*UpcomingSession{
+			{Participants: []Participant{
+				{
+					Cell:  "+15045551234",
+					Email: "test@test.com",
+				},
+			}},
+		}
+		dryRun := true
+		err := srv.sendSMSReminders(context.Background(), sessions, dryRun)
+		require.NoError(t, err)
+
+		require.False(t, mockTwilio.called, "should not send SMS in dry run mode")
 	})
 }
 
