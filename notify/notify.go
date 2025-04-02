@@ -100,17 +100,7 @@ type (
 	}
 
 	Period string
-
-	contextKey string
 )
-
-const (
-	contextKeyRecipientTZ contextKey = "recipient_tz"
-)
-
-func (c contextKey) String() string {
-	return "notify__" + string(c)
-}
 
 const (
 	InfoSessionProgramID = "5sTmB97DzcqCwEZFR"
