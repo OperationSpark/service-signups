@@ -153,7 +153,13 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(sessions) == 0 {
-		s.notFoundResponse(w, r, fmt.Sprintf("no upcoming sessions in the next %s", reqBody.JobArgs.Period))
+		// return an OK, log an info message, and return
+		s.logger.InfoContext(r.Context(), "no upcoming sessions",
+			slog.String("period", string(reqBody.JobArgs.Period)),
+			slog.String("jobName", reqBody.JobName),
+			slog.String("jobArgs", fmt.Sprintf("%+v", reqBody.JobArgs)),
+		)
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 
@@ -169,7 +175,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.serverErrorResponse(w, r, fmt.Errorf("sendSMSReminders: %v", err))
 		return
 	}
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusAccepted)
 }
 
 func NewMongoService(dbClient *mongo.Client, dbName string) *MongoService {
